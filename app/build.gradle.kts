@@ -101,7 +101,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = appIdOverride ?: "org.akanework.gramophone"
+        applicationId = appIdOverride ?: "org.kasimeka.gramophone"
         minSdk = 23
         targetSdk = 37
         versionCode = 24
