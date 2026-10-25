@@ -33,8 +33,8 @@
           };
 
           android = androidEnv.composeAndroidPackages {
-            platformVersions = [ "37" ];
-            buildToolsVersions = [ "37.0.0" ];
+            platformVersions = [ "36" "37" ];
+            buildToolsVersions = [ "36.0.0" "37.0.0" ];
             cmakeVersions = [ "3.22.1" ];
             includeNDK = true;
             ndkVersion = "28.2.13676358";
