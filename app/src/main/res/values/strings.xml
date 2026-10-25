@@ -376,6 +376,18 @@
     <string name="play">Play</string>
     <!-- Tooltip for three dots button opening context menu -->
     <string name="more">More</string>
+    <!-- Accessibility label for the queue row three-dot menu -->
+    <string name="more_options">More options</string>
+    <!-- Accessibility label for the queue row drag handle -->
+    <string name="reorder">Reorder</string>
+    <!-- Queue row menu item removing a song from the queue -->
+    <string name="remove_from_queue">Remove from queue</string>
+    <!-- Snackbar confirmation after moving a song to play next -->
+    <string name="will_play_next">Will play next</string>
+    <!-- Snackbar confirmation after removing a song from the queue -->
+    <string name="removed_from_queue">Removed from queue</string>
+    <!-- Snackbar action reversing the last queue edit -->
+    <string name="undo">Undo</string>
     <!-- Tooltip for x button removing song from queue/playlist -->
     <string name="remove">Remove</string>
     <!-- Tooltip for skip to next button in full player -->

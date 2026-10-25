@@ -50,6 +50,7 @@ abstract class EditSongAdapter(
     private val context: Context,
     private val showDuration: Boolean,
     private val disableDrag: MutableStateFlow<Boolean>? = null,
+    private val queueRowStyle: Boolean = false,
 ) : MyRecyclerView.Adapter<EditSongAdapter.ViewHolder>() {
     override fun onCreateViewHolder(
         parent: ViewGroup,
@@ -59,6 +60,7 @@ abstract class EditSongAdapter(
             LayoutInflater
                 .from(parent.context)
                 .inflate(R.layout.adapter_list_card, parent, false) as ConstraintLayout,
+            queueRowStyle,
         )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -78,7 +80,11 @@ abstract class EditSongAdapter(
             ViewCompat.performHapticFeedback(v, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
             val pos = holder.bindingAdapterPosition
             if (pos != RecyclerView.NO_POSITION) { // if -1, user clicked remove twice on same item
-                removeItem(pos)
+                if (queueRowStyle) {
+                    onActionButtonClick(holder)
+                } else {
+                    removeItem(pos)
+                }
             }
         }
         holder.itemView.setOnClickListener { v ->
@@ -113,6 +119,12 @@ abstract class EditSongAdapter(
     }
     abstract fun onRowMoved(from: Int, to: Int) // must call notifyItemMoved() if actually moving
     abstract fun removeItem(pos: Int) // must call notifyItemRemoved() if actually removing
+
+    /**
+     * Called for the trailing three-dot button when [queueRowStyle] is on. The queue adapter shows
+     * its own row menu here; other edit lists keep the remove button.
+     */
+    protected open fun onActionButtonClick(holder: ViewHolder) {}
 
     inner class PlaylistCardMoveCallback :
         ItemTouchHelper.SimpleCallback(
@@ -151,6 +163,7 @@ abstract class EditSongAdapter(
 
     class ViewHolder(
         view: ConstraintLayout,
+        queueRowStyle: Boolean = false,
     ) : RecyclerView.ViewHolder(view) {
         val songName: TextView = view.findViewById(R.id.title)
         val songArtist: TextView = view.findViewById(R.id.artist)
@@ -166,28 +179,59 @@ abstract class EditSongAdapter(
             // it programmatically.
             dragHandle.id = R.id.dragHandle
             val dp8 = 8.dpToPx(view.context)
-            dragHandle.setPaddingRelative(10.dpToPx(view.context), dp8, 0, dp8)
-            dragHandle.setImageResource(R.drawable.baseline_drag_handle_24)
-            view.addView(
-                dragHandle, ConstraintLayout.LayoutParams(
-                    ConstraintLayout.LayoutParams.WRAP_CONTENT,
-                    ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
-                ).apply {
-                    startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                    topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                    bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                })
-            view.findViewById<View>(R.id.coverCardView)
-                .updateLayoutParams<ConstraintLayout.LayoutParams> {
-                    startToStart = ConstraintLayout.LayoutParams.UNSET
-                    startToEnd = R.id.dragHandle
+            if (queueRowStyle) {
+                // Queue rows read: song -> three-dot -> drag handle.
+                dragHandle.setPaddingRelative(0, dp8, 10.dpToPx(view.context), dp8)
+                dragHandle.contentDescription = view.context.getString(R.string.reorder)
+                TooltipCompat.setTooltipText(
+                    dragHandle,
+                    view.context.getString(R.string.reorder)
+                )
+                dragHandle.setImageResource(R.drawable.baseline_drag_handle_24)
+                view.addView(
+                    dragHandle, ConstraintLayout.LayoutParams(
+                        ConstraintLayout.LayoutParams.WRAP_CONTENT,
+                        ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                    ).apply {
+                        endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                        topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                        bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                    })
+                closeButton.updateLayoutParams<ConstraintLayout.LayoutParams> {
+                    endToEnd = ConstraintLayout.LayoutParams.UNSET
+                    endToStart = R.id.dragHandle
                 }
-            closeButton.setIconResource(R.drawable.outline_close_24)
-            TooltipCompat.setTooltipText(
-                closeButton,
-                closeButton.context.getString(R.string.remove)
-            )
-            closeButton.contentDescription = closeButton.context.getString(R.string.remove)
+                closeButton.setIconResource(R.drawable.ic_more_vert_alt)
+                TooltipCompat.setTooltipText(
+                    closeButton,
+                    closeButton.context.getString(R.string.more_options)
+                )
+                closeButton.contentDescription =
+                    closeButton.context.getString(R.string.more_options)
+            } else {
+                dragHandle.setPaddingRelative(10.dpToPx(view.context), dp8, 0, dp8)
+                dragHandle.setImageResource(R.drawable.baseline_drag_handle_24)
+                view.addView(
+                    dragHandle, ConstraintLayout.LayoutParams(
+                        ConstraintLayout.LayoutParams.WRAP_CONTENT,
+                        ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                    ).apply {
+                        startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                        topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                        bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                    })
+                view.findViewById<View>(R.id.coverCardView)
+                    .updateLayoutParams<ConstraintLayout.LayoutParams> {
+                        startToStart = ConstraintLayout.LayoutParams.UNSET
+                        startToEnd = R.id.dragHandle
+                    }
+                closeButton.setIconResource(R.drawable.outline_close_24)
+                TooltipCompat.setTooltipText(
+                    closeButton,
+                    closeButton.context.getString(R.string.remove)
+                )
+                closeButton.contentDescription = closeButton.context.getString(R.string.remove)
+            }
         }
     }
 }

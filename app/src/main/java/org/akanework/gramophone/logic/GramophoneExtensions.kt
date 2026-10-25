@@ -78,18 +78,22 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_GET_AUDIO_FORMAT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_GET_LYRICS
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_AGE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_CLEAR_EDIT_UNDO
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_DEL
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_EDIT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_GET_INACTIVE_LIST
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_GET_QUEUE_FOR_UI
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_LOAD_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_PIN_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_RENAME_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_REORDER
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_UNDO_EDIT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_UNPIN_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QUERY_TIMER
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_MEDIA_ITEMS_ATOMIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_TIMER
+import org.akanework.gramophone.logic.queue.QueueEditOperation
 import org.akanework.gramophone.logic.utils.AfFormatInfo
 import org.akanework.gramophone.logic.utils.AudioFormatDetector
 import org.akanework.gramophone.logic.utils.AudioTrackInfo
@@ -466,6 +470,43 @@ fun MediaController.reorderQueue(from: Int, to: Int) =
             customExtras.putInt("to", to)
         }, Bundle.EMPTY
     )
+
+/**
+ * Edit the active queue by displayed position. Returns false when the service rejects the edit.
+ */
+fun MediaController.editQueue(
+    queueId: Long,
+    operation: QueueEditOperation,
+    position: Int,
+): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_EDIT, Bundle.EMPTY).apply {
+            customExtras.putLong("queueId", queueId)
+            customExtras.putString("operation", operation.name)
+            customExtras.putInt("position", position)
+        }
+    )
+
+/**
+ * Undo the last queue edit for [queueId]. The service silently ignores stale queue identities.
+ */
+fun MediaController.undoQueueEdit(queueId: Long): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_UNDO_EDIT, Bundle.EMPTY).apply {
+            customExtras.putLong("queueId", queueId)
+        }
+    )
+
+/**
+ * Forget the undo target without changing the queue. The queue sheet calls this when it closes.
+ */
+fun MediaController.discardQueueEditUndo() =
+    sendStatusCommand(SessionCommand(SERVICE_QB_CLEAR_EDIT_UNDO, Bundle.EMPTY))
+
+private fun MediaController.sendStatusCommand(command: SessionCommand): Boolean =
+    sendCustomCommand(command, Bundle.EMPTY).get().extras.run {
+        containsKey("status") && getBoolean("status")
+    }
 
 fun MediaController.renameQueue(queueId: Long, title: String, dryRun: Boolean): Boolean =
     sendCustomCommand(

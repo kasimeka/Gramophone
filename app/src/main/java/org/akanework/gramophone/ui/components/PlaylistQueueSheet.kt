@@ -20,6 +20,7 @@ package org.akanework.gramophone.ui.components
 import android.content.Context
 import android.content.SharedPreferences
 import android.view.View
+import androidx.appcompat.widget.PopupMenu
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,9 +49,14 @@ import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.stateIn
 import org.akanework.gramophone.R
+import org.akanework.gramophone.logic.discardQueueEditUndo
 import org.akanework.gramophone.logic.dpToPx
+import org.akanework.gramophone.logic.editQueue
 import org.akanework.gramophone.logic.getBooleanStrict
+import org.akanework.gramophone.logic.queue.QueueEditOperation
+import org.akanework.gramophone.logic.queue.QueueOrderEditor
 import org.akanework.gramophone.logic.replaceAllSupport
+import org.akanework.gramophone.logic.undoQueueEdit
 import org.akanework.gramophone.logic.ui.MyRecyclerView
 import org.akanework.gramophone.logic.utils.Flags
 import org.akanework.gramophone.ui.GramophoneTheme
@@ -73,6 +80,7 @@ class PlaylistQueueSheet(
     private val mqEnabled: Boolean
     private var mqState: MqState? = null
     private var lockEdit = MutableStateFlow(false)
+    private var snackbar: Snackbar? = null
 
     init {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
@@ -80,6 +88,10 @@ class PlaylistQueueSheet(
 
         setContentView(R.layout.playlist_bottom_sheet)
         behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        setOnDismissListener {
+            hideSnackbar()
+            activity.getPlayer()?.discardQueueEditUndo()
+        }
         if (mqEnabled) {
             behavior.maxWidth = 900.dpToPx(context)
         }
@@ -228,6 +240,29 @@ class PlaylistQueueSheet(
         lockEdit.value = lock
     }
 
+    private fun hideSnackbar() {
+        snackbar?.dismiss()
+        snackbar = null
+    }
+
+    /** A different queue edit replaces the previous snackbar and its undo target. */
+    private fun forgetEditUndo() {
+        if (snackbar != null) {
+            hideSnackbar()
+            activity.getPlayer()?.discardQueueEditUndo()
+        }
+    }
+
+    private fun showEditSnackbar(messageRes: Int, queueId: Long) {
+        snackbar?.dismiss()
+        snackbar = Snackbar.make(recyclerView, messageRes, Snackbar.LENGTH_LONG)
+            .setAction(R.string.undo) {
+                activity.getPlayer()?.undoQueueEdit(queueId)
+                snackbar = null
+            }
+        snackbar?.show()
+    }
+
     fun scrollToPositionWithOffsetCompat(position: Int, offset: Int) {
         (recyclerView as MyRecyclerView).scrollToPositionWithOffsetCompat(position, offset)
     }
@@ -242,7 +277,7 @@ class PlaylistQueueSheet(
         }
     }
 
-    inner class PlaylistCardAdapter : EditSongAdapter(activity, true, lockEdit) {
+    inner class PlaylistCardAdapter : EditSongAdapter(activity, true, lockEdit, queueRowStyle = true) {
         var currentMediaItemIndex: Int? = null
             set(value) {
                 if (field != value) {
@@ -327,7 +362,50 @@ class PlaylistQueueSheet(
             }
         }
 
+        override fun onActionButtonClick(holder: ViewHolder) {
+            if (mqState!!.isDetached()) return
+            val pos = holder.bindingAdapterPosition
+            if (pos == RecyclerView.NO_POSITION) return
+
+            // The row's context is the bottom sheet theme overlay, which lacks the AppCompat
+            // popup attributes (e.g. dropdownListPreferredItemHeight) needed by the menu
+            // layout, so use the activity theme instead.
+            val popupMenu = PopupMenu(activity, holder.closeButton)
+            popupMenu.inflate(R.menu.queue_row_menu)
+            popupMenu.menu.findItem(R.id.play_next).isEnabled =
+                QueueOrderEditor.canPlayNext(
+                    getItemCount(),
+                    currentMediaItemIndex,
+                    pos
+                )
+            popupMenu.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.play_next -> {
+                        playNext(pos)
+                        true
+                    }
+
+                    R.id.remove_from_queue -> {
+                        removeItem(pos)
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+            popupMenu.show()
+        }
+
+        private fun playNext(pos: Int) {
+            val queueId = mqState!!.activeQueue?.second?.id ?: return
+            val player = activity.getPlayer() ?: return
+            if (player.editQueue(queueId, QueueEditOperation.PLAY_NEXT, pos)) {
+                showEditSnackbar(R.string.will_play_next, queueId)
+            }
+        }
+
         override fun onRowMoved(from: Int, to: Int) {
+            forgetEditUndo()
             val mediaController = activity.getPlayer()
             val from1 = mqState!!.playlist.first.removeAt(from)
             mqState!!.playlist.first.replaceAllSupport { if (it > from1) it - 1 else it }
@@ -351,26 +429,21 @@ class PlaylistQueueSheet(
         }
 
         override fun removeItem(pos: Int) {
-            val instance = activity.getPlayer()
-
             // remove queue if this is the last item, dismiss if no queues left
             if (mqState!!.playlist.first.size <= 1) {
+                forgetEditUndo()
                 mqState!!.removeQueue()
                 return
             }
 
-            val idx = mqState!!.playlist.first.removeAt(pos)
-            mqState!!.playlist.first.replaceAllSupport { if (it > idx) it - 1 else it }
-            instance?.removeMediaItem(idx)
-            mqState!!.playlist.second.removeAt(idx)
-
-            notifyItemRemoved(pos)
-            if (pos == currentMediaItemIndex) {
-                notifyItemChanged(currentMediaItemIndex!!, true)
-            } else if (pos < (currentMediaItemIndex ?: -1)) {
-                currentMediaItemIndex = currentMediaItemIndex!! - 1
+            val queueId = mqState!!.activeQueue?.second?.id ?: return
+            val player = activity.getPlayer() ?: return
+            if (player.editQueue(queueId, QueueEditOperation.REMOVE, pos)) {
+                showEditSnackbar(R.string.removed_from_queue, queueId)
+            } else {
+                // The service rejected the edit, so restore the swiped row.
+                notifyDataSetChanged()
             }
-            mqState!!.updateTimer() // TODO: this could be more efficient
         }
 
         override fun getItem(pos: Int) = mqState!!.playlist.second[mqState!!.playlist.first[pos]]

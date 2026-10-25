@@ -921,6 +921,10 @@ class MqState(
                                 it
                             }
                         }
+                        val preserveScroll = command.customExtras.getBoolean(
+                            "preserveScroll",
+                            false
+                        )
 
                         val activeQueue = command.customExtras.getBinder("activeQueue")
                         val inactiveQueues = command.customExtras.getBinder("inactiveQueues")
@@ -937,7 +941,8 @@ class MqState(
                                 Pair(indexes, mq)
                             }.firstOrNull(),
                             inactiveQueues = MultiQueueList.getList(inactiveQueues),
-                            queueId = queueId
+                            queueId = queueId,
+                            preserveScroll = preserveScroll,
                         )
                     }
                 }
@@ -1247,6 +1252,7 @@ class MqState(
         activeQueue: Pair<MutableList<Int>, MultiQueueObject>?,
         inactiveQueues: List<MultiQueueObject>,
         queueId: Long? = null,
+        preserveScroll: Boolean = false,
     ) {
         when (level) {
             RefreshLevel.ALL -> {
@@ -1255,7 +1261,7 @@ class MqState(
                 this.inactiveQueues.clear()
                 this.inactiveQueues.addAll(inactiveQueues)
 
-                updateList(mq = activeQueue)
+                updateList(mq = activeQueue, preserveScroll = preserveScroll)
             }
             // TODO(mq): it should be possible to refresh single items
             RefreshLevel.QUEUES, RefreshLevel.ITEM -> {
@@ -1272,7 +1278,10 @@ class MqState(
                     activeQueue?.second?.let {
                         queues.add(it)
                     }
-                    updateList(instance.getQueueForUi(queues.find { it.id == queueId }!!.id))
+                    updateList(
+                        instance.getQueueForUi(queues.find { it.id == queueId }!!.id),
+                        preserveScroll,
+                    )
                 } else {
                     this.activeQueue = activeQueue
                     playlist = if (activeQueue == null) {
@@ -1281,7 +1290,7 @@ class MqState(
                         Pair(activeQueue.first, activeQueue.second.queue)
                     }
                     // update active queue with one provided by the service. Avoid dumpPlaylist() race condition
-                    updateList(mq = activeQueue)
+                    updateList(mq = activeQueue, preserveScroll = preserveScroll)
                 }
             }
 
@@ -1299,6 +1308,7 @@ class MqState(
      */
     private fun updateList(
         mq: Pair<MutableList<Int>, MultiQueueObject>? = null,
+        preserveScroll: Boolean = false,
     ) {
         val pl: Pair<MutableList<Int>, MutableList<MediaItem>> = if (mq != null) {
             Pair(mq.first, mq.second.queue)
@@ -1308,12 +1318,15 @@ class MqState(
         playlist = pl
         playlistQueueSheet?.playlistAdapter?.notifyDataSetChanged()
 
-        // update playing indicator, scroll to
+        // update playing indicator, and scroll to the current row unless the caller is preserving
+        // the user's browsing position (queue row edits do this).
         val i = (mq?.second?.startIndex ?: instance.currentMediaItemIndex).let {
             if (it == -1) 0 else it
         }
         playlistQueueSheet?.setCurrentMediaItemIndex(playlist.first.indexOf(i))
-        playlistQueueSheet?.smoothScrollToCurrentPosition(playlist.first.indexOf(i))
+        if (!preserveScroll) {
+            playlistQueueSheet?.smoothScrollToCurrentPosition(playlist.first.indexOf(i))
+        }
 
         updateTimer(mq?.second?.startIndex, mq?.second?.startPositionMs)
     }

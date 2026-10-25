@@ -98,6 +98,13 @@ class CircularShuffleOrder private constructor(
     ) :
             this(listener, shuffledIndices.copyOf(), randomSeed, Random(randomSeed), lastSeed)
 
+    /**
+     * Row identities in display/playback order. A copy is returned so callers cannot mutate the
+     * order behind the player's back.
+     */
+    val shuffledIndices: IntArray
+        get() = shuffled.copyOf()
+
     override fun getLength(): Int {
         return shuffled.size
     }

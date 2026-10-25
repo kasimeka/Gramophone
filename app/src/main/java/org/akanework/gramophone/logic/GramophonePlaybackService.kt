@@ -117,6 +117,9 @@ import kotlinx.coroutines.guava.await
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.ui.MeiZuLyricsMediaNotificationProvider
 import org.akanework.gramophone.logic.ui.isManualNotificationUpdate
+import org.akanework.gramophone.logic.queue.QueueEditOperation
+import org.akanework.gramophone.logic.queue.QueueEditResult
+import org.akanework.gramophone.logic.queue.QueueOrderEditor
 import org.akanework.gramophone.logic.utils.AfFormatInfo
 import org.akanework.gramophone.logic.utils.AfFormatTracker
 import org.akanework.gramophone.logic.utils.AudioTrackInfo
@@ -136,6 +139,7 @@ import org.akanework.gramophone.logic.utils.exoplayer.EndedWorkaroundPlayer
 import org.akanework.gramophone.logic.utils.exoplayer.GramophoneExtractorsFactory
 import org.akanework.gramophone.logic.utils.exoplayer.GramophoneMediaSourceFactory
 import org.akanework.gramophone.logic.utils.exoplayer.GramophoneRenderFactory
+import org.akanework.gramophone.logic.utils.exoplayer.PlayerQueueOrderTarget
 import org.akanework.gramophone.ui.AudioPreviewActivity
 import org.akanework.gramophone.ui.LyricWidgetProvider
 import org.akanework.gramophone.ui.MainActivity
@@ -188,6 +192,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         const val SERVICE_QB_GET_QUEUE_FOR_UI = "qb_get_queue_for_ui"
         const val SERVICE_QB_DEL = "qb_delete"
         const val SERVICE_QB_REORDER = "qb_reorder"
+        const val SERVICE_QB_EDIT = "qb_edit"
+        const val SERVICE_QB_UNDO_EDIT = "qb_undo_edit"
+        const val SERVICE_QB_CLEAR_EDIT_UNDO = "qb_clear_edit_undo"
         const val SERVICE_QB_PIN_QUEUE = "qb_pin_queue"
         const val SERVICE_QB_UNPIN_QUEUE = "qb_unpin_queue"
         const val SERVICE_QB_RENAME_QUEUE = "qb_rename"
@@ -208,6 +215,14 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
     private var controller: MediaBrowser? = null
     lateinit var qb: QueueBoard
+    private var lastQueueEditUndo: QueueEditUndoState? = null
+    private data class QueueEditUndoState(
+        val queueId: Long,
+        val operation: QueueEditOperation,
+        val displayedOrder: List<Int>,
+        val mediaItems: List<MediaItem>,
+        val removedUnderlyingIndex: Int? = null,
+    )
     private val sendLyrics = Runnable { scheduleSendingLyrics(false) }
     var lyrics: SemanticLyrics? = null
         private set
@@ -883,6 +898,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         availableSessionCommands.add(SessionCommand(SERVICE_QB_LOAD_QUEUE, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_DEL, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_REORDER, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_EDIT, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_UNDO_EDIT, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_CLEAR_EDIT_UNDO, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_PIN_QUEUE, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_UNPIN_QUEUE, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_RENAME_QUEUE, Bundle.EMPTY))
@@ -995,6 +1013,113 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 putExtra(AudioEffect.EXTRA_AUDIO_SESSION, lastSessionId)
             })
             lastSessionId = 0
+        }
+    }
+
+    private fun activeQueueMediaItems(player: EndedWorkaroundPlayer): List<MediaItem> =
+        (0 until player.exoPlayer.mediaItemCount).map { player.exoPlayer.getMediaItemAt(it) }
+
+    /**
+     * Apply one row edit to the active queue. Positions are in the order the queue sheet shows.
+     * Returns false without changing anything when the queue identity or a position is stale.
+     */
+    private fun applyQueueEdit(command: SessionCommand): Boolean {
+        val player = endedWorkaroundPlayer ?: return false
+        val queueId = command.customExtras.getLong("queueId")
+        if (queueId != player.currentQueueId) return false
+
+        val operation = try {
+            QueueEditOperation.valueOf(command.customExtras.getString("operation")!!)
+        } catch (_: Exception) {
+            return false
+        }
+        val position = command.customExtras.getInt("position")
+        val target = PlayerQueueOrderTarget(player)
+        val order = target.displayedOrder()
+        if (position !in order.indices) return false
+
+        val mediaItems = activeQueueMediaItems(player)
+        when (operation) {
+            QueueEditOperation.PLAY_NEXT -> {
+                val result = QueueOrderEditor.playNext(order, target.currentPosition(), position)
+                if (result !is QueueEditResult.Applied) return false
+                lastQueueEditUndo = QueueEditUndoState(
+                    queueId, operation, order, mediaItems
+                )
+                target.applyDisplayedOrder(result.order)
+            }
+
+            QueueEditOperation.REMOVE -> {
+                val result = QueueOrderEditor.remove(order, position)
+                if (result !is QueueEditResult.Applied) return false
+                lastQueueEditUndo = QueueEditUndoState(
+                    queueId, operation, order, mediaItems, order[position]
+                )
+                target.removeDisplayedRow(position)
+            }
+        }
+
+        player.currentIsOriginal = false
+        lastPlayedManager.save()
+        return true
+    }
+
+    /**
+     * Restore the order captured by the last queue edit. Playback is deliberately left alone:
+     * undo is an ordering action, even if the next song already started.
+     */
+    private fun applyQueueUndo(command: SessionCommand): Boolean {
+        val player = endedWorkaroundPlayer ?: return false
+        val undo = lastQueueEditUndo ?: return false
+        val queueId = command.customExtras.getLong("queueId")
+        if (queueId != player.currentQueueId || queueId != undo.queueId) return false
+
+        val target = PlayerQueueOrderTarget(player)
+        val restored = when (undo.operation) {
+            QueueEditOperation.PLAY_NEXT -> {
+                target.restoreDisplayedOrder(undo.displayedOrder, undo.mediaItems)
+            }
+
+            QueueEditOperation.REMOVE -> {
+                val removedIndex = undo.removedUnderlyingIndex ?: return false
+                if (player.exoPlayer.mediaItemCount != undo.mediaItems.size - 1) {
+                    return false
+                }
+                player.exoPlayer.addMediaItem(
+                    removedIndex,
+                    undo.mediaItems[removedIndex]
+                )
+                if (!target.restoreDisplayedOrder(undo.displayedOrder, undo.mediaItems)) {
+                    player.exoPlayer.removeMediaItem(removedIndex)
+                    return false
+                }
+                true
+            }
+        }
+        if (!restored) return false
+
+        lastQueueEditUndo = null
+        player.currentIsOriginal = false
+        lastPlayedManager.save()
+        return true
+    }
+
+    private fun broadcastQueueSongsRefresh(preserveScroll: Boolean = true) {
+        val plr = endedWorkaroundPlayer ?: return
+        val session = mediaSession ?: return
+        for (controller in session.connectedControllers) {
+            val command = SessionCommand(CLIENT_QB_REFRESH_LIST, Bundle.EMPTY).apply {
+                customExtras.putBinder(
+                    "activeQueue",
+                    MultiQueueList(listOf(plr.getActiveQueue()))
+                )
+                customExtras.putBinder(
+                    "inactiveQueues",
+                    MultiQueueList(qb.getInactiveQueues().map { it.copy(queue = ArrayList()) })
+                )
+                if (preserveScroll) customExtras.putBoolean("preserveScroll", true)
+            }
+            session.sendCustomCommand(controller, command, Bundle.EMPTY)
         }
     }
 
@@ -1317,6 +1442,33 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     SessionResult(SessionResult.RESULT_SUCCESS)
                 }
 
+                SERVICE_QB_EDIT -> {
+                    val status = applyQueueEdit(customCommand)
+                    if (status) {
+                        broadcastQueueSongsRefresh()
+                    }
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", status)
+                    }
+                }
+
+                SERVICE_QB_UNDO_EDIT -> {
+                    val status = applyQueueUndo(customCommand)
+                    if (status) {
+                        broadcastQueueSongsRefresh()
+                    }
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", status)
+                    }
+                }
+
+                SERVICE_QB_CLEAR_EDIT_UNDO -> {
+                    lastQueueEditUndo = null
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", true)
+                    }
+                }
+
                 else -> {
                     SessionResult(SessionError.ERROR_BAD_VALUE)
                 }
@@ -1604,24 +1756,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     Random.nextLong()
                 )
             )
-            for (controller in mediaSession!!.connectedControllers) {
-                val customCommand = SessionCommand(CLIENT_QB_REFRESH_LIST, Bundle.EMPTY).apply {
-                    val plr = endedWorkaroundPlayer!!
-                    customExtras.putBinder(
-                        "activeQueue",
-                        MultiQueueList(listOf(plr.getActiveQueue()))
-                    )
-                    customExtras.putBinder(
-                        "inactiveQueues",
-                        MultiQueueList(qb.getInactiveQueues().map { it.copy(queue = ArrayList()) })
-                    )
-                }
-                mediaSession!!.sendCustomCommand(
-                    controller,
-                    customCommand,
-                    Bundle.EMPTY
-                )
-            }
+            broadcastQueueSongsRefresh(preserveScroll = false)
         }
 
         lastPlayedManager.save()
