@@ -84,7 +84,7 @@ class PlaylistQueueSheet(
 
     init {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
-        mqEnabled = Flags.MQ_PREVIEW && prefs.getBooleanStrict("mq_preview", false)
+        mqEnabled = Flags.MQ_PREVIEW && prefs.getBooleanStrict("mq_preview", true)
 
         setContentView(R.layout.playlist_bottom_sheet)
         behavior.state = BottomSheetBehavior.STATE_EXPANDED

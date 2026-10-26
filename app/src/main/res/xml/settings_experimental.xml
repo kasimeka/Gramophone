@@ -65,7 +65,7 @@
             app:useSimpleSummaryProvider="true" />
 
         <SwitchPreferenceCompat
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="mq_preview"
             android:layout="@layout/preference_switch"
             android:title="@string/settings_mq_enabled"
