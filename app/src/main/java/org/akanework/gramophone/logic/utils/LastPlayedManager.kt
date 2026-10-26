@@ -99,8 +99,8 @@ class LastPlayedManager(
                             "ended $ended)..."
                 )
             }
-            val lastPlayed = PrefsListUtils.dump(
-                data.mediaItems.map {
+            val stored = ResumeState(
+                rows = data.mediaItems.map {
                     val b = SafeDelimitedStringConcat(":")
                     // add new entries at the bottom and remember they are null for upgrade path
                     b.writeStringUnsafe("ver_" + 3)
@@ -134,16 +134,23 @@ class LastPlayedManager(
                     b.writeUri(it.mediaMetadata.hdArtworkUri)
                     b.writeStringSafe(it.getFile()?.path)
                     b.toString()
-                })
+                },
+                currentRow = data.startIndex,
+                positionMs = data.startPositionMs,
+                repeatMode = repeatMode,
+                ended = ended,
+                speed = playbackParameters.speed,
+                pitch = playbackParameters.pitch,
+            ).toStored()
             prefs.edit {
-                putStringSet("last_played_lst", lastPlayed.first)
-                putString("last_played_grp", lastPlayed.second)
-                putInt("last_played_idx", data.startIndex)
-                putLong("last_played_pos", data.startPositionMs)
-                putInt("repeat_mode", repeatMode)
-                putBoolean("ended", ended)
-                putFloat("speed", playbackParameters.speed)
-                putFloat("pitch", playbackParameters.pitch)
+                putStringSet("last_played_lst", stored.rowSet)
+                putString("last_played_grp", stored.rowOrder)
+                putInt("last_played_idx", stored.currentRow)
+                putLong("last_played_pos", stored.positionMs)
+                putInt("repeat_mode", stored.repeatMode)
+                putBoolean("ended", stored.ended)
+                putFloat("speed", stored.speed)
+                putFloat("pitch", stored.pitch)
                 apply()
             }
         }
@@ -169,14 +176,24 @@ class LastPlayedManager(
                     callback(null)
                     return@withContext
                 }
-                val repeatMode = prefs.getInt("repeat_mode", Player.REPEAT_MODE_OFF)
-                val ended = prefs.getBoolean("ended", false)
-                val playbackParameters = PlaybackParameters(
-                    prefs.getFloat("speed", 1f),
-                    prefs.getFloat("pitch", 1f)
+                val resumeState = ResumeState.fromStored(
+                    StoredResumeState(
+                        rowSet = lastPlayedLst,
+                        rowOrder = lastPlayedGrp,
+                        currentRow = lastPlayedIdx,
+                        positionMs = lastPlayedPos,
+                        repeatMode = prefs.getInt("repeat_mode", Player.REPEAT_MODE_OFF),
+                        ended = prefs.getBoolean("ended", false),
+                        speed = prefs.getFloat("speed", 1f),
+                        pitch = prefs.getFloat("pitch", 1f),
+                    )
                 )
+                if (resumeState == null) {
+                    callback(null)
+                    return@withContext
+                }
                 val data = MediaItemsWithStartPosition(
-                    PrefsListUtils.parse(lastPlayedLst, lastPlayedGrp)
+                    resumeState.rows
                         .map {
                             val b = SafeDelimitedStringDecat(":", it)
                             // add new entries at the bottom and remember they are null for upgrade path
@@ -287,18 +304,19 @@ class LastPlayedManager(
                                 )
                                 .build()
                         },
-                    lastPlayedIdx,
-                    lastPlayedPos,
+                    resumeState.currentRow,
+                    resumeState.positionMs,
                 )
                 if (BuildConfig.DEBUG) {
                     Log.d(
                         TAG,
-                        "restoring playlist (${data.mediaItems.size} items, repeat $repeatMode, " +
-                                "ended $ended)..."
+                        "restoring playlist (${data.mediaItems.size} items, repeat " +
+                                "${resumeState.repeatMode}, ended ${resumeState.ended})..."
                     )
                 }
                 callback(RestoredPlaylist(data, "LastPlayedManager" /* TODO(MQ) */,
-                    ended, repeatMode, playbackParameters))
+                    resumeState.ended, resumeState.repeatMode,
+                    PlaybackParameters(resumeState.speed, resumeState.pitch)))
                 return@withContext
             } catch (e: Exception) {
                 Log.e(TAG, Log.getThrowableString(e)!!)
@@ -359,23 +377,5 @@ private class SafeDelimitedStringDecat(delimiter: String, str: String) {
     fun readUri(): Uri? = readStringSafe()?.toUri()
     fun skip() {
         read()
-    }
-}
-
-private object PrefsListUtils {
-    fun parse(stringSet: Set<String>, groupStr: String): List<String> {
-        if (groupStr.isEmpty()) return emptyList()
-        val groups = groupStr.split(",")
-        return groups.map { hc ->
-            stringSet.firstOrNull { it.hashCode().toString() == hc }
-                ?: throw NoSuchElementException(
-                    "tried to find \"$hc\" (from \"$groupStr\") in: " +
-                            stringSet.joinToString { it.hashCode().toString() })
-        }
-    }
-
-    fun dump(inList: List<String>): Pair<Set<String>, String> {
-        val list = inList.map { it.trim() }
-        return Pair(list.toSet(), list.joinToString(",") { it.hashCode().toString() })
     }
 }

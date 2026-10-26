@@ -96,6 +96,19 @@ class EndedWorkaroundPlayer(
         super.onPositionDiscontinuity(oldPosition, newPosition, reason)
     }
 
+    override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+        if (playWhenReady) {
+            if (isEnded) {
+                isEnded = false
+                super.handleSeek(0, 0L, Player.COMMAND_SEEK_TO_MEDIA_ITEM)
+            }
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
+        }
+        return super.handleSetPlayWhenReady(playWhenReady)
+    }
+
     fun updateLyricNow() {
         val isNotificationLyricsEnabled = prefs.getBooleanStrict("notification_lyrics", false)
         if (context.packageName == "com.tencent.qqmusic" || isNotificationLyricsEnabled) {
@@ -397,6 +410,12 @@ class EndedWorkaroundPlayer(
         seekCommand: Int
     ): ListenableFuture<*> {
         val alwaysSkipPrevious = prefs.getBooleanStrict("always_skip_previous", false)
+        if (isEnded && seekCommand == Player.COMMAND_SEEK_TO_DEFAULT_POSITION) {
+            // Play after an ended queue restarts from the first row, even when the caller asked
+            // for the default position of the current (last) row.
+            isEnded = false
+            return super.handleSeek(0, 0L, Player.COMMAND_SEEK_TO_MEDIA_ITEM)
+        }
         if (seekCommand == Player.COMMAND_SEEK_TO_PREVIOUS && alwaysSkipPrevious) {
             player.seekToPreviousMediaItem()
             return Futures.immediateVoidFuture()

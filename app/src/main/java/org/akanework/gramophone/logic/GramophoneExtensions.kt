@@ -113,11 +113,11 @@ import java.util.Locale
 import kotlin.math.max
 
 fun Player.playOrPause() {
-    if (playWhenReady) {
-        if (playbackState == Player.STATE_ENDED)
-            seekToDefaultPosition()
-        else
-            pause()
+    if (playbackState == Player.STATE_ENDED) {
+        seekToDefaultPosition()
+        play()
+    } else if (playWhenReady) {
+        pause()
     } else {
         play()
     }

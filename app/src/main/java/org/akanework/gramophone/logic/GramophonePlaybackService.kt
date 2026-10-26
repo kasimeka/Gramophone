@@ -612,32 +612,17 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                         if (lastPlayedManager.allowSavingState)
                             return@withContext // media items were already applied to player
                         try {
-                            if (list.size >= items.items.startIndex) {
-                                endedWorkaroundPlayer?.setMediaItems(
-                                    list,
-                                    items.items.startIndex,
-                                    items.items.startPositionMs,
-                                    items.title,
-                                    false, /* TODO(MQ) */
-                                    true, /* TODO(MQ) */
-                                    items.isEnded,
-                                    items.repeatMode,
-                                    items.playbackParameters,
-                                )
-                            } else {
-                                endedWorkaroundPlayer?.setMediaItems(
-                                    list,
-                                    C.INDEX_UNSET,
-                                    C.TIME_UNSET,
-                                    items.title,
-                                    false, /* TODO(MQ) */
-                                    true, /* TODO(MQ) */
-                                    items.isEnded,
-                                    items.repeatMode,
-                                    items.playbackParameters,
-                                )
-                                Log.w(TAG, "failed to restore index")
-                            }
+                            endedWorkaroundPlayer?.setMediaItems(
+                                list,
+                                items.items.startIndex,
+                                items.items.startPositionMs,
+                                items.title,
+                                false, /* TODO(MQ) */
+                                true, /* TODO(MQ) */
+                                items.isEnded,
+                                items.repeatMode,
+                                items.playbackParameters,
+                            )
                         } catch (e: IllegalSeekPositionException) {
                             Log.e(TAG, "failed to restore", e)
                         }

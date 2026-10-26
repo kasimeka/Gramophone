@@ -215,8 +215,8 @@ class MainActivity : BaseActivity() {
                 if (fm.fragments.lastOrNull() != f) return
                 // this won't be called in case we show()/hide() so
                 // we handle that case in BaseFragment
-                if (f is BaseFragment && f.wantsPlayer != null) {
-                    playerBottomSheet.visible = f.wantsPlayer
+                if (f is BaseFragment) {
+                    playerBottomSheet.screenPolicy = f.miniPlayerPolicy
                 }
             }
         }, false)
@@ -712,7 +712,6 @@ class MainActivity : BaseActivity() {
         }
         val autoPlay = intent.extras?.getBoolean(PLAYBACK_AUTO_START_FOR_FGS, false) == true
                 || intent.extras?.getBoolean(IntentCompat.EXTRA_START_PLAYBACK, false) == true
-                || prefs.getBooleanStrict("autoplay", false)
         if (autoPlay && !willAutoPlayLater) {
             controllerViewModel.addControllerCallback(lifecycle) { controller, _ ->
                 controller.prepare()

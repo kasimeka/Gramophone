@@ -22,6 +22,7 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.transition.MaterialSharedAxis
+import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
 import org.akanework.gramophone.ui.MainActivity
 
 /**
@@ -35,7 +36,9 @@ import org.akanework.gramophone.ui.MainActivity
  * @author AkaneTan, nift4
  * @see MainActivity
  */
-abstract class BaseFragment(val wantsPlayer: Boolean? = null) : Fragment() {
+abstract class BaseFragment(
+    val miniPlayerPolicy: MiniPlayerScreenPolicy = MiniPlayerScreenPolicy.ALLOWED,
+) : Fragment() {
 
     protected val mainActivity
         get() = requireActivity() as MainActivity
@@ -60,8 +63,6 @@ abstract class BaseFragment(val wantsPlayer: Boolean? = null) : Fragment() {
         super.onHiddenChanged(hidden)
         if (hidden) return
         // see registerFragmentLifecycleCallbacks in MainActivity
-        if (wantsPlayer != null) {
-            (activity as MainActivity?)?.playerBottomSheet?.visible = wantsPlayer
-        }
+        (activity as MainActivity?)?.playerBottomSheet?.screenPolicy = miniPlayerPolicy
     }
 }
