@@ -386,6 +386,8 @@
     <string name="will_play_next">Will play next</string>
     <!-- Snackbar confirmation after removing a song from the queue -->
     <string name="removed_from_queue">Removed from queue</string>
+    <!-- Toast confirmation after shuffling the queue from the full player, which has no undo -->
+    <string name="queue_shuffled">Queue shuffled</string>
     <!-- Snackbar action reversing the last queue edit -->
     <string name="undo">Undo</string>
     <!-- Tooltip for x button removing song from queue/playlist -->

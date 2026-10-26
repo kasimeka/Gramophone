@@ -48,6 +48,7 @@ import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
@@ -550,7 +551,10 @@ class FullBottomSheet
 
         bottomSheetShuffleButton.setOnClickListener {
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
-            instance?.shuffleQueue()
+            // The queue list is on another screen and shuffle cannot be undone, so confirm it here.
+            if (instance?.shuffleQueue() == true) {
+                Toast.makeText(context, R.string.queue_shuffled, Toast.LENGTH_SHORT).show()
+            }
             refreshShuffleEnabled()
         }
 
@@ -1365,8 +1369,10 @@ class FullBottomSheet
                 ColorStateList.valueOf(colorOnSurface)
             bottomSheetPlaylistButton.iconTint =
                 ColorStateList.valueOf(colorOnSurface)
+            // Shuffle is a one-shot action, not a checked state, so it must never look
+            // disabled just because the button is unchecked.
             bottomSheetShuffleButton.iconTint =
-                selectorBackground
+                ColorStateList.valueOf(colorOnSurface)
             bottomSheetLoopButton.iconTint =
                 selectorBackground
             bottomSheetLyricButton.iconTint =
