@@ -197,9 +197,9 @@ class ViewPagerFragment : BaseFragment(true) {
                     runBlocking { activity.reader.songListFlow.first() }.takeIf { it.isNotEmpty() }
                         ?.also {
                             controller?.setMediaItemsWithTitle(
-                                it,
+                                it.shuffled(),
                                 title = requireContext().getString(R.string.category_songs),
-                                shuffleEnabled = true,
+                                original = false,
                             )
                             controller?.prepare()
                             controller?.play()

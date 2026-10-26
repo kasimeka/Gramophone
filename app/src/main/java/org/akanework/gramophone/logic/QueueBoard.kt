@@ -25,7 +25,6 @@ import android.os.IBinder
 import android.os.Parcel
 import android.util.Log
 import androidx.compose.ui.util.fastFirstOrNull
-import androidx.core.os.BundleCompat
 import androidx.media3.common.BundleListRetriever
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -34,7 +33,8 @@ import androidx.media3.common.Player.REPEAT_MODE_OFF
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.akanework.gramophone.logic.utils.CircularShuffleOrder
+import org.akanework.gramophone.logic.queue.QueueEditResult
+import org.akanework.gramophone.logic.queue.QueueOrderEditor
 import org.akanework.gramophone.logic.utils.MediaItemList
 
 private const val QUEUE_EXPIRY_MS = 10 * 3600000 // 10 hrs
@@ -109,7 +109,7 @@ class QueueBoard(
             new.queue, new.startIndex,
             new.startPositionMs,
             new.title, new.expiry == null, new.isOriginal, new.ended, new.repeatMode,
-            new.shuffleModeEnabled, new.shuffleOrder, null,
+            null,
         )
     }
 
@@ -169,7 +169,6 @@ class QueueBoard(
      *  for a queue that never expires.
      * @param isOriginal false if the user has modified the queue, and this queue is not replaceable.
      * @param repeatMode
-     * @param shuffleOrder A shuffle order will enable shuffling of the queue, otherwise null disables it.
      * @param ended
      *
      */
@@ -182,7 +181,6 @@ class QueueBoard(
         shouldPin: Boolean,
         isOriginal: Boolean,
         repeatMode: (@Player.RepeatMode Int)?,
-        shuffleOrder: CircularShuffleOrder.Persistent?,
         ended: Boolean,
     ) {
         if (QUEUE_DEBUG)
@@ -209,7 +207,6 @@ class QueueBoard(
             startIndex = mediaItemIndex,
             startPositionMs = startPositionMs ?: C.TIME_UNSET,
             repeatMode = repeatMode ?: 0,
-            shuffleOrder = shuffleOrder,
             ended = ended,
             isOriginal = isOriginal,
         )
@@ -257,20 +254,6 @@ class QueueBoard(
         }
 
         return true
-    }
-
-    /**
-     * Reorder a queue.
-     *
-     * @param fromIndex
-     * @param toIndex
-     */
-    fun move(fromIndex: Int, toIndex: Int) {
-        if (fromIndex < toIndex) {
-            masterQueues.add(toIndex - 1, masterQueues.removeAt(fromIndex))
-        } else {
-            masterQueues.add(toIndex, masterQueues.removeAt(fromIndex))
-        }
     }
 
     /**
@@ -420,18 +403,30 @@ data class MultiQueueObject(
     var startPositionMs: Long = C.TIME_UNSET,
     var repeatMode: @Player.RepeatMode Int = 0,
 
-    var shuffleOrder: CircularShuffleOrder.Persistent? = null,
     var ended: Boolean = false,
-    val isOriginal: Boolean = true,
+    var isOriginal: Boolean = true,
 
     private var fakeQueueSize: Int? = null,
     private var fakeQueueLength: Long? = null
 ) {
     override fun toString() =
-        "$title ($id) startIndex=$startIndex, startPositionMs=$startPositionMs, repeatMode=$repeatMode, shuffleModeEnabled=$shuffleModeEnabled, ended=$ended, mediaItems_size=${queue.size}, expiry=$expiry"
+        "$title ($id) startIndex=$startIndex, startPositionMs=$startPositionMs, repeatMode=$repeatMode, ended=$ended, mediaItems_size=${queue.size}, expiry=$expiry"
 
-    val shuffleModeEnabled
-        get() = shuffleOrder != null
+    /**
+     * Shuffle everything in this queue, keeping its resume row as the anchor. The queue has one
+     * order, so this rewrites that order in place. Returns false when there is nothing to reorder.
+     */
+    fun shuffleEverything(): Boolean {
+        val anchor = startIndex.takeIf { it in queue.indices } ?: return false
+        val result = QueueOrderEditor.shuffleEverything(queue.indices.toList(), anchor)
+            as? QueueEditResult.Applied ?: return false
+        val reordered = result.order.map { queue[it] }
+        queue.clear()
+        queue.addAll(reordered)
+        startIndex = result.order.indexOf(anchor)
+        isOriginal = false
+        return true
+    }
 
     /**
      * Retrieve the song at current position in the queue
@@ -490,7 +485,6 @@ data class MultiQueueObject(
 
             putBoolean("ended", ended)
             putBoolean("isOriginal", isOriginal)
-            putParcelable("shuffleOrder", shuffleOrder)
 
             fakeQueueSize?.let {
                 putInt("fakeQueueSize", it)
@@ -517,10 +511,6 @@ data class MultiQueueObject(
                 repeatMode = bundle.getInt("repeatMode", REPEAT_MODE_OFF),
                 ended = bundle.getBoolean("ended"),
                 isOriginal = bundle.getBoolean("isOriginal"),
-                shuffleOrder = BundleCompat.getParcelable(
-                    bundle, "shuffleOrder",
-                    CircularShuffleOrder.Persistent::class.java
-                ),
 
                 fakeQueueSize = bundle.getInt("fakeQueueSize", C.INDEX_UNSET)
                     .let { if (it == C.INDEX_UNSET) null else it },

@@ -17,6 +17,8 @@
 
 package org.akanework.gramophone.logic.queue
 
+import kotlin.random.Random
+
 /**
  * Operations the queue row menu can apply to the active queue.
  */
@@ -68,6 +70,30 @@ object QueueOrderEditor {
         val targetPosition = currentAfterRemoval + 1
         newOrder.add(targetPosition, row)
         return QueueEditResult.Applied(newOrder)
+    }
+
+    /**
+     * Shuffle everything is only meaningful when there is an anchor row and at least one other row
+     * to reorder after it.
+     */
+    fun canShuffleEverything(size: Int, anchorPosition: Int?): Boolean {
+        if (anchorPosition == null) return false
+        if (size <= 1) return false
+        return anchorPosition in 0..<size
+    }
+
+    /**
+     * Move the anchor row to the front, then randomly reorder every other row after it. Every row
+     * keeps its identity, so the result is a permutation of [order] with no duplicates or omissions.
+     */
+    fun shuffleEverything(
+        order: List<Int>,
+        anchorPosition: Int?,
+        random: Random = Random.Default,
+    ): QueueEditResult {
+        if (!canShuffleEverything(order.size, anchorPosition)) return QueueEditResult.NoOp
+        val permutation = QueueShuffle.shuffledOrder(order.size, anchorPosition!!, random)
+        return QueueEditResult.Applied(permutation.map { order[it] })
     }
 
     /**

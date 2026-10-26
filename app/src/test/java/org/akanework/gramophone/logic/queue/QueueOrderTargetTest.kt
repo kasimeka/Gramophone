@@ -18,159 +18,171 @@
 package org.akanework.gramophone.logic.queue
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.random.Random
 
 /**
- * Checks the service's editor application through the same seam the player uses: displayed order
- * and playback order must agree in both unshuffled and shuffled mode, including undo.
+ * Checks queue edits through the same seam the player uses. A queue has one displayed order, which
+ * is also its playback, edit, and persistence order.
  */
 class QueueOrderTargetTest {
-    private val unshuffled = FakeQueueOrderTarget(
+    private val queue = FakeQueueOrderTarget(
         items = listOf(10, 11, 12, 13, 14),
         current = 10,
     )
-    private val shuffled = FakeQueueOrderTarget(
-        items = listOf(10, 11, 12, 13, 14),
-        current = 11,
-        shuffleOrder = listOf(2, 1, 4, 0, 3),
-    )
 
     @Test
-    fun playNextReordersMediaItemsWhenUnshuffled() {
-        val before = unshuffled.displayedOrder()
-        val result = QueueOrderEditor.playNext(before, unshuffled.currentPosition(), 4)
+    fun playNextReordersMediaItems() {
+        val before = queue.displayedOrder()
+        val result = QueueOrderEditor.playNext(before, queue.currentPosition(), 4)
             as QueueEditResult.Applied
 
-        unshuffled.applyDisplayedOrder(result.order)
+        queue.applyDisplayedOrder(result.order)
 
-        assertEquals(listOf(10, 14, 11, 12, 13), unshuffled.underlyingOrder())
-        assertEquals(listOf(0, 1, 2, 3, 4), unshuffled.displayedOrder())
-        assertEquals(0, unshuffled.currentPosition())
-        assertEquals(0, unshuffled.currentIdentity())
-    }
-
-    @Test
-    fun playNextReordersShuffleOrderWithoutChangingMediaItems() {
-        // Displayed rows: [2, 1, 4, 0, 3], current row identity 1 is at position 1.
-        val before = shuffled.displayedOrder()
-        val result = QueueOrderEditor.playNext(before, shuffled.currentPosition(), 4)
-            as QueueEditResult.Applied
-
-        shuffled.applyDisplayedOrder(result.order)
-
-        assertEquals(listOf(2, 1, 3, 4, 0), shuffled.displayedOrder())
-        assertEquals(listOf(10, 11, 12, 13, 14), shuffled.underlyingOrder())
-        assertEquals(1, shuffled.currentPosition())
-        assertEquals(1, shuffled.currentIdentity())
+        assertEquals(listOf(10, 14, 11, 12, 13), queue.underlyingOrder())
+        assertEquals(listOf(0, 1, 2, 3, 4), queue.displayedOrder())
+        assertEquals(0, queue.currentPosition())
+        assertEquals(0, queue.currentIdentity())
     }
 
     @Test
     fun undoAfterPlayNextRestoresCapturedOrder() {
-        val capturedOrder = unshuffled.displayedOrder()
-        val capturedItems = unshuffled.underlyingOrder()
-        val result = QueueOrderEditor.playNext(capturedOrder, unshuffled.currentPosition(), 4)
+        val capturedOrder = queue.displayedOrder()
+        val capturedItems = queue.underlyingOrder()
+        val result = QueueOrderEditor.playNext(capturedOrder, queue.currentPosition(), 4)
             as QueueEditResult.Applied
-        unshuffled.applyDisplayedOrder(result.order)
+        queue.applyDisplayedOrder(result.order)
 
-        unshuffled.undoCapturedOrder(capturedOrder, capturedItems)
+        queue.undoCapturedOrder(capturedOrder, capturedItems)
 
-        assertEquals(capturedOrder, unshuffled.displayedOrder())
-        assertEquals(capturedItems, unshuffled.underlyingOrder())
-    }
-
-    @Test
-    fun undoAfterPlayNextRestoresShuffleOrder() {
-        val capturedOrder = shuffled.displayedOrder()
-        val capturedItems = shuffled.underlyingOrder()
-        val result = QueueOrderEditor.playNext(capturedOrder, shuffled.currentPosition(), 4)
-            as QueueEditResult.Applied
-        shuffled.applyDisplayedOrder(result.order)
-
-        shuffled.undoCapturedOrder(capturedOrder, capturedItems)
-
-        assertEquals(capturedOrder, shuffled.displayedOrder())
-        assertEquals(capturedItems, shuffled.underlyingOrder())
+        assertEquals(capturedOrder, queue.displayedOrder())
+        assertEquals(capturedItems, queue.underlyingOrder())
     }
 
     @Test
     fun undoAfterPlaybackAdvancedLeavesPlaybackWhereItIs() {
-        val capturedOrder = unshuffled.displayedOrder()
-        val capturedItems = unshuffled.underlyingOrder()
-        val result = QueueOrderEditor.playNext(capturedOrder, unshuffled.currentPosition(), 4)
+        val capturedOrder = queue.displayedOrder()
+        val capturedItems = queue.underlyingOrder()
+        val result = QueueOrderEditor.playNext(capturedOrder, queue.currentPosition(), 4)
             as QueueEditResult.Applied
-        unshuffled.applyDisplayedOrder(result.order)
+        queue.applyDisplayedOrder(result.order)
         // The moved row has already started; undo must not rewind it.
-        unshuffled.setCurrent(14)
+        queue.setCurrent(14)
 
-        unshuffled.undoCapturedOrder(capturedOrder, capturedItems)
+        queue.undoCapturedOrder(capturedOrder, capturedItems)
 
-        assertEquals(capturedOrder, unshuffled.displayedOrder())
-        assertEquals(4, unshuffled.currentIdentity())
-        assertEquals(4, unshuffled.currentPosition())
+        assertEquals(capturedOrder, queue.displayedOrder())
+        assertEquals(4, queue.currentIdentity())
+        assertEquals(4, queue.currentPosition())
     }
 
     @Test
-    fun removeEditsMediaItemsWhenUnshuffled() {
-        val before = unshuffled.displayedOrder()
+    fun removeEditsMediaItems() {
+        val before = queue.displayedOrder()
         val result = QueueOrderEditor.remove(before, 2)
             as QueueEditResult.Applied
 
-        unshuffled.removeDisplayedRow(2)
+        queue.removeDisplayedRow(2)
 
-        assertEquals(listOf(10, 11, 13, 14), unshuffled.displayedOrderItems())
-        assertEquals(0, unshuffled.currentPosition())
+        assertEquals(listOf(10, 11, 13, 14), queue.displayedOrderItems())
+        assertEquals(0, queue.currentPosition())
         assertEquals(listOf(0, 1, 3, 4), result.order)
     }
 
     @Test
-    fun removeEditsShuffleOrderWhenShuffled() {
-        // Displayed rows: [2, 1, 4, 0, 3], remove displayed position 2 (identity 4).
-        val result = QueueOrderEditor.remove(shuffled.displayedOrder(), 2)
-            as QueueEditResult.Applied
+    fun undoAfterRemovalRestoresRowAtOriginalPosition() {
+        val capturedOrder = queue.displayedOrder()
+        val capturedItems = queue.underlyingOrder()
+        queue.removeDisplayedRow(2)
 
-        shuffled.removeDisplayedRow(2)
+        queue.undoCapturedOrder(capturedOrder, capturedItems)
 
-        assertEquals(listOf(2, 1, 0, 3), shuffled.displayedOrder())
-        assertEquals(listOf(10, 11, 12, 13), shuffled.underlyingOrder())
-        assertEquals(listOf(2, 1, 0, 3), result.order)
+        assertEquals(capturedOrder, queue.displayedOrder())
+        assertEquals(capturedItems, queue.underlyingOrder())
     }
 
     @Test
-    fun undoAfterUnshuffledRemovalRestoresRowAtOriginalPosition() {
-        val capturedOrder = unshuffled.displayedOrder()
-        val capturedItems = unshuffled.underlyingOrder()
-        unshuffled.removeDisplayedRow(2)
+    fun undoAfterRemovalLeavesAdvancedPlaybackAlone() {
+        val capturedOrder = queue.displayedOrder()
+        val capturedItems = queue.underlyingOrder()
+        queue.removeDisplayedRow(2)
+        queue.setCurrent(13)
 
-        unshuffled.undoCapturedOrder(capturedOrder, capturedItems)
+        queue.undoCapturedOrder(capturedOrder, capturedItems)
 
-        assertEquals(capturedOrder, unshuffled.displayedOrder())
-        assertEquals(capturedItems, unshuffled.underlyingOrder())
+        assertEquals(capturedOrder, queue.displayedOrder())
+        assertEquals(3, queue.currentIdentity())
     }
 
     @Test
-    fun undoAfterShuffledRemovalRestoresRowAndShuffleOrder() {
-        val capturedOrder = shuffled.displayedOrder()
-        val capturedItems = shuffled.underlyingOrder()
-        shuffled.removeDisplayedRow(2)
+    fun shuffleActiveQueueAnchorsCurrentRowAndKeepsItPlaying() {
+        queue.setCurrent(12)
+        val capturedPosition = queue.currentPosition()
+        val result = QueueOrderEditor.shuffleEverything(
+            queue.displayedOrder(),
+            capturedPosition,
+            Random(7),
+        ) as QueueEditResult.Applied
 
-        shuffled.undoCapturedOrder(capturedOrder, capturedItems)
+        queue.applyDisplayedOrder(result.order)
 
-        assertEquals(capturedOrder, shuffled.displayedOrder())
-        assertEquals(capturedItems, shuffled.underlyingOrder())
+        assertEquals(12, queue.displayedOrderItems().first())
+        assertEquals(0, queue.currentPosition())
+        assertEquals(0, queue.currentIdentity())
+        assertEquals(queue.displayedOrder().size, queue.displayedOrder().toSet().size)
+        assertFalse(queue.isOriginal)
     }
 
     @Test
-    fun undoAfterShuffledRemovalLeavesAdvancedPlaybackAlone() {
-        val capturedOrder = shuffled.displayedOrder()
-        val capturedItems = shuffled.underlyingOrder()
-        shuffled.removeDisplayedRow(3)
-        // Playback advanced from identity 0 to identity 3 before the user tapped Undo.
-        shuffled.setCurrent(13)
+    fun undoAfterShuffleRestoresTheOneOrder() {
+        val capturedOrder = queue.displayedOrder()
+        val capturedItems = queue.underlyingOrder()
+        val result = QueueOrderEditor.shuffleEverything(
+            capturedOrder,
+            queue.currentPosition(),
+            Random(9),
+        ) as QueueEditResult.Applied
+        queue.applyDisplayedOrder(result.order)
 
-        shuffled.undoCapturedOrder(capturedOrder, capturedItems)
+        queue.undoCapturedOrder(capturedOrder, capturedItems)
 
-        assertEquals(capturedOrder, shuffled.displayedOrder())
-        assertEquals(3, shuffled.currentIdentity())
+        assertEquals(capturedOrder, queue.displayedOrder())
+        assertEquals(capturedItems, queue.underlyingOrder())
+    }
+
+    @Test
+    fun shufflingInactiveQueueChangesOnlyThatQueue() {
+        val active = FakeQueueOrderTarget(
+            items = listOf(10, 11, 12, 13, 14),
+            current = 11,
+            isOriginal = true,
+        )
+        val inactive = FakeQueueOrderTarget(
+            items = listOf(20, 21, 22, 23),
+            current = 22,
+            isOriginal = true,
+        )
+        val activeOrder = active.displayedOrder()
+        val activeIdentity = active.currentIdentity()
+        val inactiveAnchor = inactive.currentIdentity()
+
+        val result = QueueOrderEditor.shuffleEverything(
+            inactive.displayedOrder(),
+            inactive.currentPosition(),
+            Random(3),
+        ) as QueueEditResult.Applied
+        inactive.applyDisplayedOrder(result.order)
+
+        assertEquals(0, inactive.currentIdentity())
+        assertEquals(0, inactive.currentPosition())
+        assertFalse(inactive.isOriginal)
+        assertEquals(activeOrder, active.displayedOrder())
+        assertEquals(activeIdentity, active.currentIdentity())
+        assertTrue(active.isOriginal)
+        assertNotEquals(active.displayedOrderItems(), inactive.displayedOrderItems())
     }
 }
 
@@ -182,62 +194,39 @@ class QueueOrderTargetTest {
 private class FakeQueueOrderTarget(
     items: List<Int>,
     current: Int,
-    shuffleOrder: List<Int>? = null,
+    var isOriginal: Boolean = true,
 ) : QueueOrderTarget {
     private val mediaItems = items.toMutableList()
-    private var shuffleOrder = shuffleOrder?.toMutableList()
     private var currentItem: Int? = current
     private var lastRemoved: Pair<Int, Int>? = null
 
     override val size: Int
         get() = mediaItems.size
 
-    override fun displayedOrder(): List<Int> =
-        shuffleOrder?.toList() ?: mediaItems.indices.toList()
+    override fun displayedOrder(): List<Int> = mediaItems.indices.toList()
 
-    override fun currentPosition(): Int? {
-        val underlying = currentIdentity() ?: return null
-        return if (shuffleOrder == null) {
-            underlying
-        } else {
-            shuffleOrder!!.indexOf(underlying).takeIf { it != -1 }
-        }
-    }
+    override fun currentPosition(): Int? = currentIdentity()
 
     override fun applyDisplayedOrder(order: List<Int>) {
         require(order.size == mediaItems.size && order.toSet().size == order.size)
-        if (shuffleOrder != null) {
-            shuffleOrder = order.toMutableList()
-            return
-        }
         val reordered = order.map { mediaItems[it] }.toMutableList()
         mediaItems.clear()
         mediaItems.addAll(reordered)
+        isOriginal = false
     }
 
     override fun removeDisplayedRow(position: Int) {
-        val order = displayedOrder()
-        val underlyingIndex = order[position]
-        val removed = mediaItems.removeAt(underlyingIndex)
-        lastRemoved = underlyingIndex to removed
-        if (shuffleOrder != null) {
-            shuffleOrder = order
-                .filterIndexed { index, _ -> index != position }
-                .map { if (it > underlyingIndex) it - 1 else it }
-                .toMutableList()
-        }
+        val removed = mediaItems.removeAt(position)
+        lastRemoved = position to removed
         if (currentItem == removed) currentItem = null
+        isOriginal = false
     }
 
-    /** Mirrors the service undo: put a removed row back, then restore the captured displayed order. */
+    /** Mirrors Undo: put a removed row back, then restore the captured displayed order. */
     fun undoCapturedOrder(capturedOrder: List<Int>, capturedItems: List<Int>) {
         lastRemoved?.let { (index, item) ->
             mediaItems.add(index, item)
             lastRemoved = null
-        }
-        if (shuffleOrder != null) {
-            applyDisplayedOrder(capturedOrder)
-            return
         }
         val remaining = mediaItems.indices.toMutableList()
         val targetOrder = capturedItems.map { captured ->

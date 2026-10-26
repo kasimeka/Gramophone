@@ -313,20 +313,10 @@ class LibraryTreeLoader(
     }
 
     private suspend fun searchForMediaItem(query: String): List<MediaItem> {
-        val text = query.trim()
         val list = app.reader.songListFlow.first()
         val sortedList = sortList(list, LibraryAdapterTypes.SEARCH, Sorter(SongAdapter.MediaItemHelper, null))
         // TODO support focus and sub queries (see MainActivity)
-        if (text == "") return sortedList
-        return sortedList.filter {
-            // TODO sort results by match quality? (using raw=natural order)
-            // TODO this is copied directly from SearchFragment, which should probably call into
-            //  here for its search needs instead in the future
-            val isMatchingTitle = it.mediaMetadata.title?.contains(text, true) == true
-            val isMatchingAlbum = it.mediaMetadata.albumTitle?.contains(text, true) == true
-            val isMatchingArtist = it.mediaMetadata.artist?.contains(text, true) == true
-            isMatchingTitle || isMatchingAlbum || isMatchingArtist
-        }
+        return sortedList.filterSongsBySearchQuery(query)
     }
 
     fun addMediaItems(
@@ -374,4 +364,16 @@ class LibraryTreeLoader(
     }
 
 
+}
+
+
+/** Shared song search predicate used by library search and the launcher shuffle shortcut. */
+fun List<MediaItem>.filterSongsBySearchQuery(query: String): List<MediaItem> {
+    val text = query.trim()
+    if (text.isEmpty()) return this
+    return filter {
+        it.mediaMetadata.title?.contains(text, true) == true ||
+            it.mediaMetadata.albumTitle?.contains(text, true) == true ||
+            it.mediaMetadata.artist?.contains(text, true) == true
+    }
 }

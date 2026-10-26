@@ -74,6 +74,7 @@ import androidx.media3.common.C
 import androidx.media3.common.HeartRating
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Timeline
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.Log
@@ -122,6 +123,7 @@ import org.akanework.gramophone.logic.getTimer
 import org.akanework.gramophone.logic.playOrPause
 import org.akanework.gramophone.logic.setTextAnimation
 import org.akanework.gramophone.logic.setTimer
+import org.akanework.gramophone.logic.shuffleQueue
 import org.akanework.gramophone.logic.startAnimation
 import org.akanework.gramophone.logic.updateMargin
 import org.akanework.gramophone.logic.utils.AudioFormatDetector
@@ -523,10 +525,6 @@ class FullBottomSheet
             instance?.seekForward()
             true
         }
-        bottomSheetShuffleButton.addOnCheckedChangeListener { _, isChecked ->
-            instance?.shuffleModeEnabled = isChecked
-        }
-
         bottomSheetFullSlider.addOnChangeListener { _, value, isUser ->
             if (isUser) {
                 val dest = instance?.mediaMetadata?.durationMs
@@ -552,6 +550,8 @@ class FullBottomSheet
 
         bottomSheetShuffleButton.setOnClickListener {
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
+            instance?.shuffleQueue()
+            refreshShuffleEnabled()
         }
 
         val colorSecondaryContainer =
@@ -582,7 +582,7 @@ class FullBottomSheet
             firstTime = true
             updateTimer()
             onRepeatModeChanged(instance?.repeatMode ?: Player.REPEAT_MODE_OFF)
-            onShuffleModeEnabledChanged(instance?.shuffleModeEnabled == true)
+            refreshShuffleEnabled()
             onPlaybackStateChanged(instance?.playbackState ?: Player.STATE_IDLE)
             onMediaItemTransition(
                 instance?.currentMediaItem,
@@ -1177,15 +1177,6 @@ class FullBottomSheet
                 )
             )
 
-            val shuffleTransition = ValueAnimator.ofArgb(
-                bottomSheetShuffleButton.iconTint.getColorForState(
-                    bottomSheetShuffleButton.drawableState, Color.RED
-                ),
-                selectorBackground.getColorForState(
-                    bottomSheetShuffleButton.drawableState, Color.RED
-                )
-            )
-
             val favoriteTransition = ValueAnimator.ofArgb(
                 bottomSheetFavoriteButton.iconTint.getColorForState(
                     bottomSheetFavoriteButton.drawableState, Color.RED
@@ -1295,14 +1286,6 @@ class FullBottomSheet
                 duration = BACKGROUND_COLOR_TRANSITION_SEC
             }
 
-            shuffleTransition.apply {
-                addUpdateListener { animation ->
-                    val progressColor = animation.animatedValue as Int
-                    bottomSheetShuffleButton.iconTint = ColorStateList.valueOf(progressColor)
-                }
-                duration = BACKGROUND_COLOR_TRANSITION_SEC
-            }
-
             favoriteTransition.apply {
                 addUpdateListener { animation ->
                     val progressColor = animation.animatedValue as Int
@@ -1321,7 +1304,6 @@ class FullBottomSheet
                 lyricTextColorTransition.start()
                 lyricHighlightTlColorTransition.start()
                 loopTransition.start()
-                shuffleTransition.start()
                 favoriteTransition.start()
 
                 // Note: Animator.addListener isn't thread-safe on all Android versions, ensure we
@@ -1335,7 +1317,6 @@ class FullBottomSheet
                 lyricTextColorTransition.awaitEnd()
                 lyricHighlightTlColorTransition.awaitEnd()
                 loopTransition.awaitEnd()
-                shuffleTransition.awaitEnd()
                 favoriteTransition.awaitEnd()
             }
         }
@@ -1426,6 +1407,7 @@ class FullBottomSheet
         mediaItem: MediaItem?,
         reason: Int
     ) {
+        refreshShuffleEnabled()
         if (instance?.mediaItemCount != 0) {
             bottomSheetFullCover.dispose()
             bottomSheetFullCover.loadNoPlaceholder(mediaItem?.mediaMetadata?.artworkUri) {
@@ -1459,6 +1441,18 @@ class FullBottomSheet
                 (mediaMetadata.userRating as? HeartRating)?.isHeart == true
         }
         bottomSheetFavoriteButton.addOnCheckedChangeListener(this) // see onCheckedChanged
+    }
+
+    private fun refreshShuffleEnabled() {
+        val player = instance ?: return
+        bottomSheetShuffleButton.isEnabled =
+            player.mediaItemCount > 1 &&
+                player.currentMediaItemIndex != C.INDEX_UNSET &&
+                player.currentMediaItem?.mediaMetadata?.isPlayable != false
+    }
+
+    override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+        refreshShuffleEnabled()
     }
 
     private fun updateDuration() {
@@ -1497,10 +1491,6 @@ class FullBottomSheet
         reason: Int
     ) {
         positionRunnable.run()
-    }
-
-    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-        bottomSheetShuffleButton.isChecked = shuffleModeEnabled
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {

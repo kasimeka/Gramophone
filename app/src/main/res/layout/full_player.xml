@@ -397,7 +397,7 @@
             android:layout_height="48dp"
             android:layout_weight="1"
             android:background="@drawable/rp_buttons"
-            android:checkable="true"
+            android:checkable="false"
             android:contentDescription="@string/shuffle"
             android:insetLeft="0dp"
             android:insetTop="0dp"

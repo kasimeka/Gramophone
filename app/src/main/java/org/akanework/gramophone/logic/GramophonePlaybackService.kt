@@ -124,7 +124,6 @@ import org.akanework.gramophone.logic.utils.AfFormatInfo
 import org.akanework.gramophone.logic.utils.AfFormatTracker
 import org.akanework.gramophone.logic.utils.AudioTrackInfo
 import org.akanework.gramophone.logic.utils.BtCodecInfo
-import org.akanework.gramophone.logic.utils.CircularShuffleOrder
 import org.akanework.gramophone.logic.utils.Flags
 import org.akanework.gramophone.logic.utils.LastPlayedManager
 import org.akanework.gramophone.logic.utils.LrcUtils.LrcParserOptions
@@ -158,7 +157,6 @@ import java.util.concurrent.Executor
 import kotlin.collections.emptyList
 import kotlin.collections.map
 import kotlin.collections.plus
-import kotlin.random.Random
 
 
 /**
@@ -191,8 +189,8 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         const val SERVICE_QB_LOAD_QUEUE = "qb_load"
         const val SERVICE_QB_GET_QUEUE_FOR_UI = "qb_get_queue_for_ui"
         const val SERVICE_QB_DEL = "qb_delete"
-        const val SERVICE_QB_REORDER = "qb_reorder"
         const val SERVICE_QB_EDIT = "qb_edit"
+        const val SERVICE_QB_SHUFFLE = "qb_shuffle"
         const val SERVICE_QB_UNDO_EDIT = "qb_undo_edit"
         const val SERVICE_QB_CLEAR_EDIT_UNDO = "qb_clear_edit_undo"
         const val SERVICE_QB_PIN_QUEUE = "qb_pin_queue"
@@ -261,24 +259,18 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
     private fun getRepeatCommand() =
         when (controller!!.repeatMode) {
-            Player.REPEAT_MODE_OFF -> customCommands[2]
-            Player.REPEAT_MODE_ALL -> customCommands[3]
-            Player.REPEAT_MODE_ONE -> customCommands[4]
+            Player.REPEAT_MODE_OFF -> customCommands[0]
+            Player.REPEAT_MODE_ALL -> customCommands[1]
+            Player.REPEAT_MODE_ONE -> customCommands[2]
             else -> throw IllegalArgumentException()
         }
-
-    private fun getShufflingCommand() =
-        if (controller!!.shuffleModeEnabled)
-            customCommands[1]
-        else
-            customCommands[0]
 
     private fun getFavoriteCommand(): CommandButton {
         val isFavorite = (controller?.currentMediaItem?.mediaMetadata?.userRating as? HeartRating)?.isHeart == true
         return if (isFavorite) {
-            customCommands[6]
+            customCommands[4]
         } else {
-            customCommands[5]
+            customCommands[3]
         }
     }
 
@@ -363,14 +355,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
         customCommands =
             listOf(
-                CommandButton.Builder(CommandButton.ICON_SHUFFLE_OFF) // shuffle currently disabled, click will enable
-                    .setDisplayName(getString(R.string.shuffle))
-                    .setPlayerCommand(Player.COMMAND_SET_SHUFFLE_MODE, true)
-                    .build(),
-                CommandButton.Builder(CommandButton.ICON_SHUFFLE_ON) // shuffle currently enabled, click will disable
-                    .setDisplayName(getString(R.string.shuffle))
-                    .setPlayerCommand(Player.COMMAND_SET_SHUFFLE_MODE, false)
-                    .build(),
                 CommandButton.Builder(CommandButton.ICON_REPEAT_OFF) // repeat currently disabled, click will repeat all
                     .setDisplayName(getString(R.string.repeat_mode))
                     .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ALL)
@@ -477,7 +461,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         player.exoPlayer.addAnalyticsListener(EventLogger())
         player.exoPlayer.addAnalyticsListener(afFormatTracker)
         player.exoPlayer.addAnalyticsListener(this)
-        player.exoPlayer.setShuffleOrder(CircularShuffleOrder(player, 0, 0, Random.nextLong()))
         lastPlayedManager = LastPlayedManager(this, player)
         lastPlayedManager.allowSavingState = false
         libraryTreeLoader = LibraryTreeLoader(
@@ -639,8 +622,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                                     true, /* TODO(MQ) */
                                     items.isEnded,
                                     items.repeatMode,
-                                    items.shuffle,
-                                    items.seed,
                                     items.playbackParameters,
                                 )
                             } else {
@@ -653,8 +634,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                                     true, /* TODO(MQ) */
                                     items.isEnded,
                                     items.repeatMode,
-                                    items.shuffle,
-                                    items.seed,
                                     items.playbackParameters,
                                 )
                                 Log.w(TAG, "failed to restore index")
@@ -875,7 +854,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 builder.setMediaButtonPreferences(
                     ImmutableList.of(
                         getRepeatCommand(),
-                        getShufflingCommand(),
                         getFavoriteCommand()
                     )
                 )
@@ -897,8 +875,8 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         availableSessionCommands.add(SessionCommand(SERVICE_QB_GET_QUEUE_FOR_UI, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_LOAD_QUEUE, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_DEL, Bundle.EMPTY))
-        availableSessionCommands.add(SessionCommand(SERVICE_QB_REORDER, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_EDIT, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_SHUFFLE, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_UNDO_EDIT, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_CLEAR_EDIT_UNDO, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_PIN_QUEUE, Bundle.EMPTY))
@@ -1104,11 +1082,15 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         return true
     }
 
-    private fun broadcastQueueSongsRefresh(preserveScroll: Boolean = true) {
+    private fun broadcastQueueSongsRefresh(
+        preserveScroll: Boolean = true,
+        queueId: Long? = null,
+    ) {
         val plr = endedWorkaroundPlayer ?: return
         val session = mediaSession ?: return
         for (controller in session.connectedControllers) {
             val command = SessionCommand(CLIENT_QB_REFRESH_LIST, Bundle.EMPTY).apply {
+                if (queueId != null) customExtras.putLong("queueId", queueId)
                 customExtras.putBinder(
                     "activeQueue",
                     MultiQueueList(listOf(plr.getActiveQueue()))
@@ -1121,6 +1103,34 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             }
             session.sendCustomCommand(controller, command, Bundle.EMPTY)
         }
+    }
+
+    /**
+     * Shuffle everything for the active queue or for an inactive preview. The queue has one order,
+     * so this rewrites that order directly. The anchor row keeps playing and position is untouched.
+     */
+    private fun applyQueueShuffle(command: SessionCommand): Boolean {
+        val player = endedWorkaroundPlayer ?: return false
+        val queueId = if (command.customExtras.containsKey("queueId"))
+            command.customExtras.getLong("queueId") else -1L
+
+        if (queueId == -1L || queueId == player.currentQueueId) {
+            if (player.currentMediaItem?.mediaMetadata?.isPlayable == false) return false
+            val target = PlayerQueueOrderTarget(player)
+            val result = QueueOrderEditor.shuffleEverything(
+                target.displayedOrder(),
+                target.currentPosition(),
+            ) as? QueueEditResult.Applied ?: return false
+            lastQueueEditUndo = null
+            target.applyDisplayedOrder(result.order)
+            player.currentIsOriginal = false
+            lastPlayedManager.save()
+            return true
+        }
+
+        val queue = qb.masterQueues.find { it.id == queueId } ?: return false
+        if (queue.queue.none { it.mediaMetadata.isPlayable == true }) return false
+        return queue.shuffleEverything()
     }
 
     override fun onCustomCommand(
@@ -1142,18 +1152,17 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     if (seamless) {
                         endedWorkaroundPlayer!!.setMediaItemsSeamlessly(songList,
                             position, null, title, pinned = false, original = true,
-                            repeatMode = null, shuffleModeEnabled = null, newShuffleOrder = null,
-                            playbackParameters = null, ended = false,
+                            repeatMode = null, playbackParameters = null, ended = false,
                              )
                     } else {
-                        val shuffleModeEnabled = if (customCommand.customExtras.containsKey("shuffleEnabled"))
-                            customCommand.customExtras.getBoolean("shuffleEnabled") else null
                         val repeatMode = if (customCommand.customExtras.containsKey("repeatMode"))
                             customCommand.customExtras.getInt("repeatMode") else null
+                        val original = if (customCommand.customExtras.containsKey("original"))
+                            customCommand.customExtras.getBoolean("original") else true
                         endedWorkaroundPlayer!!.setMediaItems(songList, startIndex = position,
-                            startPositionMs = C.TIME_UNSET, title, pinned = false, original = true,
-                            newShuffleOrder = null, ended = false, repeatMode = repeatMode,
-                            shuffleModeEnabled = shuffleModeEnabled, playbackParameters = null)
+                            startPositionMs = C.TIME_UNSET, title, pinned = false, original = original,
+                            ended = false, repeatMode = repeatMode,
+                            playbackParameters = null)
                     }
                     SessionResult(SessionResult.RESULT_SUCCESS)
                 },
@@ -1452,6 +1461,20 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     }
                 }
 
+                SERVICE_QB_SHUFFLE -> {
+                    val status = applyQueueShuffle(customCommand)
+                    if (status) {
+                        val queueId = customCommand.customExtras.getLong("queueId")
+                        val activeId = endedWorkaroundPlayer?.currentQueueId
+                        broadcastQueueSongsRefresh(
+                            queueId = queueId.takeIf { it != -1L && it != activeId }
+                        )
+                    }
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", status)
+                    }
+                }
+
                 SERVICE_QB_UNDO_EDIT -> {
                     val status = applyQueueUndo(customCommand)
                     if (status) {
@@ -1742,23 +1765,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         lastSentNotificationLyric = null
         lastSentHighlightedLyric = null
 
-        // reshuffle queue when shuffle AND repeat all are enabled
-        val player = endedWorkaroundPlayer
-        if (player != null && player.currentMediaItemIndex == player.exoPlayer.shuffleOrder.lastIndex &&
-            reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO &&
-            player.shuffleModeEnabled && player.repeatMode == Player.REPEAT_MODE_ALL
-        ) {
-            player.exoPlayer.setShuffleOrder(
-                CircularShuffleOrder(
-                    player,
-                    player.exoPlayer.shuffleOrder.lastIndex,
-                    player.exoPlayer.mediaItemCount,
-                    Random.nextLong()
-                )
-            )
-            broadcastQueueSongsRefresh(preserveScroll = false)
-        }
-
         lastPlayedManager.save()
     }
 
@@ -1781,28 +1787,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         lastPlayedManager.save()
     }
 
-    override fun onEvents(player: Player, events: Player.Events) {
-        super<Player.Listener>.onEvents(player, events)
-        // if timeline changed, shuffle order is handled elsewhere instead (cloneAndInsert called by
-        // ExoPlayer for common case and nextShuffleOrder for resumption case)
-        if (events.contains(Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED)
-            && !events.contains(Player.EVENT_TIMELINE_CHANGED)
-        ) {
-            // when enabling shuffle, re-shuffle lists so that the first index is up to date
-            Log.i(TAG, "re-shuffling playlist")
-            endedWorkaroundPlayer?.let {
-                it.exoPlayer.setShuffleOrder(
-                    CircularShuffleOrder(
-                        it,
-                        it.exoPlayer.currentMediaItemIndex,
-                        it.exoPlayer.mediaItemCount,
-                        Random.nextLong()
-                    )
-                )
-            }
-        }
-    }
-
     private suspend fun mapMediaItemsForFavorites(mediaItems: List<MediaItem>): List<MediaItem> {
         val favorites = gramophoneApplication.reader.playlistListFlow.map { it.find { p ->
             p is Favorite } }.first()?.songList?.map { it.mediaId } ?: emptyList()
@@ -1817,13 +1801,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             } else item
         }
     }
-    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-        refreshMediaButtonCustomLayout()
-        if (needsMissingOnDestroyCallWorkarounds()) {
-            handler.post { lastPlayedManager.save() }
-        }
-    }
-
     override fun onRepeatModeChanged(repeatMode: Int) {
         refreshMediaButtonCustomLayout()
         if (needsMissingOnDestroyCallWorkarounds()) {
@@ -1865,7 +1842,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             ) {
                 mediaSession!!.setMediaButtonPreferences(
                     it, if (isEmpty) emptyList() else
-                        ImmutableList.of(getRepeatCommand(), getShufflingCommand(), getFavoriteCommand())
+                        ImmutableList.of(getRepeatCommand(), getFavoriteCommand())
                 )
             }
         }

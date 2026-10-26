@@ -94,8 +94,10 @@ import org.akanework.gramophone.logic.getInactiveQueues
 import org.akanework.gramophone.logic.getQueueForUi
 import org.akanework.gramophone.logic.loadQueue
 import org.akanework.gramophone.logic.pinQueue
+import org.akanework.gramophone.logic.queue.QueueOrderEditor
 import org.akanework.gramophone.logic.playOrPause
 import org.akanework.gramophone.logic.renameQueue
+import org.akanework.gramophone.logic.shuffleQueue
 import org.akanework.gramophone.logic.supportsWideScreen
 import org.akanework.gramophone.logic.unpinQueue
 import org.akanework.gramophone.logic.utils.CalculationUtils.convertDurationToTimeStamp
@@ -484,7 +486,7 @@ fun ActionBar(
 ) {
     val isPlaying by mqState.isPlaying.collectAsState()
     val repeatMode by mqState.repeatMode.collectAsState()
-    val shuffleModeEnabled by mqState.shuffleModeEnabled.collectAsState()
+    val canShuffle by mqState.canShuffle.collectAsState()
 
     BackHandler(mqState.isEditAllowed) {
         mqState.isEditAllowed = false
@@ -523,14 +525,14 @@ fun ActionBar(
             }
             IconButton(
                 onClick = {
-                    mqState.toggleShuffleMode()
+                    mqState.shuffleQueue()
                 },
-                enabled = !mqState.isDetached(),
+                enabled = canShuffle,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_shuffle),
                     contentDescription = null,
-                    tint = LocalContentColor.current.copy(if (shuffleModeEnabled) 1f else 0.5f)
+                    tint = LocalContentColor.current.copy(if (canShuffle) 1f else 0.5f)
                 )
             }
         }
@@ -842,12 +844,12 @@ class MqState(
     private val instance = activity.getPlayer()!!
     val isPlaying = MutableStateFlow(instance.isPlaying)
 
-    // shuffle and repeat modes do not need to be manually set for queue loads, they will be set automatically
-    val shuffleModeEnabled = MutableStateFlow(instance.shuffleModeEnabled)
+    // repeat mode does not need to be manually set for queue loads, it is set automatically
     val repeatMode = MutableStateFlow(instance.repeatMode)
+    val canShuffle = MutableStateFlow(false)
 
     val mediaItemCount = MutableStateFlow(instance.mediaItemCount)
-    val currentMediaItemIndex = MutableStateFlow(getShuffledIndex())
+    val currentMediaItemIndex = MutableStateFlow(getCurrentIndex())
     val durationMs = MutableStateFlow(getDurationMs())
 
     var expanded by mutableStateOf(false)
@@ -881,17 +883,14 @@ class MqState(
             this@MqState.repeatMode.value = repeatMode
         }
 
-        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-            this@MqState.shuffleModeEnabled.value = shuffleModeEnabled
-        }
-
         override fun onMediaItemTransition(
             mediaItem: MediaItem?,
             reason: @Player.MediaItemTransitionReason Int
         ) {
             if (isDetached()) return
             this@MqState.mediaItemCount.value = instance.mediaItemCount
-            this@MqState.currentMediaItemIndex.value = getShuffledIndex()
+            this@MqState.currentMediaItemIndex.value = getCurrentIndex()
+            refreshCanShuffle()
         }
     }
 
@@ -932,13 +931,7 @@ class MqState(
                         handleRefresh(
                             level = level,
                             activeQueue = MultiQueueList.getList(activeQueue).map { mq ->
-                                val indexes: MutableList<Int> = if (mq.shuffleOrder?.data == null) {
-                                    (0 until mq.getSize()).toMutableList()
-                                } else {
-                                    mq.shuffleOrder!!.data!!.toMutableList()
-                                }
-
-                                Pair(indexes, mq)
+                                Pair((0 until mq.getSize()).toMutableList(), mq)
                             }.firstOrNull(),
                             inactiveQueues = MultiQueueList.getList(inactiveQueues),
                             queueId = queueId,
@@ -994,6 +987,7 @@ class MqState(
         instance.getInactiveQueues().toMutableList().let {
             inactiveQueues.addAll(it)
         }
+        refreshCanShuffle()
         onFinish?.invoke()
     }
 
@@ -1036,11 +1030,11 @@ class MqState(
         }
         detachedQueue = mq
         this.repeatMode.value = mq.repeatMode
-        this.shuffleModeEnabled.value = mq.shuffleModeEnabled
         this.mediaItemCount.value = mq.getSize()
-        this.currentMediaItemIndex.value = getShuffledIndex(mq)
+        this.currentMediaItemIndex.value = getCurrentIndex(mq)
         this.durationMs.value = getDurationMs(mq)
         updateList(instance.getQueueForUi(mq.id))
+        refreshCanShuffle()
     }
 
     /**
@@ -1049,9 +1043,8 @@ class MqState(
     fun resetHead(updateSongList: Boolean = true) {
         detachedQueue = null
         this.repeatMode.value = instance.repeatMode
-        this.shuffleModeEnabled.value = instance.shuffleModeEnabled
         this.mediaItemCount.value = instance.mediaItemCount
-        this.currentMediaItemIndex.value = getShuffledIndex()
+        this.currentMediaItemIndex.value = getCurrentIndex()
         this.durationMs.value = getDurationMs()
         if (updateSongList) {
             updateList(mq = activeQueue)
@@ -1077,9 +1070,6 @@ class MqState(
 
         detachedQueue?.repeatMode?.let {
             playerListener.onRepeatModeChanged(it)
-        }
-        detachedQueue?.shuffleModeEnabled?.let {
-            playerListener.onShuffleModeEnabledChanged(it)
         }
     }
 
@@ -1110,9 +1100,13 @@ class MqState(
         }
     }
 
-    fun toggleShuffleMode() {
-        instance.shuffleModeEnabled = !instance.shuffleModeEnabled
-        updateList()
+    fun shuffleQueue() {
+        val queueId = if (isDetached()) {
+            detachedQueue?.id ?: return
+        } else {
+            activeQueue?.second?.id ?: -1L
+        }
+        instance.shuffleQueue(queueId)
     }
 
     fun playNext(queueId: Long) {
@@ -1208,25 +1202,16 @@ class MqState(
         resetHead()
     }
 
-    private fun getShuffledIndex(mq: MultiQueueObject? = null): Int {
-        if (mq != null) {
-            if (mq.shuffleOrder == null) {
-                return mq.startIndex
-            }
+    private fun refreshCanShuffle() {
+        val queue = if (isDetached()) detachedQueue else activeQueue?.second
+        val anchor = if (isDetached()) queue?.startIndex else currentMediaItemIndex.value
+        canShuffle.value =
+            QueueOrderEditor.canShuffleEverything(queue?.getSize() ?: 0, anchor) &&
+                playlist.second.any { it.mediaMetadata.isPlayable == true }
+    }
 
-            val indexes = mq.shuffleOrder!!.data!!.toMutableList()
-            return indexes.indexOf(mq.startIndex)
-        }
-
-        val indexes = LinkedList<Int>()
-        val s = instance.shuffleModeEnabled
-        var i = instance.currentTimeline.getFirstWindowIndex(s)
-        while (i != C.INDEX_UNSET) {
-            indexes.add(i)
-            i = instance.currentTimeline.getNextWindowIndex(i, Player.REPEAT_MODE_OFF, s)
-        }
-
-        return indexes.indexOf(instance.currentMediaItemIndex)
+    private fun getCurrentIndex(mq: MultiQueueObject? = null): Int {
+        return if (mq != null) mq.startIndex else instance.currentMediaItemIndex
     }
 
     private fun getDurationMs(mq: MultiQueueObject? = null): Long {
@@ -1316,6 +1301,7 @@ class MqState(
             dumpPlaylist()
         }
         playlist = pl
+        refreshCanShuffle()
         playlistQueueSheet?.playlistAdapter?.notifyDataSetChanged()
 
         // update playing indicator, and scroll to the current row unless the caller is preserving
@@ -1337,13 +1323,7 @@ class MqState(
         for (i in 0 until instance.mediaItemCount) {
             items.add(instance.getMediaItemAt(i))
         }
-        val indexes = LinkedList<Int>()
-        val s = instance.shuffleModeEnabled
-        var i = instance.currentTimeline.getFirstWindowIndex(s)
-        while (i != C.INDEX_UNSET) {
-            indexes.add(i)
-            i = instance.currentTimeline.getNextWindowIndex(i, Player.REPEAT_MODE_OFF, s)
-        }
+        val indexes = (items.indices).toMutableList()
         return Pair(indexes, items)
     }
 

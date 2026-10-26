@@ -84,6 +84,7 @@ import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.dpToPx
 import org.akanework.gramophone.logic.enableEdgeToEdgeProperly
+import org.akanework.gramophone.logic.filterSongsBySearchQuery
 import org.akanework.gramophone.logic.getBooleanStrict
 import org.akanework.gramophone.logic.gramophoneApplication
 import org.akanework.gramophone.logic.hasAudioPermission
@@ -91,6 +92,7 @@ import org.akanework.gramophone.logic.hasScopedStorageV2
 import org.akanework.gramophone.logic.hasScopedStorageWithMediaTypes
 import org.akanework.gramophone.logic.needsMissingOnDestroyCallWorkarounds
 import org.akanework.gramophone.logic.postAtFrontOfQueueAsync
+import org.akanework.gramophone.logic.setMediaItemsWithTitle
 import org.akanework.gramophone.logic.ui.BaseActivity
 import org.akanework.gramophone.ui.adapters.PlaylistAdapter
 import org.akanework.gramophone.ui.components.PlayerBottomSheet
@@ -686,19 +688,26 @@ class MainActivity : BaseActivity() {
             val query = intent.getStringExtra("item_name") ?: ""
             willAutoPlayLater = true
             controllerViewModel.addControllerCallback(lifecycle) { controller, _ ->
-                controller.shuffleModeEnabled = true
-                controller.setMediaItem(
-                    MediaItem.Builder()
-                        .setRequestMetadata(
-                            MediaItem.RequestMetadata.Builder()
-                                .setSearchQuery(query) // empty = every song
-                                .build()
+                lifecycleScope.launch {
+                    val songs = withContext(Dispatchers.Default) {
+                        reader.songListFlow.first().filterSongsBySearchQuery(query)
+                    }
+                    if (songs.isEmpty()) {
+                        controller.setMediaItems(listOf())
+                    } else {
+                        controller.setMediaItemsWithTitle(
+                            songs.shuffled(),
+                            title = if (query.isBlank())
+                                getString(R.string.shuffle_all)
+                            else
+                                getString(R.string.search_query, query),
+                            original = false,
                         )
-                        .build()
-                )
-                controller.prepare()
-                controller.play()
-                dispose()
+                        controller.prepare()
+                        controller.play()
+                    }
+                    dispose()
+                }
             }
         }
         val autoPlay = intent.extras?.getBoolean(PLAYBACK_AUTO_START_FOR_FGS, false) == true

@@ -207,7 +207,6 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
                     setMediaItemsWithTitle(
                         songList,
                         title = runBlocking { adapter.queueTitle!!.first() },
-                        shuffleEnabled = false,
                         repeatMode = REPEAT_MODE_OFF,
                     )
                     if (songList.isNotEmpty()) {
@@ -223,7 +222,6 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
                         setMediaItemsWithTitle(
                             albums.flatMap { it.songList },
                             title = runBlocking { adapter.queueTitle.first() },
-                            shuffleEnabled = false,
                             repeatMode = REPEAT_MODE_OFF,
                         )
                         prepare()
@@ -239,9 +237,9 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
                 val controller = adapter.getActivity().getPlayer()
                 controller?.apply {
                     setMediaItemsWithTitle(
-                        songList,
+                        songList.shuffled(),
                         title = runBlocking { adapter.queueTitle!!.first() },
-                        shuffleEnabled = true,
+                        original = false,
                     )
                     if (songList.isNotEmpty()) {
                         prepare()
@@ -254,11 +252,11 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
                 controller?.apply {
                     list.takeIf { it.isNotEmpty() }?.also { albums ->
                         setMediaItemsWithTitle(
-                            albums.shuffled().flatMap { it.songList },
+                            albums.flatMap { it.songList }.shuffled(),
                             title = context.getString(R.string.shuffled,
                                     runBlocking { adapter.queueTitle.first() }),
-                            shuffleEnabled = false,
                             repeatMode = REPEAT_MODE_OFF,
+                            original = false,
                         )
                         prepare()
                         play()

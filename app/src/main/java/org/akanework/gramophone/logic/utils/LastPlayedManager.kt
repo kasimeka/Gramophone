@@ -79,12 +79,6 @@ class LastPlayedManager(
         )
     }
 
-    fun eraseShuffleOrder() {
-        prefs.edit(commit = true) {
-            putString("shuffle_persist", null)
-        }
-    }
-
     fun save() {
         if (!allowSavingState) {
             Log.i(TAG, "skipped save")
@@ -95,18 +89,14 @@ class LastPlayedManager(
         }
         val data = dumpPlaylist()
         val repeatMode = controller.repeatMode
-        val shuffleModeEnabled = controller.shuffleModeEnabled
         val playbackParameters = controller.playbackParameters
-        val persistent = if (controller.shuffleModeEnabled)
-            CircularShuffleOrder.Persistent(controller.exoPlayer.shuffleOrder as CircularShuffleOrder)
-        else null
         val ended = controller.playbackState == Player.STATE_ENDED
         job?.cancel()
         job = CoroutineScope(Dispatchers.Default).launch {
             if (BuildConfig.DEBUG) {
                 Log.d(
                     TAG, "saving playlist (${data.mediaItems.size} items, repeat $repeatMode, " +
-                            "shuffle $shuffleModeEnabled, ended $ended)..."
+                            "ended $ended)..."
                 )
             }
             val lastPlayed = PrefsListUtils.dump(
@@ -151,8 +141,6 @@ class LastPlayedManager(
                 putInt("last_played_idx", data.startIndex)
                 putLong("last_played_pos", data.startPositionMs)
                 putInt("repeat_mode", repeatMode)
-                putBoolean("shuffle", shuffleModeEnabled)
-                putString("shuffle_persist", persistent?.toString())
                 putBoolean("ended", ended)
                 putFloat("speed", playbackParameters.speed)
                 putFloat("pitch", playbackParameters.pitch)
@@ -163,8 +151,8 @@ class LastPlayedManager(
 
     class RestoredPlaylist(
         val items: MediaItemsWithStartPosition, val title: String,
-        val seed: CircularShuffleOrder.Persistent?, val isEnded: Boolean, val repeatMode: Int,
-        val shuffle: Boolean, val playbackParameters: PlaybackParameters
+        val isEnded: Boolean, val repeatMode: Int,
+        val playbackParameters: PlaybackParameters
     )
 
     suspend fun restore(callback: suspend (RestoredPlaylist?) -> Unit) {
@@ -172,17 +160,6 @@ class LastPlayedManager(
             Log.d(TAG, "decoding playlist...")
         }
         withContext(Dispatchers.Default) {
-            val seed = try {
-                CircularShuffleOrder.Persistent.deserialize(
-                    prefs.getString(
-                        "shuffle_persist",
-                        null
-                    )
-                )
-            } catch (e: Exception) {
-                eraseShuffleOrder()
-                throw e
-            }
             try {
                 val lastPlayedLst = prefs.getStringSet("last_played_lst", null)?.toSet()
                 val lastPlayedGrp = prefs.getString("last_played_grp", null)
@@ -193,7 +170,6 @@ class LastPlayedManager(
                     return@withContext
                 }
                 val repeatMode = prefs.getInt("repeat_mode", Player.REPEAT_MODE_OFF)
-                val shuffleModeEnabled = prefs.getBoolean("shuffle", false)
                 val ended = prefs.getBoolean("ended", false)
                 val playbackParameters = PlaybackParameters(
                     prefs.getFloat("speed", 1f),
@@ -318,20 +294,13 @@ class LastPlayedManager(
                     Log.d(
                         TAG,
                         "restoring playlist (${data.mediaItems.size} items, repeat $repeatMode, " +
-                                "shuffle $shuffleModeEnabled, ended $ended)..."
+                                "ended $ended)..."
                     )
                 }
-                if (seed.data != null && seed.data.size != data.mediaItems.size)
-                    throw IllegalStateException("Bad shuffle order size ${seed.data.size} for" +
-                            " ${data.mediaItems.size} items")
                 callback(RestoredPlaylist(data, "LastPlayedManager" /* TODO(MQ) */,
-                    seed, ended, repeatMode, shuffleModeEnabled, playbackParameters))
+                    ended, repeatMode, playbackParameters))
                 return@withContext
             } catch (e: Exception) {
-                try {
-                    this@LastPlayedManager.eraseShuffleOrder()
-                } catch (_: Exception) {
-                }
                 Log.e(TAG, Log.getThrowableString(e)!!)
                 callback(null)
                 return@withContext

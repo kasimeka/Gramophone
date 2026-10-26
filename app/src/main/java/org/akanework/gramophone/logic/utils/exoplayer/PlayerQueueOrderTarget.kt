@@ -20,12 +20,10 @@ package org.akanework.gramophone.logic.utils.exoplayer
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import org.akanework.gramophone.logic.queue.QueueOrderTarget
-import org.akanework.gramophone.logic.utils.CircularShuffleOrder
-import kotlin.random.Random
 
 /**
- * Applies displayed-order edits to the active queue. With shuffle on the shuffle order is the
- * displayed order. With shuffle off the media item order is the displayed order.
+ * Applies queue-order edits to the active queue. The media item order is the only order: it is
+ * displayed, played, edited, exported, and persisted.
  */
 class PlayerQueueOrderTarget(
     private val player: EndedWorkaroundPlayer,
@@ -36,16 +34,11 @@ class PlayerQueueOrderTarget(
     override val size: Int
         get() = exoPlayer.mediaItemCount
 
-    override fun displayedOrder(): List<Int> {
-        if (!exoPlayer.shuffleModeEnabled) return (0 until size).toList()
-        val shuffleOrder = exoPlayer.shuffleOrder as CircularShuffleOrder
-        return shuffleOrder.shuffledIndices.toList()
-    }
+    override fun displayedOrder(): List<Int> = (0 until size).toList()
 
     override fun currentPosition(): Int? {
         val current = exoPlayer.currentMediaItemIndex
-        if (current == C.INDEX_UNSET) return null
-        return displayedOrder().indexOf(current).takeIf { it != -1 }
+        return current.takeIf { it != C.INDEX_UNSET }
     }
 
     override fun applyDisplayedOrder(order: List<Int>) {
@@ -53,11 +46,6 @@ class PlayerQueueOrderTarget(
             "displayed order size ${order.size} does not match media item count $size"
         }
         require(order.toSet().size == order.size) { "displayed order contains duplicate rows" }
-
-        if (exoPlayer.shuffleModeEnabled) {
-            setShuffleOrder(order)
-            return
-        }
 
         // Move media items until their order matches the edited displayed order. The current
         // media item keeps playing; only its index changes when it moves.
@@ -73,37 +61,20 @@ class PlayerQueueOrderTarget(
     }
 
     override fun removeDisplayedRow(position: Int) {
-        val order = displayedOrder()
-        require(position in order.indices) { "position $position is outside displayed order" }
-        val underlyingIndex = order[position]
-        val wasShuffled = exoPlayer.shuffleModeEnabled
-        exoPlayer.removeMediaItem(underlyingIndex)
-        if (wasShuffled) {
-            // ExoPlayer also adjusts its shuffle order on removal. Set the exact displayed order
-            // here so the visible list and playback order cannot drift apart.
-            val newOrder = order
-                .filterIndexed { index, _ -> index != position }
-                .map { if (it > underlyingIndex) it - 1 else it }
-            setShuffleOrder(newOrder)
-        }
+        require(position in 0..<size) { "position $position is outside displayed order" }
+        exoPlayer.removeMediaItem(position)
     }
 
     /**
-     * Restore the displayed order captured before an edit. [order] holds row identities in
-     * displayed order. [capturedItems] is the media-item order before the edit: unshuffled
-     * identities are media-item positions, so they shift when items move, and the captured items
-     * are needed to map rows back to where they are now. Returns false, changing nothing, when the
-     * captured edit no longer matches the queue.
+     * Restore the order captured before an edit. [order] holds the media-item order before the
+     * edit and [capturedItems] the media items at that time; items may have shifted since then, so
+     * rows are matched back by identity. Returns false, changing nothing, when the captured edit
+     * no longer matches the queue.
      */
     fun restoreDisplayedOrder(order: List<Int>, capturedItems: List<MediaItem>): Boolean {
         if (order.size != size || capturedItems.size != size) return false
         if (order.toSet().size != order.size) return false
         if (order.any { it !in 0..<size }) return false
-
-        if (exoPlayer.shuffleModeEnabled) {
-            applyDisplayedOrder(order)
-            return true
-        }
 
         val currentItems = (0 until size).map { exoPlayer.getMediaItemAt(it) }
         val remaining = currentItems.indices.toMutableList()
@@ -114,16 +85,5 @@ class PlayerQueueOrderTarget(
         }
         applyDisplayedOrder(targetOrder)
         return true
-    }
-
-    private fun setShuffleOrder(order: List<Int>) {
-        exoPlayer.setShuffleOrder(
-            CircularShuffleOrder(
-                player,
-                order.toIntArray(),
-                Random.nextLong(),
-                null,
-            )
-        )
     }
 }

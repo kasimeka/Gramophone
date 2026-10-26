@@ -21,6 +21,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.random.Random
 
 class QueueOrderEditorTest {
     @Test
@@ -113,5 +114,66 @@ class QueueOrderEditorTest {
         assertEquals(QueueEditResult.NoOp, QueueOrderEditor.remove(listOf(0, 1), -1))
         assertEquals(QueueEditResult.NoOp, QueueOrderEditor.remove(listOf(0, 1), 2))
         assertEquals(QueueEditResult.NoOp, QueueOrderEditor.remove(emptyList(), 0))
+    }
+
+    @Test
+    fun shuffleIsDisabledWithoutAnchor() {
+        assertFalse(QueueOrderEditor.canShuffleEverything(4, null))
+        assertEquals(
+            QueueEditResult.NoOp,
+            QueueOrderEditor.shuffleEverything(listOf(0, 1, 2, 3), null)
+        )
+    }
+
+    @Test
+    fun shuffleIsDisabledForEmptyAndOneRowQueues() {
+        assertFalse(QueueOrderEditor.canShuffleEverything(0, null))
+        assertFalse(QueueOrderEditor.canShuffleEverything(1, 0))
+        assertEquals(QueueEditResult.NoOp, QueueOrderEditor.shuffleEverything(emptyList(), 0))
+        assertEquals(QueueEditResult.NoOp, QueueOrderEditor.shuffleEverything(listOf(0), 0))
+    }
+
+    @Test
+    fun shuffleIsDisabledForInvalidAnchor() {
+        assertFalse(QueueOrderEditor.canShuffleEverything(4, -1))
+        assertFalse(QueueOrderEditor.canShuffleEverything(4, 4))
+        assertEquals(
+            QueueEditResult.NoOp,
+            QueueOrderEditor.shuffleEverything(listOf(0, 1, 2, 3), 4)
+        )
+    }
+
+    @Test
+    fun shuffleMovesAnchorFirstAndKeepsEveryRow() {
+        val order = listOf(0, 1, 2, 3, 4)
+        val result = QueueOrderEditor.shuffleEverything(order, 3, Random(1))
+            as QueueEditResult.Applied
+
+        assertEquals(3, result.order.first())
+        assertEquals(order.size, result.order.size)
+        assertEquals(order.toSet(), result.order.toSet())
+    }
+
+    @Test
+    fun shuffleKeepsOrderIdentityNotJustPositions() {
+        val order = listOf(4, 2, 0, 3, 1)
+        val result = QueueOrderEditor.shuffleEverything(order, 2, Random(5))
+            as QueueEditResult.Applied
+
+        assertEquals(0, result.order.first())
+        assertEquals(order.toSet(), result.order.toSet())
+    }
+
+    @Test
+    fun everyNonAnchorRowCanMoveAcrossShuffles() {
+        val order = (0..5).toList()
+        val seen = mutableSetOf<Int>()
+        repeat(200) {
+            val result = QueueOrderEditor.shuffleEverything(order, 0, Random(it))
+                as QueueEditResult.Applied
+            seen.addAll(result.order.drop(1).take(1))
+        }
+
+        assertEquals(order.drop(1).toSet(), seen)
     }
 }

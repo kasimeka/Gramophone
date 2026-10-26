@@ -86,7 +86,7 @@ import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_LOAD_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_PIN_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_RENAME_QUEUE
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_REORDER
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_SHUFFLE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_UNDO_EDIT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_UNPIN_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QUERY_TIMER
@@ -317,15 +317,19 @@ fun MediaController.setMediaItemsSeamlessly(items: List<MediaItem>, position: In
     )
 }
 
-fun MediaController.setMediaItemsWithTitle(items: List<MediaItem>, position: Int = C.INDEX_UNSET, title: String,
-                                        shuffleEnabled: Boolean? = null, repeatMode: @Player.RepeatMode Int? = null) {
+fun MediaController.setMediaItemsWithTitle(
+    items: List<MediaItem>,
+    position: Int = C.INDEX_UNSET,
+    title: String,
+    repeatMode: @Player.RepeatMode Int? = null,
+    original: Boolean = true,
+) {
     sendCustomCommand(
         SessionCommand(SERVICE_SET_MEDIA_ITEMS_ATOMIC, Bundle.EMPTY).apply {
             customExtras.putBinder("items", MediaItemList(items))
             customExtras.putInt("position", position)
             customExtras.putString("title", title)
-            if (shuffleEnabled != null)
-                customExtras.putBoolean("shuffleEnabled", shuffleEnabled)
+            customExtras.putBoolean("original", original)
             if (repeatMode != null)
                 customExtras.putInt("repeatMode", repeatMode)
         }, Bundle.EMPTY
@@ -408,7 +412,7 @@ fun MediaController.getInactiveQueue(queueId: Long): MultiQueueObject? =
     }
 
 /**
- * Get full [MultiQueueObject] object with media items and shuffle order.
+ * Get full [MultiQueueObject] object with media items in its single queue order.
  *
  * @param queueId Inactive queue id, or specify -1 to retrieve the active queue.
  */
@@ -420,12 +424,7 @@ fun MediaController.getQueueForUi(queueId: Long = -1L): Pair<MutableList<Int>, M
     ).get().extras.run {
         val binder = getBinder("allQueues")!!
         MultiQueueList.getList(binder).map { mq ->
-            val indexes: MutableList<Int> = if (mq.shuffleOrder?.data == null) {
-                (0 until mq.getSize()).toMutableList()
-            } else {
-                mq.shuffleOrder!!.data!!.toMutableList()
-            }
-
+            val indexes: MutableList<Int> = (0 until mq.getSize()).toMutableList()
             Pair(indexes, mq)
         }.firstOrNull()
     }
@@ -463,14 +462,6 @@ fun MediaController.deleteQueue(queueId: Long) =
         }, Bundle.EMPTY
     )
 
-fun MediaController.reorderQueue(from: Int, to: Int) =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_REORDER, Bundle.EMPTY).apply {
-            customExtras.putInt("from", from)
-            customExtras.putInt("to", to)
-        }, Bundle.EMPTY
-    )
-
 /**
  * Edit the active queue by displayed position. Returns false when the service rejects the edit.
  */
@@ -484,6 +475,17 @@ fun MediaController.editQueue(
             customExtras.putLong("queueId", queueId)
             customExtras.putString("operation", operation.name)
             customExtras.putInt("position", position)
+        }
+    )
+
+/**
+ * Shuffle a queue's single order. The active queue is the default; pass an inactive queue id to
+ * shuffle a preview without loading it. Returns false when the action is unavailable.
+ */
+fun MediaController.shuffleQueue(queueId: Long = -1L): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_SHUFFLE, Bundle.EMPTY).apply {
+            customExtras.putLong("queueId", queueId)
         }
     )
 
