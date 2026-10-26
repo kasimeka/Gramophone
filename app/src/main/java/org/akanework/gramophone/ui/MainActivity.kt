@@ -40,6 +40,7 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.view.Choreographer
 import android.view.SearchEvent
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -55,6 +56,9 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.net.toUri
 import androidx.core.os.BundleCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
@@ -66,6 +70,7 @@ import androidx.media3.common.util.Log
 import androidx.media3.session.DefaultMediaNotificationProvider
 import coil3.imageLoader
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -94,6 +99,11 @@ import org.akanework.gramophone.logic.needsMissingOnDestroyCallWorkarounds
 import org.akanework.gramophone.logic.postAtFrontOfQueueAsync
 import org.akanework.gramophone.logic.setMediaItemsWithTitle
 import org.akanework.gramophone.logic.ui.BaseActivity
+import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
+import org.akanework.gramophone.logic.ui.TabBarPosition
+import org.akanework.gramophone.logic.ui.TabBarPresence
+import org.akanework.gramophone.logic.ui.TABS_AT_BOTTOM_DEFAULT
+import org.akanework.gramophone.logic.ui.TABS_AT_BOTTOM_KEY
 import org.akanework.gramophone.ui.adapters.PlaylistAdapter
 import org.akanework.gramophone.ui.components.PlayerBottomSheet
 import org.akanework.gramophone.ui.fragments.BaseFragment
@@ -136,6 +146,26 @@ class MainActivity : BaseActivity() {
     private var ready = false
     lateinit var playerBottomSheet: PlayerBottomSheet
         private set
+    lateinit var bottomTabLayout: TabLayout
+        private set
+    private var librarySectionCount = 0
+    private var tabsAtBottomOnCreate = TABS_AT_BOTTOM_DEFAULT
+    private val tabsAtBottomPreference: Boolean
+        get() = prefs.getBooleanStrict(TABS_AT_BOTTOM_KEY, TABS_AT_BOTTOM_DEFAULT)
+
+    /** The position chosen when this activity was created; a change waits for recreation. */
+    val tabsAtBottom: Boolean
+        get() = tabsAtBottomOnCreate
+
+    val isBottomTabBarVisible: Boolean
+        get() = ::bottomTabLayout.isInitialized && bottomTabLayout.isVisible
+
+    /** Measured height of the docked tab bar, including its gesture-area inset, or zero if hidden. */
+    val bottomTabBarDockedHeight: Int
+        get() = if (isBottomTabBarVisible) bottomTabLayout.height else 0
+
+    val isLibraryInFront: Boolean
+        get() = supportFragmentManager.fragments.lastOrNull() is ViewPagerFragment
     private lateinit var intentSenderDelete: ActivityResultLauncher<IntentSenderRequest>
     private lateinit var addToPlaylistIntentSender: ActivityResultLauncher<IntentSenderRequest>
     private lateinit var markIsFavoriteStatusIntentSender: ActivityResultLauncher<IntentSenderRequest>
@@ -165,6 +195,7 @@ class MainActivity : BaseActivity() {
         Log.i("MainActivity", "onCreate($intent)")
         installSplashScreen().setKeepOnScreenCondition { !ready }
         super.onCreate(savedInstanceState)
+        tabsAtBottomOnCreate = tabsAtBottomPreference
         lifecycle.addObserver(controllerViewModel)
         enableEdgeToEdgeProperly()
         if (savedInstanceState?.containsKey("AddToPlaylistPendingRequest") == true) {
@@ -233,6 +264,18 @@ class MainActivity : BaseActivity() {
             })
         }
         playerBottomSheet = findViewById(R.id.player_layout)
+        bottomTabLayout = findViewById(R.id.bottom_tab_layout)
+        bottomTabLayout.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            if (isBottomTabBarVisible) playerBottomSheet.onDockedGroupChanged()
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(bottomTabLayout) { v, insets ->
+            val i = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(i.left, v.paddingTop, i.right, i.bottom)
+            insets
+        }
+        updateTabBarPresence()
 
         // Check all permissions.
         if (!hasAudioPermission()) {
@@ -788,6 +831,48 @@ class MainActivity : BaseActivity() {
 
     fun maybeReportFullyDrawn() {
         if (!ready) reportFullyDrawn()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Every inset consumer caches measurements, so a position change is applied by recreation
+        // instead of a live relayout.
+        if (tabsAtBottomPreference != tabsAtBottomOnCreate) recreate()
+    }
+
+    /**
+     * Recompute the activity-owned tab bar from the position setting, the number of enabled
+     * sections and the current screen policy. The full player denies the dock temporarily.
+     */
+    fun updateTabBarPresence() {
+        if (!::bottomTabLayout.isInitialized || !::playerBottomSheet.isInitialized) return
+        val effectivePolicy =
+            if (playerBottomSheet.obscuresBottomBar) MiniPlayerScreenPolicy.DENIED
+            else playerBottomSheet.screenPolicy
+        val show = TabBarPresence.shouldShow(
+            position = if (tabsAtBottom) TabBarPosition.BOTTOM else TabBarPosition.TOP,
+            hasEnoughSections = librarySectionCount >= 2,
+            screenPolicy = effectivePolicy,
+        )
+        val visibility = if (show) View.VISIBLE else View.GONE
+        if (bottomTabLayout.visibility == visibility) return
+        bottomTabLayout.visibility = visibility
+        if (show) ViewCompat.requestApplyInsets(bottomTabLayout)
+        playerBottomSheet.onDockedGroupChanged()
+    }
+
+    fun onLibrarySectionsChanged(count: Int) {
+        if (librarySectionCount == count) return
+        librarySectionCount = count
+        updateTabBarPresence()
+    }
+
+    /** Pop every pushed screen so the library is back in front, keeping the selected section. */
+    fun returnToLibrary() {
+        if (isLibraryInFront) return
+        supportFragmentManager.popBackStack(
+            null, FragmentManager.POP_BACK_STACK_INCLUSIVE
+        )
     }
 
     /**

@@ -73,6 +73,10 @@ class ViewPagerFragment : BaseFragment() {
     val recycledViewPool = RecyclerView.RecycledViewPool()
     private lateinit var viewPager2: ViewPager2
     private lateinit var adapter: ViewPager2Adapter
+    private lateinit var topTabLayout: TabLayout
+    private var tabLayoutMediator: TabLayoutMediator? = null
+    private var tabReselectListener: TabLayout.OnTabSelectedListener? = null
+    private var boundTabLayout: TabLayout? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -80,9 +84,12 @@ class ViewPagerFragment : BaseFragment() {
         savedInstanceState: Bundle?,
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_viewpager, container, false)
-        val tabLayout = rootView.findViewById<TabLayout>(R.id.tab_layout)
+        topTabLayout = rootView.findViewById(R.id.tab_layout)
         val topAppBar = rootView.findViewById<MaterialToolbar>(R.id.topAppBar)
         viewPager2 = rootView.findViewById(R.id.fragment_viewpager)
+        if ((requireActivity() as MainActivity).tabsAtBottom) {
+            topTabLayout.visibility = View.GONE
+        }
 
         appBarLayout = rootView.findViewById(R.id.appbarlayout)
         appBarLayout.enableEdgeToEdgePaddingListener()
@@ -221,9 +228,26 @@ class ViewPagerFragment : BaseFragment() {
                 requireContext(),
                 viewPager2
             )
+        adapter.onTabListChanged = { updateTabPresentation() }
         viewPager2.adapter = adapter
 
-        TabLayoutMediator(tabLayout, viewPager2) { tab, position ->
+        // The activity's bottom tab bar is inflated after this fragment's container, so wait for
+        // the activity layout to finish before binding to it.
+        rootView.post {
+            if (view != null && isAdded) bindTabBar()
+        }
+
+        return rootView
+    }
+
+    private fun bindTabBar() {
+        val activity = requireActivity() as MainActivity
+        val bottom = activity.tabsAtBottom
+        val target = if (bottom) activity.bottomTabLayout else topTabLayout
+        boundTabLayout = target
+
+        tabLayoutMediator?.detach()
+        tabLayoutMediator = TabLayoutMediator(target, viewPager2) { tab, position ->
             tab.text = getString(adapter.getLabelResId(position))
             tab.view.post {
                 try {
@@ -235,16 +259,21 @@ class ViewPagerFragment : BaseFragment() {
                     val lp = tab.view.layoutParams as ViewGroup.MarginLayoutParams
                     lp.marginStart = if (position == 0)
                         resources.getDimension(R.dimen.tab_layout_content_padding).toInt() else 0
-                    lp.marginEnd = if (position == tabLayout.tabCount - 1)
+                    lp.marginEnd = if (position == target.tabCount - 1)
                         resources.getDimension(R.dimen.tab_layout_content_padding).toInt() else 0
                     tab.view.layoutParams = lp
                 } catch (_: IllegalStateException) {
                 }
             }
-        }.attach()
-        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+        }.also { it.attach() }
+
+        val listener = object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(p0: TabLayout.Tab?) {
-                // do nothing
+                if (bottom && !activity.isLibraryInFront && p0 != null) {
+                    // Commit the section change while the pager is still hidden, then pop back.
+                    viewPager2.setCurrentItem(p0.position, false)
+                    activity.returnToLibrary()
+                }
             }
 
             override fun onTabUnselected(p0: TabLayout.Tab?) {
@@ -252,21 +281,43 @@ class ViewPagerFragment : BaseFragment() {
             }
 
             override fun onTabReselected(p0: TabLayout.Tab?) {
-                if (p0 != null)
-                    (childFragmentManager.findFragmentByTag("f${adapter.getItemId(p0.position)}")
-                            as AdapterFragment?)?.onTabReselected()
+                if (p0 == null) return
+                if (bottom && !activity.isLibraryInFront) {
+                    activity.returnToLibrary()
+                } else {
+                    onTabReselected(p0.position)
+                }
             }
-        })
-
-        if (adapter.itemCount < 2) {
-            tabLayout.visibility = View.GONE
-            viewPager2.isUserInputEnabled = false
-        } else {
-            tabLayout.visibility = View.VISIBLE
-            viewPager2.isUserInputEnabled = true
         }
+        tabReselectListener = listener
+        target.addOnTabSelectedListener(listener)
+        updateTabPresentation()
+    }
 
-        return rootView
+    private fun updateTabPresentation() {
+        if (view == null) return
+        val activity = requireActivity() as MainActivity
+        val enoughSections = adapter.itemCount >= 2
+        viewPager2.isUserInputEnabled = enoughSections
+        if (activity.tabsAtBottom) {
+            activity.onLibrarySectionsChanged(adapter.itemCount)
+        } else {
+            topTabLayout.visibility = if (enoughSections) View.VISIBLE else View.GONE
+        }
+    }
+
+    fun onTabReselected(position: Int) {
+        (childFragmentManager.findFragmentByTag("f${adapter.getItemId(position)}")
+                as AdapterFragment?)?.onTabReselected()
+    }
+
+    override fun onDestroyView() {
+        tabLayoutMediator?.detach()
+        tabLayoutMediator = null
+        tabReselectListener?.let { boundTabLayout?.removeOnTabSelectedListener(it) }
+        tabReselectListener = null
+        boundTabLayout = null
+        super.onDestroyView()
     }
 
     fun maybeReportFullyDrawn(itemId: Int) {
@@ -277,9 +328,14 @@ class ViewPagerFragment : BaseFragment() {
     private fun showRefreshDoneSnackBar(playerLayout: PlayerBottomSheet, count: Int) {
         val view = view
         if (view == null) return
+        val activity = requireActivity() as MainActivity
+        // When only the tab bar is docked, host the snackbar in the activity so it can anchor to
+        // the activity-owned bar. Otherwise keep the existing fragment-hosted behaviour.
+        val host = if (!playerLayout.actuallyVisible && activity.isBottomTabBarVisible)
+            activity.findViewById<View>(R.id.rootView) else view
         val snackBar =
             Snackbar.make(
-                view,
+                host,
                 getString(
                     R.string.refreshed_songs,
                     count,
@@ -316,8 +372,9 @@ class ViewPagerFragment : BaseFragment() {
         // Set an anchor for snack bar.
         if (playerLayout.actuallyVisible)
             snackBar.anchorView = playerLayout
+        else if (activity.isBottomTabBarVisible)
+            snackBar.anchorView = activity.bottomTabLayout
         else if (needsManualSnackBarInset()) {
-            val activity = requireActivity() as MainActivity
             // snack bar only implements proper insets handling for Q+
             snackBar.view.updateMargin {
                 val i = ViewCompat.getRootWindowInsets(activity.window.decorView)

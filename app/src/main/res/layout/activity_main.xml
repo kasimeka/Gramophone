@@ -32,4 +32,30 @@
         app:shapeAppearance="@style/BottomPlayerCornerShape"
         tools:behavior_peekHeight="1000dp" />
 
+    <!-- Elevation only orders this above the collapsed sheet; no outline means no shadow. -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/bottom_tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@android:color/transparent"
+        android:elevation="1dp"
+        android:outlineProvider="none"
+        android:visibility="gone"
+        app:tabBackground="@android:color/transparent"
+        app:tabGravity="start"
+        app:tabIndicator="@drawable/selected_chip_background"
+        app:tabIndicatorColor="?colorSecondaryContainer"
+        app:tabIndicatorFullWidth="true"
+        app:tabIndicatorGravity="stretch"
+        app:tabMinWidth="0dp"
+        app:tabMode="scrollable"
+        app:tabPaddingEnd="12dp"
+        app:tabPaddingStart="12dp"
+        app:tabRippleColor="@android:color/transparent"
+        app:tabSelectedTextColor="?colorOnSecondaryContainer"
+        app:tabTextAppearance="@style/TabTextAppearance"
+        app:tabTextColor="?attr/colorOnSurfaceVariant"
+        tools:visibility="visible" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

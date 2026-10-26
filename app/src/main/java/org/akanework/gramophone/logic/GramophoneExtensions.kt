@@ -613,9 +613,10 @@ fun View.enableEdgeToEdgePaddingListener(
                     if (ime) WindowInsetsCompat.Type.ime() else 0
             val i = insets.getInsets(mask)
             val pbsp = (context as? MainActivity)?.playerBottomSheet?.getBottomPadding() ?: 0
+            val tabBarHeight = (context as? MainActivity)?.bottomTabBarDockedHeight ?: 0
             v.setPadding(
                 pl + i.left, pt + (if (top) i.top else 0), pr + i.right,
-                pb + max(i.bottom, pbsp)
+                pb + max(max(i.bottom, tabBarHeight), pbsp)
             )
             extra?.invoke(i)
             return@setOnApplyWindowInsetsListener insets

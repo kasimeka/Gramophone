@@ -54,6 +54,15 @@
             android:summary="@string/tab_order_summary"
             android:title="@string/tab_order"
             app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="tabs_at_bottom"
+            android:layout="@layout/preference_switch"
+            android:summary="@string/tabs_at_bottom_summary"
+            android:title="@string/tabs_at_bottom"
+            android:widgetLayout="@layout/preference_switch_widget"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory

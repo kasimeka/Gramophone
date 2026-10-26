@@ -356,6 +356,10 @@
     <string name="tab_order">Configure tab order</string>
     <!-- Choose order of tabs in appearance settings. Subtext -->
     <string name="tab_order_summary">The app will show the first tab on startup. Tabs after the divider will be hidden.</string>
+    <!-- Settings switch that moves the library section tabs below the mini player. Title -->
+    <string name="tabs_at_bottom">Tabs at bottom</string>
+    <!-- Settings switch that moves the library section tabs below the mini player. Subtext -->
+    <string name="tabs_at_bottom_summary">Show the tab bar below the mini player.</string>
     <!-- Accessibility label for seek bar in settings -->
     <string name="seekbar">Seekbar</string>
     <!-- Accessibility label for divider which is semantically important in tab order dialog -->

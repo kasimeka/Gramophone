@@ -86,6 +86,8 @@ class PlayerBottomSheet private constructor(
     private val lyricsFrame: View by lazy { activity.findViewById(R.id.lyric_framelayout)!! }
     private var lastActuallyVisible: Boolean? = null
     private var lastMeasuredHeight: Int? = null
+    private var lastTabBarHeight: Int? = null
+    private var lastInsets: Insets? = null
 
     /**
      * The current screen's policy for the mini player. Presence is derived from this policy and
@@ -96,7 +98,22 @@ class PlayerBottomSheet private constructor(
             if (field != value) {
                 field = value
                 updatePresence()
+                activity.updateTabBarPresence()
             }
+        }
+
+    /**
+     * The full player occupies the whole dock, so the tab bar must not float on top of it. The
+     * sheet is either a docked mini player (collapsed or hidden) or a playback surface.
+     */
+    val obscuresBottomBar: Boolean
+        get() = when (standardBottomSheetBehavior?.state) {
+            BottomSheetBehavior.STATE_EXPANDED,
+            BottomSheetBehavior.STATE_HALF_EXPANDED,
+            BottomSheetBehavior.STATE_DRAGGING,
+            BottomSheetBehavior.STATE_SETTLING -> true
+
+            else -> false
         }
 
     private val hasActiveQueue: Boolean
@@ -201,6 +218,7 @@ class PlayerBottomSheet private constructor(
                     bottomSheetBackCallback!!.isEnabled = false
                 }
             }
+            activity.updateTabBarPresence()
             dispatchBottomSheetInsets()
         }
 
@@ -312,6 +330,8 @@ class PlayerBottomSheet private constructor(
         super.onDetachedFromWindow()
         lastActuallyVisible = null
         lastMeasuredHeight = null
+        lastTabBarHeight = null
+        lastInsets = null
         fullPlayer.minimize = null
         lifecycleOwner.lifecycle.removeObserver(this)
         standardBottomSheetBehavior?.removeBottomSheetCallback(bottomSheetCallback)
@@ -325,17 +345,44 @@ class PlayerBottomSheet private constructor(
             MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
             MeasureSpec.UNSPECIFIED
         )
-        standardBottomSheetBehavior?.setPeekHeight(previewPlayer.measuredHeight, false)
+        standardBottomSheetBehavior?.setPeekHeight(
+            previewPlayer.measuredHeight + activity.bottomTabBarDockedHeight,
+            false
+        )
     }
 
     fun getBottomPadding() = if (lastActuallyVisible == true) lastMeasuredHeight ?: 0 else 0
 
+    /**
+     * The docked group changed shape (tab bar shown/hidden or measured). Recompute the sheet peek
+     * and re-dispatch insets so every list padding follows the new band.
+     */
+    fun onDockedGroupChanged() {
+        if (!isAttachedToWindow) return
+        // Update the preview padding before measuring so the cached collapsed height is exact.
+        applyPreviewPadding()
+        updatePeekHeight()
+        dispatchBottomSheetInsets()
+    }
+
+    private fun applyPreviewPadding() {
+        val i = lastInsets ?: return
+        previewPlayer.setPadding(
+            i.left, 0, i.right,
+            if (activity.isBottomTabBarVisible) 0 else i.bottom
+        )
+    }
+
     private fun dispatchBottomSheetInsets() {
-        if (lastMeasuredHeight == previewPlayer.measuredHeight &&
-            lastActuallyVisible == actuallyVisible
+        val tabBarHeight = activity.bottomTabBarDockedHeight
+        val collapsedHeight = previewPlayer.measuredHeight + tabBarHeight
+        if (lastMeasuredHeight == collapsedHeight &&
+            lastActuallyVisible == actuallyVisible &&
+            lastTabBarHeight == tabBarHeight
         ) return
         if (BuildConfig.DEBUG) Log.i(TAG, "dispatching bottom sheet insets")
-        lastMeasuredHeight = previewPlayer.measuredHeight
+        lastMeasuredHeight = collapsedHeight
+        lastTabBarHeight = tabBarHeight
         lastActuallyVisible = actuallyVisible
         // This dispatches the last known insets again to force regeneration of
         // FragmentContainerView's insets which will in turn call generateBottomSheetInsets().
@@ -358,7 +405,10 @@ class PlayerBottomSheet private constructor(
         // fullPlayer should extend into system bars AND display cutout. previewPlayer can't use
         // fitsSystemWindows because it doesn't want top padding from status bar.
         // We have to do it manually, duh.
-        previewPlayer.setPadding(myInsets.left, 0, myInsets.right, myInsets.bottom)
+        // When the tab bar is docked below the sheet, it carries the system bar inset instead, so
+        // the preview must not reserve the same inset twice.
+        lastInsets = myInsets
+        applyPreviewPadding()
         // Let fullPlayer handle insets itself (and discard result as it's irrelevant to hierarchy)
         ViewCompat.dispatchApplyWindowInsets(fullPlayer, insets.clone())
         // Same for lyrics view

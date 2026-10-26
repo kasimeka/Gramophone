@@ -21,7 +21,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -30,11 +29,9 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.tabs.TabLayout
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.getStringStrict
 import org.akanework.gramophone.logic.hasImprovedMediaStore
-import org.akanework.gramophone.ui.MainActivity
 import org.akanework.gramophone.ui.fragments.AdapterFragment
 
 /**
@@ -50,6 +47,9 @@ class ViewPager2Adapter(
 
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
     private var tabs = mapSettingToTabList(prefs.getStringStrict("tabs", "")!!)
+
+    /** Called after a tab-order or hidden-tab change has been applied to the pager. */
+    var onTabListChanged: (() -> Unit)? = null
 
     init {
         prefs.registerOnSharedPreferenceChangeListener(this)
@@ -70,15 +70,7 @@ class ViewPager2Adapter(
             val newPosition = tabs.indexOfFirst { it == currentItemId }
             viewPager2.setCurrentItem(newPosition, false)
         }
-
-        val tabLayout = (context as? MainActivity)?.findViewById<TabLayout>(R.id.tab_layout)
-        if (getItemCount() < 2) {
-            tabLayout?.visibility = View.GONE
-            viewPager2.isUserInputEnabled = false
-        } else {
-            tabLayout?.visibility = View.VISIBLE
-            viewPager2.isUserInputEnabled = true
-        }
+        onTabListChanged?.invoke()
     }
 
     fun getLabelResId(position: Int) = tabs[position]!!.label
