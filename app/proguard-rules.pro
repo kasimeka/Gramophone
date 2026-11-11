@@ -45,3 +45,11 @@
     onMoreData(...);
     onCanWriteMoreData(...);
 }
+
+# Prune stale Transition.sRunningAnimators entries left by predictive-back SeekController (androidx.transition:1.6.0)
+-keepclassmembers class androidx.transition.Transition {
+    private static java.lang.ThreadLocal sRunningAnimators;
+}
+-keepclassmembers class androidx.transition.Transition$AnimationInfo {
+    android.view.View mView;
+}

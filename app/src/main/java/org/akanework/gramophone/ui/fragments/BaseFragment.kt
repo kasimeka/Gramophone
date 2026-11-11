@@ -17,12 +17,90 @@
 
 package org.akanework.gramophone.ui.fragments
 
+import android.animation.Animator
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.transition.Transition
+import androidx.transition.TransitionManager
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.transition.MaterialSharedAxis
 import org.akanework.gramophone.ui.MainActivity
+import java.lang.reflect.Field
+
+private val mainHandler = Handler(Looper.getMainLooper())
+
+private val runningAnimatorsField: Field? by lazy(LazyThreadSafetyMode.NONE) {
+    runCatching {
+        Transition::class.java.getDeclaredField("sRunningAnimators").apply {
+            isAccessible = true
+        }
+    }.getOrNull()
+}
+
+private val animationInfoViewField: Field? by lazy(LazyThreadSafetyMode.NONE) {
+    runCatching {
+        Class.forName("androidx.transition.Transition\$AnimationInfo")
+            .getDeclaredField("mView")
+            .apply { isAccessible = true }
+    }.getOrNull()
+}
+
+private val transitionCleanupListener = object : Transition.TransitionListener {
+    override fun onTransitionStart(transition: Transition) {}
+
+    override fun onTransitionEnd(transition: Transition) {
+        mainHandler.post { pruneDetachedTransitionAnimators() }
+    }
+
+    override fun onTransitionCancel(transition: Transition) {
+        mainHandler.post { pruneDetachedTransitionAnimators() }
+    }
+
+    override fun onTransitionPause(transition: Transition) {}
+
+    override fun onTransitionResume(transition: Transition) {}
+}
+
+private fun unwrapActivity(context: Context?): Activity? {
+    var current = context
+    while (current != null) {
+        if (current is Activity) return current
+        val next = (current as? ContextWrapper)?.baseContext ?: return null
+        if (next === current) return null
+        current = next
+    }
+    return null
+}
+
+internal fun pruneDetachedTransitionAnimators(destroyedActivity: Activity? = null) {
+    if (Looper.myLooper() != Looper.getMainLooper()) return
+    val threadLocal = runCatching { runningAnimatorsField?.get(null) as? ThreadLocal<*> }.getOrNull() ?: return
+    val runningAnimators = threadLocal.get() as? MutableMap<*, *> ?: return
+    if (runningAnimators.isEmpty()) return
+    val viewField = animationInfoViewField ?: return
+
+    val keysToRemove = ArrayList<Any?>()
+    for ((animator, info) in runningAnimators) {
+        val view = if (info != null) runCatching { viewField.get(info) as? View }.getOrNull() else null
+        val stillShown = view != null &&
+            view.isAttachedToWindow &&
+            (destroyedActivity == null || unwrapActivity(view.context) !== destroyedActivity)
+        if (!stillShown) {
+            keysToRemove.add(animator)
+        }
+    }
+    for (key in keysToRemove) {
+        (key as? Animator)?.cancel()
+        runningAnimators.remove(key)
+    }
+}
 
 /**
  * BaseFragment:
@@ -44,9 +122,13 @@ abstract class BaseFragment(val wantsPlayer: Boolean? = null) : Fragment() {
         super.onCreate(savedInstanceState)
         // Enable material transitions.
         enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, /* forward= */ true)
+            .addListener(transitionCleanupListener)
         returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, /* forward= */ false)
+            .addListener(transitionCleanupListener)
         exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, /* forward= */ true)
+            .addListener(transitionCleanupListener)
         reenterTransition = MaterialSharedAxis(MaterialSharedAxis.X, /* forward= */ false)
+            .addListener(transitionCleanupListener)
     }
 
     // https://github.com/material-components/material-components-android/issues/1984#issuecomment-1089710991
@@ -54,6 +136,29 @@ abstract class BaseFragment(val wantsPlayer: Boolean? = null) : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         // Overlap colors.
         view.setBackgroundColor(MaterialColors.getColor(view, android.R.attr.colorBackground))
+    }
+
+    override fun onDestroyView() {
+        // End running transitions here, but only drop the transition objects in onDestroy: they
+        // belong to the fragment instance, which survives its views.
+        val root = view
+        val parent = root?.parent as? ViewGroup
+        parent?.let { TransitionManager.endTransitions(it) }
+        (root as? ViewGroup)?.let { if (it !== parent) TransitionManager.endTransitions(it) }
+        super.onDestroyView()
+        mainHandler.post { pruneDetachedTransitionAnimators() }
+    }
+
+    override fun onDestroy() {
+        (enterTransition as? Transition)?.removeListener(transitionCleanupListener)
+        (returnTransition as? Transition)?.removeListener(transitionCleanupListener)
+        (exitTransition as? Transition)?.removeListener(transitionCleanupListener)
+        (reenterTransition as? Transition)?.removeListener(transitionCleanupListener)
+        enterTransition = null
+        returnTransition = null
+        exitTransition = null
+        reenterTransition = null
+        super.onDestroy()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {

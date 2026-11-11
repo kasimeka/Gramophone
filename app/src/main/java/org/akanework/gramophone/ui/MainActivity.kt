@@ -64,8 +64,10 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.Log
 import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.transition.TransitionManager
 import coil3.imageLoader
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -98,6 +100,7 @@ import org.akanework.gramophone.ui.fragments.BaseFragment
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment
 import org.akanework.gramophone.ui.fragments.SearchFragment
 import org.akanework.gramophone.ui.fragments.ViewPagerFragment
+import org.akanework.gramophone.ui.fragments.pruneDetachedTransitionAnimators
 import org.nift4.mediastorecompat.MediaStoreCompat
 import uk.akane.libphonograph.dynamicitem.Favorite
 import uk.akane.libphonograph.manipulator.ItemManipulator
@@ -826,6 +829,7 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        findViewById<ViewGroup>(R.id.container)?.let { TransitionManager.endTransitions(it) }
         // https://github.com/androidx/media/issues/805
         if (needsMissingOnDestroyCallWorkarounds()
             && (getPlayer()?.playWhenReady != true || getPlayer()?.mediaItemCount == 0)
@@ -834,6 +838,9 @@ class MainActivity : BaseActivity() {
             nm.cancel(DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID)
         }
         super.onDestroy()
+        pruneDetachedTransitionAnimators(this)
+        val activityRef = WeakReference(this)
+        handler.post { pruneDetachedTransitionAnimators(activityRef.get()) }
         // we don't ever want covers to be the cause of service being killed by too high mem usage
         // (this is placed after super.onDestroy() to make sure all ImageViews are dead)
         imageLoader.memoryCache?.clear()

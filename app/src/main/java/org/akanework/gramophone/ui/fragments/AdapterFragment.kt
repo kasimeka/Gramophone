@@ -90,7 +90,13 @@ class AdapterFragment : BaseFragment(null) {
     }
 
     override fun onDestroyView() {
-        adapter.onFullyDrawnListener = null
+        // Detach adapter and listeners so the destroyed view hierarchy is not kept reachable.
+        if (::adapter.isInitialized) {
+            adapter.onFullyDrawnListener = null
+        }
+        if (::recyclerView.isInitialized) {
+            recyclerView.adapter = null
+        }
         super.onDestroyView()
     }
 

@@ -332,6 +332,9 @@ class LibraryTreeLoader(
     fun addMediaItems(
         mediaItems: List<MediaItem>
     ): ListenableFuture<ExpandedMediaItems> = scope.future(Dispatchers.Default) {
+        if (mediaItems.isEmpty()) {
+            return@future ExpandedMediaItems(emptyList())
+        }
         var startingIndex: Int? = null
         val resultList = mutableListOf<MediaItem>()
         var title: String? = null

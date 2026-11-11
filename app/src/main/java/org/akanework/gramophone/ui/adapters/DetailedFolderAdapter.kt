@@ -252,8 +252,9 @@ class DetailedFolderAdapter(
 
     override fun onDetachedFromRecyclerView(recyclerView: MyRecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
-        scope!!.cancel()
+        scope?.cancel()
         scope = null
+        this.recyclerView = null
     }
 
     fun onSaveInstanceState(outState: Bundle) {
