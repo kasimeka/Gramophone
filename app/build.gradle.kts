@@ -255,6 +255,15 @@ android {
         includeInBundle = false
     }
     testOptions.unitTests.isIncludeAndroidResources = true
+    // JDK 25 module encapsulation hides jdk.internal.access and seals java.io for unnamed-module
+    // test code; these opens/exports are required for the current unit-test stack. Remove when the
+    // test dependencies no longer need them.
+    testOptions.unitTests.all {
+        it.jvmArgs(
+            "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+        )
+    }
 }
 
 resourcePlaceholders {

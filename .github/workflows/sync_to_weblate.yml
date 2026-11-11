@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout weblate branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: weblate
           fetch-depth: 0
