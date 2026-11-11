@@ -270,9 +270,7 @@
     <!-- Toggle in lyrics settings to make all lyrics display in center instead of left. Subtitle -->
     <string name="settings_lyrics_center_summary">Use center alignment for lyrics</string>
     <!-- Toggle in behavior settings to make app start playing music when opening it. Title -->
-    <string name="settings_play_on_launch">Play on launch</string>
     <!-- Toggle in behavior settings to make app start playing music when opening it. Subtitle -->
-    <string name="settings_play_on_launch_summary">Play music on launch</string>
     <!-- Window title of submenu in behavior settings to exclude songs that are in specific folders -->
     <string name="settings_blacklist">Blacklist</string>
     <!-- Toggle in behavior settings to exclude songs that are in specific folders. Subtext -->

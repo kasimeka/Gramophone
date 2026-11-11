@@ -47,7 +47,7 @@ import org.akanework.gramophone.ui.adapters.Sorter
  *
  * @author AkaneTan
  */
-class SearchFragment : BaseFragment(true) {
+class SearchFragment : BaseFragment() {
     // TODO this class leaks InsetSourceControl
     private lateinit var editText: EditText
     private lateinit var qTitle: Flow<String>

@@ -53,7 +53,7 @@ import uk.akane.libphonograph.items.Playlist
  * @see BaseFragment
  * @author AkaneTan, nift4
  */
-class GeneralSubFragment : BaseFragment(true) {
+class GeneralSubFragment : BaseFragment() {
     companion object {
         private const val TAG = "GeneralSubFragment"
     }

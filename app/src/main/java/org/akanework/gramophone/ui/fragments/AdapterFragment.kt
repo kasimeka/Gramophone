@@ -53,7 +53,7 @@ import org.akanework.gramophone.ui.adapters.Sorter
  *
  * @author nift4
  */
-class AdapterFragment : BaseFragment(null) {
+class AdapterFragment : BaseFragment() {
     companion object {
         private const val TAG = "AdapterFragment"
     }

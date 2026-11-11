@@ -123,8 +123,6 @@
     <string name="settings_library">Bibliothèque</string>
     <string name="settings_lyrics_bold_summary">Utiliser une police plus grosse pour les paroles</string>
     <string name="settings_customization">Personnalisation</string>
-    <string name="settings_play_on_launch_summary">Lancer la musique au démarrage</string>
-    <string name="settings_play_on_launch">Lire au démarrage</string>
     <string name="settings_blacklist">Liste d\'exclusion</string>
     <string name="settings_blacklist_folder">Exclure des dossiers</string>
     <string name="settings_blacklist_folder_summary">Filtre les morceaux de certains dossiers</string>

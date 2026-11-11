@@ -36,7 +36,6 @@
         <item quantity="many">%d غرضاً</item>
         <item quantity="other">%d غرضاً</item>
     </plurals>
-    <string name="settings_play_on_launch_summary">تشغيل الأغنية مع تشغيل القائمة</string>
     <string name="category_genres">الأنواع</string>
     <string name="settings_about_app">حول</string>
     <string name="natural_order">التَّرتيب الطَّبيعيّ</string>
@@ -58,7 +57,6 @@
         <item quantity="many">%d فنّاناً</item>
         <item quantity="other">%d فنّاناً</item>
     </plurals>
-    <string name="settings_play_on_launch">شغِّل مع تشغيل البرنامج</string>
     <plurals name="albums">
         <item quantity="zero">لا ألبومات</item>
         <item quantity="one">ألبوم واحد (%d)</item>

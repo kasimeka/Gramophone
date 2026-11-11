@@ -118,8 +118,6 @@
     <string name="dialog_path">Elérési útvonal</string>
     <string name="repeat_mode">Ismétlés mód</string>
     <string name="settings_player_ui">Lejátszó UI</string>
-    <string name="settings_play_on_launch_summary">Zene elindítása megnyitáskor</string>
-    <string name="settings_play_on_launch">Lejátszás indításkor</string>
     <string name="deny_images"><![CDATA[Ne adjon \"Fotó és videó\" engedélyt]]></string>
     <string name="grant_images"><![CDATA[Adjon \"Fotó és videó\" engedélyt]]></string>
     <string name="home_menu_refresh">Frissítés</string>

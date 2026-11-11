@@ -46,7 +46,7 @@ import org.akanework.gramophone.ui.adapters.SongAdapter
  * @see BaseFragment
  * @see GeneralSubFragment
  */
-class ArtistSubFragment : BaseFragment(true), PopupTextProvider {
+class ArtistSubFragment : BaseFragment(), PopupTextProvider {
     companion object {
         private const val TAG = "ArtistSubFragment"
     }

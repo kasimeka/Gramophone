@@ -34,7 +34,6 @@
         <item quantity="many">%d elementów</item>
         <item quantity="other">%d elementów</item>
     </plurals>
-    <string name="settings_play_on_launch_summary">Odtwarzaj muzykę po uruchomieniu odtwarzacza</string>
     <string name="category_genres">Gatunki</string>
     <string name="settings_about_app">O Gramophone</string>
     <string name="natural_order">Domyślny</string>
@@ -54,7 +53,6 @@
         <item quantity="many">%d wykonawców</item>
         <item quantity="other">%d wykonawców</item>
     </plurals>
-    <string name="settings_play_on_launch">Odtwarzanie przy uruchomieniu</string>
     <plurals name="albums">
         <item quantity="one">%d album</item>
         <item quantity="few">%d albumy</item>

@@ -67,7 +67,7 @@ import org.nift4.mediastorecompat.MediaStoreCompat
  *
  * @author AkaneTan
  */
-class ViewPagerFragment : BaseFragment(true) {
+class ViewPagerFragment : BaseFragment() {
     lateinit var appBarLayout: AppBarLayout
         private set
     val recycledViewPool = RecyclerView.RecycledViewPool()
@@ -314,7 +314,7 @@ class ViewPagerFragment : BaseFragment(true) {
         )
 
         // Set an anchor for snack bar.
-        if (playerLayout.visible && playerLayout.actuallyVisible)
+        if (playerLayout.actuallyVisible)
             snackBar.anchorView = playerLayout
         else if (needsManualSnackBarInset()) {
             val activity = requireActivity() as MainActivity

@@ -3,7 +3,6 @@
     <string name="settings_category_links">Tautan</string>
     <string name="compact_list">Daftar (ringkas)</string>
     <string name="settings_customization_summary">Kelola opsi kustomisasi</string>
-    <string name="settings_play_on_launch_summary">Putar musik saat diluncurkan</string>
     <string name="refreshed_songs">Disegarkan %1$d lagu</string>
     <string name="home_menu_settings">Pengaturan</string>
     <string name="unknown_playlist">Daftar putar tidak diketahui</string>
@@ -104,7 +103,6 @@
     <string name="settings_lyrics_center_summary">Gunakan perataan tengah untuk lirik</string>
     <string name="settings_lyrics_bold_summary">Gunakan ketebalan font yang lebih besar untuk lirik</string>
     <string name="sort_by_modified_date">Tanggal diubah</string>
-    <string name="settings_play_on_launch">Putar saat diluncurkan</string>
     <string name="settings_blacklist">Daftar hitam</string>
     <string name="settings_blacklist_folder">Folder daftar hitam</string>
     <string name="settings_blacklist_folder_summary">Saring lagu dari folder tertentu</string>

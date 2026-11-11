@@ -115,11 +115,9 @@
     <string name="settings_library_summary">Administrar la biblioteca multimedia</string>
     <string name="sort_by_modified_date">Fecha de modificación</string>
     <string name="settings_customization_summary">Gestionar las opciones de personalización</string>
-    <string name="settings_play_on_launch_summary">Reproducir la música al iniciar</string>
     <string name="settings_player_ui_summary">Interfaz del reproductor completo y letras</string>
     <string name="settings_lyrics_center_summary">Centrar las letras de las canciones</string>
     <string name="settings_title_bold_summary">Poner en negrita el título en el reproductor completo</string>
-    <string name="settings_play_on_launch">Reproducir al iniciar</string>
     <string name="settings_lyric">Letra</string>
     <string name="settings_category_links">Enlaces</string>
     <string name="settings_color_accuracy_summary">Generar colores precisos</string>

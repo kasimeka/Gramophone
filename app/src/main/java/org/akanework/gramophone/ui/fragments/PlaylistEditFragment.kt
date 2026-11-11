@@ -59,6 +59,7 @@ import kotlinx.coroutines.withContext
 import okio.IOException
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
+import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
 import org.akanework.gramophone.logic.ui.MyRecyclerView
 import org.akanework.gramophone.ui.components.EditSongAdapter
 import org.nift4.mediastorecompat.MediaStoreCompat
@@ -70,7 +71,7 @@ import uk.akane.libphonograph.reader.Reader
 import uk.akane.libphonograph.toUriCompat
 import java.nio.file.Files
 
-class PlaylistEditFragment : BaseFragment(false) {
+class PlaylistEditFragment : BaseFragment(MiniPlayerScreenPolicy.DENIED) {
     companion object {
         private const val TAG = "PlaylistEditFragment"
         private const val FOLDER_NAME = "Restored playlists"

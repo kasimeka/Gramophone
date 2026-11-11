@@ -40,19 +40,18 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.common.util.Log
 import androidx.media3.session.MediaController
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCallback
 import com.google.android.material.motion.MaterialBottomContainerBackHelper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.clone
 import org.akanework.gramophone.logic.fadOutAnimation
+import org.akanework.gramophone.logic.ui.MiniPlayerPresence
+import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
 import org.akanework.gramophone.logic.ui.MyBottomSheetBehavior
 import org.akanework.gramophone.ui.MainActivity
 
@@ -87,26 +86,39 @@ class PlayerBottomSheet private constructor(
     private val lyricsFrame: View by lazy { activity.findViewById(R.id.lyric_framelayout)!! }
     private var lastActuallyVisible: Boolean? = null
     private var lastMeasuredHeight: Int? = null
-    var visible = false
+    private var lastPreviewHeight = 0
+
+    /**
+     * The current screen's policy for the mini player. Presence is derived from this policy and
+     * the active queue, never from whatever sheet state was left behind.
+     */
+    var screenPolicy: MiniPlayerScreenPolicy = MiniPlayerScreenPolicy.ALLOWED
         set(value) {
             if (field != value) {
                 field = value
-                // TODO: this should be animated with predictive back once we switch to a better
-                //  back stack.
-                standardBottomSheetBehavior?.state =
-                    if ((instance?.mediaItemCount ?: 0) > 0 && value) {
-                        if (standardBottomSheetBehavior?.state
-                            != BottomSheetBehavior.STATE_EXPANDED
-                        )
-                            BottomSheetBehavior.STATE_COLLAPSED
-                        else BottomSheetBehavior.STATE_EXPANDED
-                    } else {
-                        BottomSheetBehavior.STATE_HIDDEN
-                    }
+                updatePresence()
             }
         }
+
+    private val hasActiveQueue: Boolean
+        get() = (instance?.mediaItemCount ?: 0) > 0
+
+    /**
+     * Recompute whether the mini player should be present. The sheet is only ever shown as
+     * collapsed here; an expanded or user-dragged sheet is left alone.
+     */
+    private fun updatePresence() {
+        val behavior = standardBottomSheetBehavior ?: return
+        val show = MiniPlayerPresence.shouldShow(hasActiveQueue, screenPolicy)
+        // Presence is visibility, not a sheet state: a hidden state animates back in on appear.
+        if (!show && behavior.state == BottomSheetBehavior.STATE_EXPANDED) {
+            behavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
+        visibility = if (show) VISIBLE else GONE
+    }
+
     val actuallyVisible: Boolean
-        get() = standardBottomSheetBehavior?.state != BottomSheetBehavior.STATE_HIDDEN
+        get() = visibility == VISIBLE
     val visibleAndExpanded: Boolean
         get() = standardBottomSheetBehavior?.state == BottomSheetBehavior.STATE_EXPANDED
 
@@ -114,6 +126,13 @@ class PlayerBottomSheet private constructor(
         inflate(context, R.layout.bottom_sheet, this)
         previewPlayer = findViewById(R.id.preview_player)!!
         fullPlayer = findViewById(R.id.full_player)!!
+        // The text in the mini player can change its height after the sheet was measured.
+        previewPlayer.addOnLayoutChangeListener { _, _, top, _, bottom, _, _, _, _ ->
+            if (bottom - top != lastPreviewHeight) {
+                lastPreviewHeight = bottom - top
+                updatePeekHeight()
+            }
+        }
 
         setOnClickListener { open() }
 
@@ -122,6 +141,8 @@ class PlayerBottomSheet private constructor(
                 instance?.currentMediaItem,
                 Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
             )
+            // The controller can arrive before the sheet is attached; check presence once it has.
+            post { updatePresence() }
         }
     }
 
@@ -286,6 +307,11 @@ class PlayerBottomSheet private constructor(
             standardBottomSheetBehavior!!.addBottomSheetCallback(bottomSheetCallback)
             // this is required after onRestoreSavedInstanceState() in BottomSheetBehaviour
             bottomSheetCallback.onStateChanged(this, standardBottomSheetBehavior!!.state)
+            // Close the cold-launch ordering gap: the screen may have reported its policy before
+            // the behaviour existed, and the resume state may have arrived before we attached.
+            updatePresence()
+            // Layout can still reset the sheet state after attach, so presence is checked again after it.
+            post { updatePresence() }
             lifecycleOwner.lifecycle.addObserver(this)
             updatePeekHeight()
             dispatchBottomSheetInsets()
@@ -305,11 +331,25 @@ class PlayerBottomSheet private constructor(
     }
 
     private fun updatePeekHeight() {
+        val w = width
+        if (w <= 0) return
         previewPlayer.measure(
-            MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
             MeasureSpec.UNSPECIFIED
         )
-        standardBottomSheetBehavior?.setPeekHeight(previewPlayer.measuredHeight, false)
+        val h = if (previewPlayer.height > 0) previewPlayer.height else previewPlayer.measuredHeight
+        if (h > 0) {
+            standardBottomSheetBehavior?.setPeekHeight(h, false)
+        }
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w > 0 && h > 0 && (w != oldw || h != oldh)) {
+            updatePeekHeight()
+            dispatchBottomSheetInsets()
+            updatePresence()
+        }
     }
 
     fun getBottomPadding() = if (lastActuallyVisible == true) lastMeasuredHeight ?: 0 else 0
@@ -377,28 +417,11 @@ class PlayerBottomSheet private constructor(
         mediaItem: MediaItem?,
         reason: Int,
     ) {
-        val shouldBeHidden = (instance?.mediaItemCount ?: 0) <= 0 || !visible
-        CoroutineScope(Dispatchers.Main).launch {
-            while (standardBottomSheetBehavior?.state == BottomSheetBehavior.STATE_SETTLING) {
-                delay(100)
-            }
-            doOnLayout {
-                val state = standardBottomSheetBehavior?.state
-                val newState = if (!shouldBeHidden) {
-                    if (state != BottomSheetBehavior.STATE_EXPANDED
-                        && state != BottomSheetBehavior.STATE_COLLAPSED) {
-                        BottomSheetBehavior.STATE_COLLAPSED
-                    } else null
-                } else {
-                    BottomSheetBehavior.STATE_HIDDEN
-                }
-                // if we are destroyed after onMediaItemTransition but before this runs,
-                // standardBottomSheetBehavior will be null
-                if (newState != null) {
-                    standardBottomSheetBehavior?.state = newState
-                }
-            }
-        }
+        updatePresence()
+    }
+
+    override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+        updatePresence()
     }
 
     override fun onStop(owner: LifecycleOwner) {

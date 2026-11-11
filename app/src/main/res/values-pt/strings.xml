@@ -29,8 +29,6 @@
     <string name="settings_lyrics_configuration_summary">Configurar a aparência das letras</string>
     <string name="settings_lyrics_bold">Letras em negrito</string>
     <string name="settings_lyrics_center_summary">Fazer com que as letras sejam exibidas no centro</string>
-    <string name="settings_play_on_launch">Reproduzir ao iniciar</string>
-    <string name="settings_play_on_launch_summary">Reproduzir música ao iniciar (se houver alguma na playlist)</string>
     <string name="home_menu_search">Pesquisar</string>
     <string name="home_menu_settings">Configurações</string>
     <string name="home_menu_refresh">Atualizar</string>

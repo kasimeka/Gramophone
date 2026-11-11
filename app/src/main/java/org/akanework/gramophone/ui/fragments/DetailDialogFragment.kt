@@ -42,10 +42,11 @@ import org.akanework.gramophone.logic.getFile
 import org.akanework.gramophone.logic.hasImprovedMediaStore
 import org.akanework.gramophone.logic.toLocaleString
 import org.akanework.gramophone.logic.toMediaStoreId
+import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
 import org.akanework.gramophone.logic.ui.placeholderScaleToFit
 import org.akanework.gramophone.logic.utils.CalculationUtils.convertDurationToTimeStamp
 
-class DetailDialogFragment : BaseFragment(false) {
+class DetailDialogFragment : BaseFragment(MiniPlayerScreenPolicy.DENIED) {
 
     override fun onCreateView(
         inflater: LayoutInflater,

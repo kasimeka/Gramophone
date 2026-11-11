@@ -103,8 +103,6 @@
     <string name="settings_player_options_summary">Ausgabequalität, Wiedergabeverhalten</string>
     <string name="unknown_title">Unbekannter Titel</string>
     <string name="settings_lyrics_center">Zentriert</string>
-    <string name="settings_play_on_launch_summary">Beim Start Musik wiedergeben</string>
-    <string name="settings_play_on_launch">Beim Start wiedergeben</string>
     <string name="settings_experimental_settings_summary">Testfunktionen, Sonstiges</string>
     <string name="settings_lyrics_bold_summary">Für Liedtexte eine höhere Schriftstärke verwenden</string>
     <string name="settings_category_basic_info">Basisinformation</string>

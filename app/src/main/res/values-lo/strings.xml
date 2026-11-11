@@ -125,8 +125,6 @@
     <string name="settings_lyrics_bold_summary">ໃຊ້ຟອນໂຕໜາສຳລັບເນື້ອເພງ</string>
     <string name="settings_lyrics_center">ຈັດວາງເຄິ່ງກາງ</string>
     <string name="settings_lyrics_center_summary">ໃຊ້ການຈັດວາງເຄິ່ງກາງສຳລັບເນື້ອເພງ</string>
-    <string name="settings_play_on_launch">ຫຼິ້ນເມື່ອເປີດແອັບ</string>
-    <string name="settings_play_on_launch_summary">ຫຼິ້ນເພງເມື່ອເປີດແອັບ</string>
     <string name="settings_blacklist">ບັນຊີດຳ</string>
     <string name="settings_blacklist_folder_summary">ກັ່ນຕອງເພງຈາກບາງໂຟນເດີ</string>
     <string name="settings_blacklist_folder">ບັນຊີດຳໂຟນເດີ</string>

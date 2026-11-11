@@ -133,8 +133,6 @@
     <string name="settings_lyrics_bold_summary">Koristi deblji font za tekstove pjesama</string>
     <string name="settings_lyrics_center">Centrirano poravnanje</string>
     <string name="settings_lyrics_center_summary">Koristi centrirano poravnanje za tekstove pjesama</string>
-    <string name="settings_play_on_launch">Reproduciraj nakon pokretanja aplikacije</string>
-    <string name="settings_play_on_launch_summary">Reproduciraj glazbu nakon pokretanja aplikacije</string>
     <string name="settings_blacklist">Crna lista</string>
     <string name="settings_blacklist_folder_summary">Filtriraj pjesme iz određenih mapa</string>
     <string name="settings_blacklist_folder">Mape Crnih lista</string>

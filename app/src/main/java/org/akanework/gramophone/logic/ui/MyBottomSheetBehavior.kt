@@ -38,6 +38,9 @@ class MyBottomSheetBehavior<T : View>(context: Context, attrs: AttributeSet) :
         state = STATE_HIDDEN
         maxWidth = ViewGroup.LayoutParams.MATCH_PARENT
         isGestureInsetBottomIgnored = true
+        // The mini player is a pinned surface: list scrolling and flings must not move the sheet.
+        // Direct dragging on the sheet itself stays available.
+        setDraggableOnNestedScroll(false)
     }
 
     @SuppressLint("RestrictedApi")

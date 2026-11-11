@@ -123,8 +123,6 @@
     <string name="settings_blacklist_folder_summary">Lọc bài hát trong một số thư mục</string>
     <string name="settings_category_full_player">Trình phát đầy đủ</string>
     <string name="settings_category_misc">Khác</string>
-    <string name="settings_play_on_launch_summary">Tự động phát khi mở ứng dụng</string>
-    <string name="settings_play_on_launch">Phát khi mở ứng dụng</string>
     <string name="album_cover">Ảnh album</string>
     <string name="delete_failed">Lỗi xóa bài: %s</string>
     <string name="dialog_edit_metadata">Chỉnh sửa</string>
