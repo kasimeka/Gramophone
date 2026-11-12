@@ -34,6 +34,21 @@
 
     </com.google.android.material.card.MaterialCardView>
 
+    <ImageView
+        android:id="@+id/now_playing"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_marginStart="8dp"
+        android:contentDescription="@string/now_playing"
+        android:importantForAccessibility="no"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/coverCardView"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?attr/colorPrimary"
+        tools:src="@drawable/outline_volume_up_24"
+        tools:visibility="visible" />
+
     <TextView
         android:id="@+id/title"
         android:layout_width="0dp"
@@ -45,7 +60,7 @@
         android:textSize="17sp"
         app:layout_constrainedHeight="true"
         app:layout_constraintBottom_toTopOf="@id/artist"
-        app:layout_constraintEnd_toStartOf="@id/now_playing"
+        app:layout_constraintEnd_toStartOf="@id/more"
         app:layout_constraintStart_toEndOf="@id/coverCardView"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed"
@@ -63,24 +78,11 @@
         android:textSize="15sp"
         app:layout_constrainedHeight="true"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/now_playing"
+        app:layout_constraintEnd_toStartOf="@id/more"
         app:layout_constraintStart_toEndOf="@id/coverCardView"
         app:layout_constraintTop_toBottomOf="@id/title"
         app:textFontWeight="400"
         tools:text="Example Artist" />
-
-    <ImageView
-        android:id="@+id/now_playing"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="end|center_vertical"
-        android:contentDescription="@string/now_playing"
-        android:padding="12dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/more"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="?attr/colorOnSurface" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/more"

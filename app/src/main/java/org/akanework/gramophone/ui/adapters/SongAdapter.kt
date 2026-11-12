@@ -45,8 +45,11 @@ import org.akanework.gramophone.logic.requireMediaStoreId
 import org.akanework.gramophone.logic.setMediaItemsSeamlessly
 import org.akanework.gramophone.logic.ui.MyRecyclerView
 import org.akanework.gramophone.ui.MediaControllerViewModel
+import org.akanework.gramophone.ui.NowPlayingPresentation
+import org.akanework.gramophone.ui.NowPlayingState
+import org.akanework.gramophone.ui.NowPlayingViewBinder
 import org.akanework.gramophone.ui.SongPickerActivity
-import org.akanework.gramophone.ui.components.NowPlayingDrawable
+import org.akanework.gramophone.ui.components.AddToQueueSheet
 import org.akanework.gramophone.ui.fragments.ArtistSubFragment
 import org.akanework.gramophone.ui.fragments.DetailDialogFragment
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment
@@ -148,23 +151,27 @@ class SongAdapter(
                     }
 
                     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                        currentIsPlaying =
-                            playWhenReady &&
-                                    mediaControllerViewModel.get()!!.playbackState != Player.STATE_ENDED
-                                    && mediaControllerViewModel.get()!!.playbackState != Player.STATE_IDLE
+                        val controller = mediaControllerViewModel.get()!!
+                        currentIsPlaying = NowPlayingPresentation.isEffectivelyPlaying(
+                            playWhenReady,
+                            controller.playbackState,
+                        )
                     }
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
-                        currentIsPlaying =
-                            mediaControllerViewModel.get()!!.playWhenReady
-                                    && playbackState != Player.STATE_ENDED &&
-                                    mediaControllerViewModel.get()!!.playbackState != Player.STATE_IDLE
+                        val controller = mediaControllerViewModel.get()!!
+                        currentIsPlaying = NowPlayingPresentation.isEffectivelyPlaying(
+                            controller.playWhenReady,
+                            playbackState,
+                        )
                     }
                 }
             ) {
                 currentMediaItem = it.currentMediaItem?.mediaId
-                currentIsPlaying =
-                    it.playWhenReady && it.playbackState != Player.STATE_ENDED && it.playbackState != Player.STATE_IDLE
+                currentIsPlaying = NowPlayingPresentation.isEffectivelyPlaying(
+                    it.playWhenReady,
+                    it.playbackState,
+                )
             }
         }
     }
@@ -342,28 +349,15 @@ class SongAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.isNotEmpty()) {
-            if (payloads.none { it is Boolean && it }) {
-                holder.nowPlaying.drawable?.level = if (currentIsPlaying == true) 1 else 0
-                return
-            }
-            if (currentMediaItem == null || getSongList()[position].mediaId != currentMediaItem) {
-                (holder.nowPlaying.drawable as? NowPlayingDrawable?)?.level2Done = Runnable {
-                    holder.nowPlaying.visibility = View.GONE
-                    holder.nowPlaying.setImageDrawable(null)
-                }
-                holder.nowPlaying.drawable?.level = 2
-                return
-            }
-        } else {
+        if (payloads.isEmpty()) {
             super.onBindViewHolder(holder, position, payloads)
-            if (currentMediaItem == null || getSongList()[position].mediaId != currentMediaItem)
-                return
         }
-        holder.nowPlaying.setImageDrawable(
-            NowPlayingDrawable(context)
-                .also { it.level = if (currentIsPlaying == true) 1 else 0 })
-        holder.nowPlaying.visibility = View.VISIBLE
+        val isCurrent = currentMediaItem != null &&
+            getSongList().getOrNull(position)?.mediaId == currentMediaItem
+        NowPlayingViewBinder.apply(
+            holder,
+            NowPlayingState(isCurrent = isCurrent, isPlaying = currentIsPlaying == true),
+        )
     }
 
     object MediaItemHelper : Sorter.Helper<MediaItem>(

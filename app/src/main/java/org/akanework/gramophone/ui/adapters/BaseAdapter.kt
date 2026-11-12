@@ -69,6 +69,8 @@ import org.akanework.gramophone.logic.ui.placeholderScaleToFit
 import org.akanework.gramophone.logic.utils.flows.PauseManagingSharedFlow.Companion.sharePauseableIn
 import org.akanework.gramophone.logic.utils.flows.repeatPausingWithLifecycle
 import org.akanework.gramophone.ui.MainActivity
+import org.akanework.gramophone.ui.NowPlayingState
+import org.akanework.gramophone.ui.NowPlayingViewBinder
 import org.akanework.gramophone.ui.components.CustomGridLayoutManager
 import org.akanework.gramophone.ui.components.NowPlayingDrawable
 import org.akanework.gramophone.ui.fragments.AdapterFragment
@@ -429,9 +431,7 @@ abstract class BaseAdapter<T : Any>(
         holder.itemView.setOnClickListener(null)
         holder.itemView.setOnLongClickListener(null)
         holder.moreButton?.setOnClickListener(null)
-        (holder.nowPlaying.drawable as? NowPlayingDrawable?)?.level2Done = null
-        holder.nowPlaying.setImageDrawable(null)
-        holder.nowPlaying.visibility = View.GONE
+        NowPlayingViewBinder.apply(holder, NowPlayingState(isCurrent = false, isPlaying = false))
         holder.songCover.dispose()
         super.onViewRecycled(holder)
     }
