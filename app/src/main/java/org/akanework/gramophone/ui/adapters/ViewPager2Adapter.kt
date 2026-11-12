@@ -21,7 +21,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -30,12 +29,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.tabs.TabLayout
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.getStringStrict
 import org.akanework.gramophone.logic.hasImprovedMediaStore
-import org.akanework.gramophone.ui.MainActivity
 import org.akanework.gramophone.ui.fragments.AdapterFragment
+import org.akanework.gramophone.ui.fragments.QueuesFragment
 
 /**
  * This is the ViewPager2 adapter.
@@ -50,6 +48,9 @@ class ViewPager2Adapter(
 
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
     private var tabs = mapSettingToTabList(prefs.getStringStrict("tabs", "")!!)
+
+    /** Called after a tab-order or hidden-tab change has been applied to the pager. */
+    var onTabListChanged: (() -> Unit)? = null
 
     init {
         prefs.registerOnSharedPreferenceChangeListener(this)
@@ -70,15 +71,7 @@ class ViewPager2Adapter(
             val newPosition = tabs.indexOfFirst { it == currentItemId }
             viewPager2.setCurrentItem(newPosition, false)
         }
-
-        val tabLayout = (context as? MainActivity)?.findViewById<TabLayout>(R.id.tab_layout)
-        if (getItemCount() < 2) {
-            tabLayout?.visibility = View.GONE
-            viewPager2.isUserInputEnabled = false
-        } else {
-            tabLayout?.visibility = View.VISIBLE
-            viewPager2.isUserInputEnabled = true
-        }
+        onTabListChanged?.invoke()
     }
 
     fun getLabelResId(position: Int) = tabs[position]!!.label
@@ -87,9 +80,15 @@ class ViewPager2Adapter(
         .also { if (it == -1) throw IllegalStateException("indexOf null is -1 in tab list?") }
 
     override fun createFragment(position: Int): Fragment =
-        AdapterFragment().apply {
-            arguments = Bundle().apply {
-                putInt("ID", tabs[position]!!.id)
+        tabs[position]!!.let { tab ->
+            if (tab == Tab.Playlist) {
+                QueuesFragment()
+            } else {
+                AdapterFragment().apply {
+                    arguments = Bundle().apply {
+                        putInt("ID", tab.id)
+                    }
+                }
             }
         }
 
@@ -104,14 +103,14 @@ class ViewPager2Adapter(
     companion object {
         enum class Tab(val id: Int, val label: Int) {
             // Do not rename entries here, names are written to disk. Order is default tab order
+            Playlist(R.id.playlists, R.string.category_queues),
             Songs(R.id.songs, R.string.category_songs),
             Albums(R.id.albums, R.string.category_albums),
             Artists(R.id.artists, R.string.category_artists),
             Genres(R.id.genres, R.string.category_genres),
             Dates(R.id.dates, R.string.category_dates),
             Folders(R.id.folders, R.string.folders),
-            FileSystem(R.id.detailed_folders, R.string.filesystem),
-            Playlist(R.id.playlists, R.string.category_playlists)
+            FileSystem(R.id.detailed_folders, R.string.filesystem)
         }
 
         fun mapSettingToTabList(setting: String): List<Tab?> {
@@ -122,7 +121,7 @@ class ViewPager2Adapter(
                     else
                         try {
                             val t = Tab.valueOf(it)
-                            if (!hasImprovedMediaStore() && t == Tab.Genres)
+                            if ((!hasImprovedMediaStore() && t == Tab.Genres) || t == Tab.Playlist)
                                 listOf() else listOf(t)
                         } catch (_: IllegalArgumentException) {
                             listOf() // this tab was removed
@@ -130,6 +129,7 @@ class ViewPager2Adapter(
                 }.toMutableList()
             else mutableListOf()
             Tab.entries.forEach {
+                if (it == Tab.Playlist) return@forEach
                 if (stList.indexOf(it) != stList.lastIndexOf(it))
                     stList.removeAll { i -> i == it }
                 if (!stList.contains(it) && (it != Tab.Genres || hasImprovedMediaStore()))
@@ -137,6 +137,16 @@ class ViewPager2Adapter(
             }
             if (!stList.contains(null))
                 stList.add(null)
+            // The Queues tab (Playlist) is permanent: always present, first, and never hidden.
+            stList.removeAll { it == Tab.Playlist }
+            val separatorIndex = stList.indexOf(null).let { if (it == -1) stList.size else it }
+            if (separatorIndex == 0) {
+                stList.add(0, Tab.Playlist)
+                stList.add(1, null)
+                stList.removeAt(stList.lastIndexOf(null))
+            } else {
+                stList.add(0, Tab.Playlist)
+            }
             return stList
         }
 
