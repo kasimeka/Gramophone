@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.ItemTouchHelper.UP
 import androidx.recyclerview.widget.RecyclerView
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.ui.MyRecyclerView
+import org.akanework.gramophone.ui.adapters.ViewPager2Adapter.Companion.Tab
 import org.akanework.gramophone.ui.adapters.ViewPager2Adapter.Companion.mapSettingToTabList
 import org.akanework.gramophone.ui.adapters.ViewPager2Adapter.Companion.mapTabListToSetting
 import org.akanework.gramophone.ui.components.TabOrderPreference.TabOrderAdapter.TabOrderViewHolder
@@ -59,40 +60,40 @@ class TabOrderPreference(context: Context, attrs: AttributeSet) : DialogPreferen
     }
 
     class TabOrderDialog : PreferenceDialogFragmentCompat() {
-        private val adapter by lazy { TabOrderAdapter((preference as TabOrderPreference).value) }
+        private val adapter by lazy {
+            TabOrderAdapter((preference as TabOrderPreference).value) { viewHolder ->
+                itemTouchHelper?.startDrag(viewHolder)
+            }
+        }
+        private var itemTouchHelper: ItemTouchHelper? = null
 
         override fun onBindDialogView(view: View) {
             super.onBindDialogView(view)
             val recyclerView = view.findViewById<MyRecyclerView>(R.id.recyclerview)
             recyclerView.adapter = adapter
-            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(UP or DOWN, 0) {
-                override fun isLongPressDragEnabled(): Boolean {
-                    return true
+            itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(UP or DOWN, 0) {
+                override fun isLongPressDragEnabled(): Boolean = false
+
+                override fun getDragDirs(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder
+                ): Int {
+                    return if (adapter.canDrag(viewHolder.bindingAdapterPosition)) UP or DOWN else 0
                 }
 
-                override fun isItemViewSwipeEnabled(): Boolean {
-                    return false
-                }
+                override fun isItemViewSwipeEnabled(): Boolean = false
 
                 override fun onMove(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder,
                     target: RecyclerView.ViewHolder
                 ): Boolean {
-                    if (viewHolder is TabOrderAdapter.TabOrderSeparatorViewHolder &&
-                        target.bindingAdapterPosition == 0
-                    ) return false
-                    if (target.bindingAdapterPosition >= adapter.value.indexOf(null) &&
-                        viewHolder.bindingAdapterPosition == 0
-                    ) return false
-                    adapter.value.add(
-                        target.bindingAdapterPosition,
-                        adapter.value.removeAt(viewHolder.bindingAdapterPosition)
-                    )
-                    adapter.notifyItemMoved(
-                        viewHolder.bindingAdapterPosition,
-                        target.bindingAdapterPosition
-                    )
+                    val from = viewHolder.bindingAdapterPosition
+                    val to = target.bindingAdapterPosition
+                    if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) return false
+                    if (!adapter.canMove(from, to)) return false
+                    adapter.value.add(to, adapter.value.removeAt(from))
+                    adapter.notifyItemMoved(from, to)
                     return true
                 }
 
@@ -102,7 +103,12 @@ class TabOrderPreference(context: Context, attrs: AttributeSet) : DialogPreferen
                 ) {
                     throw IllegalStateException()
                 }
-            }).attachToRecyclerView(recyclerView)
+            }).also { it.attachToRecyclerView(recyclerView) }
+        }
+
+        override fun onDestroyView() {
+            itemTouchHelper = null
+            super.onDestroyView()
         }
 
         override fun onDialogClosed(positiveResult: Boolean) {
@@ -127,8 +133,43 @@ class TabOrderPreference(context: Context, attrs: AttributeSet) : DialogPreferen
         }
     }
 
-    class TabOrderAdapter(initialValue: String) : MyRecyclerView.Adapter<TabOrderViewHolder>() {
+    class TabOrderAdapter(
+        initialValue: String,
+        private val onStartDrag: (RecyclerView.ViewHolder) -> Unit
+    ) : MyRecyclerView.Adapter<TabOrderViewHolder>() {
         val value = mapSettingToTabList(initialValue).toMutableList()
+
+        private val separatorIndex: Int
+            get() = value.indexOf(null)
+
+        /** The Queues tab (persisted as Playlist) is permanent and cannot be hidden. */
+        private fun isPermanent(tab: Tab?): Boolean = tab == Tab.Playlist
+
+        fun canDrag(position: Int): Boolean {
+            if (position !in value.indices) return false
+            val item = value[position]
+            return item == null || !isPermanent(item)
+        }
+
+        fun canMove(from: Int, to: Int): Boolean {
+            if (from == to) return false
+            if (from !in value.indices || to !in value.indices) return false
+            val moving = value[from]
+            val sep = separatorIndex
+            val permanentIndex = value.indexOfFirst { isPermanent(it) }
+            if (moving == null) {
+                // The divider cannot move above the first visible tab or below the permanent Queues tab.
+                if (to == 0) return false
+                if (permanentIndex != -1 && to <= permanentIndex) return false
+                return true
+            }
+            if (isPermanent(moving)) return false
+            // Keep the permanent Queues tab first and never move other tabs above it.
+            if (permanentIndex != -1 && to <= permanentIndex) return false
+            // No tab may cross below the divider (tabs after it are hidden).
+            if (sep != -1 && to >= sep) return false
+            return true
+        }
 
         override fun onCreateViewHolder(
             parent: ViewGroup,
@@ -152,6 +193,29 @@ class TabOrderPreference(context: Context, attrs: AttributeSet) : DialogPreferen
             if (holder is TabOrderItemViewHolder) {
                 val item = value[position]!!
                 holder.name.text = holder.itemView.context.getString(item.label)
+                val permanent = isPermanent(item)
+                holder.hint.visibility = if (permanent) View.VISIBLE else View.GONE
+                if (permanent) {
+                    holder.hint.setText(R.string.tab_order_queues_permanent)
+                }
+                holder.itemView.isClickable = !permanent
+                holder.itemView.isFocusable = !permanent
+                holder.itemView.alpha = if (permanent) 0.38f else 1f
+                holder.dragHandle.alpha = if (permanent) 0.38f else 1f
+                holder.dragHandle.setOnTouchListener { _, event ->
+                    if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN && !permanent) {
+                        holder.itemView.performClick()
+                        onStartDrag(holder)
+                    }
+                    false
+                }
+            } else if (holder is TabOrderSeparatorViewHolder) {
+                holder.itemView.setOnTouchListener { _, event ->
+                    if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                        onStartDrag(holder)
+                    }
+                    false
+                }
             }
         }
 
@@ -163,7 +227,9 @@ class TabOrderPreference(context: Context, attrs: AttributeSet) : DialogPreferen
 
         open class TabOrderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
         class TabOrderItemViewHolder(itemView: View) : TabOrderViewHolder(itemView) {
-            val name = itemView.findViewById<TextView>(R.id.tabName)
+            val name: TextView = itemView.findViewById(R.id.tabName)
+            val hint: TextView = itemView.findViewById(R.id.tabHint)
+            val dragHandle: View = itemView.findViewById(R.id.dragHandle)
         }
 
         class TabOrderSeparatorViewHolder(itemView: View) : TabOrderViewHolder(itemView)

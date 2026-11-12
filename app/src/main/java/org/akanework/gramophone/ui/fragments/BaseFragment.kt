@@ -142,17 +142,15 @@ abstract class BaseFragment(
     }
 
     override fun onDestroyView() {
-        // End running transitions here, but only drop the transition objects in onDestroy: they
-        // belong to the fragment instance, which survives its views.
+        // Fragment transitions are driven on the container/scene root and may keep running-state
+        // references (e.g. AnimationInfo/TransitionValues) after the fragment view is destroyed,
+        // which can retain detached ComposeViews, RecyclerViews, and the fragment container
+        // itself. End any running transitions on the relevant roots before teardown and drop the
+        // transition instances so a destroyed view hierarchy cannot outlive this fragment.
         val root = view
         val parent = root?.parent as? ViewGroup
         parent?.let { TransitionManager.endTransitions(it) }
         (root as? ViewGroup)?.let { if (it !== parent) TransitionManager.endTransitions(it) }
-        super.onDestroyView()
-        mainHandler.post { pruneDetachedTransitionAnimators() }
-    }
-
-    override fun onDestroy() {
         (enterTransition as? Transition)?.removeListener(transitionCleanupListener)
         (returnTransition as? Transition)?.removeListener(transitionCleanupListener)
         (exitTransition as? Transition)?.removeListener(transitionCleanupListener)
@@ -161,7 +159,8 @@ abstract class BaseFragment(
         returnTransition = null
         exitTransition = null
         reenterTransition = null
-        super.onDestroy()
+        super.onDestroyView()
+        mainHandler.post { pruneDetachedTransitionAnimators() }
     }
 
     override fun onHiddenChanged(hidden: Boolean) {

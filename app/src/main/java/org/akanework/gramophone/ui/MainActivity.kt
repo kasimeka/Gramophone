@@ -412,6 +412,19 @@ class MainActivity : BaseActivity() {
                     if (songs.isEmpty()) {
                         controller.setMediaItems(listOf())
                     } else {
+                        val searchSource = if (query.isBlank()) {
+                            org.akanework.gramophone.logic.queue.QueueSource(
+                                kind = org.akanework.gramophone.logic.queue.QueueSourceKind.ALL_SONGS,
+                                identifier = "all_songs",
+                                displayName = getString(R.string.shuffle_all),
+                            )
+                        } else {
+                            org.akanework.gramophone.logic.queue.QueueSource(
+                                kind = org.akanework.gramophone.logic.queue.QueueSourceKind.SEARCH_RESULTS,
+                                identifier = query,
+                                displayName = getString(R.string.search_query, query),
+                            )
+                        }
                         controller.setMediaItemsWithTitle(
                             songs.shuffled(),
                             title = if (query.isBlank())
@@ -419,6 +432,7 @@ class MainActivity : BaseActivity() {
                             else
                                 getString(R.string.search_query, query),
                             original = false,
+                            source = searchSource,
                         )
                         controller.prepare()
                         controller.play()

@@ -148,4 +148,13 @@ class QueueTitlesTest {
         // The queue's own title is excluded by the caller, so keeping it is a no-op, not a suffix.
         assertEquals("Roadtrip", QueueTitles.renameTitle("Roadtrip", emptyList()))
     }
+
+    @Test
+    fun defaultTitleFormatsCounter() {
+        assertEquals("New Queue #1", QueueTitles.defaultTitle(1))
+        assertEquals("New Queue #42", QueueTitles.defaultTitle(42))
+        assertThrows(IllegalArgumentException::class.java) {
+            QueueTitles.defaultTitle(0)
+        }
+    }
 }

@@ -121,7 +121,7 @@ class ViewPager2Adapter(
                     else
                         try {
                             val t = Tab.valueOf(it)
-                            if ((!hasImprovedMediaStore() && t == Tab.Genres) || t == Tab.Playlist)
+                            if (!hasImprovedMediaStore() && t == Tab.Genres)
                                 listOf() else listOf(t)
                         } catch (_: IllegalArgumentException) {
                             listOf() // this tab was removed
@@ -129,7 +129,6 @@ class ViewPager2Adapter(
                 }.toMutableList()
             else mutableListOf()
             Tab.entries.forEach {
-                if (it == Tab.Playlist) return@forEach
                 if (stList.indexOf(it) != stList.lastIndexOf(it))
                     stList.removeAll { i -> i == it }
                 if (!stList.contains(it) && (it != Tab.Genres || hasImprovedMediaStore()))

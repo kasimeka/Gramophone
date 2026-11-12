@@ -43,7 +43,6 @@ import org.akanework.gramophone.ui.adapters.SongAdapter
 import org.akanework.gramophone.ui.adapters.Sorter
 import uk.akane.libphonograph.dynamicitem.Favorite
 import uk.akane.libphonograph.dynamicitem.RecentlyAdded
-import uk.akane.libphonograph.items.Playlist
 
 /**
  * GeneralSubFragment:
@@ -79,12 +78,20 @@ class GeneralSubFragment : BaseFragment() {
         val id = bundle.getString("Id")?.toLong()
 
         val title: Flow<String>
+        val source: Flow<org.akanework.gramophone.logic.queue.QueueSource?>
         var rawOrderExposed: Sorter.Type? = null
 
         when (itemType) {
             R.id.album -> {
                 val item = mainActivity.reader.albumListFlow.map { it.find { it.id == id } }
                 title = item.map { it?.title ?: requireContext().getString(R.string.unknown_album) }
+                source = item.map {
+                    org.akanework.gramophone.logic.queue.QueueSource(
+                        kind = org.akanework.gramophone.logic.queue.QueueSourceKind.ALBUM,
+                        identifier = id?.toString(),
+                        displayName = it?.title,
+                    )
+                }
                 itemList = item.map { it?.songList }
                 rawOrderExposed = Sorter.Type.ByAlbumTitleAscending
             }
@@ -99,6 +106,13 @@ class GeneralSubFragment : BaseFragment() {
                 // Genres
                 val item = mainActivity.reader.genreListFlow.map { it.find { it.id == id } }
                 title = item.map { it?.title ?: requireContext().getString(R.string.unknown_genre) }
+                source = item.map {
+                    org.akanework.gramophone.logic.queue.QueueSource(
+                        kind = org.akanework.gramophone.logic.queue.QueueSourceKind.GENRE,
+                        identifier = id?.toString(),
+                        displayName = it?.title,
+                    )
+                }
                 itemList = item.map { it?.songList }
             }
 
@@ -106,6 +120,13 @@ class GeneralSubFragment : BaseFragment() {
                 // Dates
                 val item = mainActivity.reader.dateListFlow.map { it.find { it.id == id } }
                 title = item.map { it?.title ?: requireContext().getString(R.string.unknown_year) }
+                source = item.map {
+                    org.akanework.gramophone.logic.queue.QueueSource(
+                        kind = org.akanework.gramophone.logic.queue.QueueSourceKind.ALL_SONGS,
+                        identifier = id?.let { "date:$it" },
+                        displayName = it?.title,
+                    )
+                }
                 itemList = item.map { it?.songList }
             }
 
@@ -117,10 +138,12 @@ class GeneralSubFragment : BaseFragment() {
             } TODO */
 
             R.id.playlist -> {
-                // Playlists
+                // Legacy dynamic library items (Favourites, Recently added) opened as a song list.
                 val clazz = arguments?.getString("Class") ?: "null"
-                val item = mainActivity.reader.playlistListFlow.map {
-                    it.find { if (id != null) it.id == id else it.javaClass.name == clazz }
+                val item = mainActivity.reader.dynamicItemsFlow.map { items ->
+                    items.find {
+                        if (id != null) it.id == id else it.javaClass.name == clazz
+                    }
                 }
                     .provideReplayCacheInvalidationManager()
                     .sharePauseableIn(
@@ -129,32 +152,29 @@ class GeneralSubFragment : BaseFragment() {
                         replay = 1
                     )
                 title = item.map {
-                    if (it is RecentlyAdded) {
-                        requireContext().getString(R.string.recently_added)
-                    } else if (it is Favorite) {
-                        requireContext().getString(R.string.playlist_favourite)
-                    } else {
-                        it?.title ?: (requireContext().getString(R.string.unknown_playlist)
-                                + if (it != null) " (${it.id} - ${it.path})" else "")
+                    when (it) {
+                        is RecentlyAdded -> requireContext().getString(R.string.recently_added)
+                        is Favorite -> requireContext().getString(R.string.playlist_favourite)
+                        else -> it?.title ?: requireContext().getString(R.string.unknown_queue)
+                    }
+                }
+                source = item.map {
+                    when (it) {
+                        is RecentlyAdded -> org.akanework.gramophone.logic.queue.QueueSource(
+                            kind = org.akanework.gramophone.logic.queue.QueueSourceKind.RECENTLY_ADDED,
+                            identifier = "recently_added",
+                            displayName = "Recently added",
+                        )
+                        is Favorite -> org.akanework.gramophone.logic.queue.QueueSource(
+                            kind = org.akanework.gramophone.logic.queue.QueueSourceKind.FAVOURITES,
+                            identifier = "favourites",
+                            displayName = "Favourites",
+                        )
+                        else -> null
                     }
                 }
                 itemList = item.map { it?.songList }
                 rawOrderExposed = Sorter.Type.NaturalOrder
-                if (clazz == Playlist::class.java.name) {
-                    topAppBar.inflateMenu(R.menu.playlist_subfragment_menu)
-                    topAppBar.setOnMenuItemClickListener {
-                        when (it.itemId) {
-                            R.id.edit -> {
-                                mainActivity.startFragment(PlaylistEditFragment()) {
-                                    putString("Id", id?.toString())
-                                }
-                                true
-                            }
-
-                            else -> false
-                        }
-                    }
-                }
             }
 
             else -> throw IllegalArgumentException()
@@ -177,7 +197,8 @@ class GeneralSubFragment : BaseFragment() {
                 sharedTitle,
                 itemList,
                 rawOrderExposed = rawOrderExposed,
-                isSubFragment = itemType
+                isSubFragment = itemType,
+                queueSource = source,
             )
 
         recyclerView.enableEdgeToEdgePaddingListener()

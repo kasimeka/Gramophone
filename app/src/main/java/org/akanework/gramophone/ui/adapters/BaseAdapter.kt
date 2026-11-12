@@ -72,7 +72,7 @@ import org.akanework.gramophone.ui.MainActivity
 import org.akanework.gramophone.ui.NowPlayingState
 import org.akanework.gramophone.ui.NowPlayingViewBinder
 import org.akanework.gramophone.ui.components.CustomGridLayoutManager
-import org.akanework.gramophone.ui.components.NowPlayingDrawable
+
 import org.akanework.gramophone.ui.fragments.AdapterFragment
 import org.akanework.gramophone.ui.getAdapterType
 import uk.akane.libphonograph.items.Item

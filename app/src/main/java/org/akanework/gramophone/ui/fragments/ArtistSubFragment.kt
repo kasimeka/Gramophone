@@ -74,6 +74,13 @@ class ArtistSubFragment : BaseFragment(), PopupTextProvider {
                 it.albumArtistListFlow else it.artistListFlow
         }.map { it.find { it.id == id } }
         val title = item.map { it?.title ?: requireContext().getString(R.string.unknown_artist) }
+        val artistSource = item.map {
+            org.akanework.gramophone.logic.queue.QueueSource(
+                kind = org.akanework.gramophone.logic.queue.QueueSourceKind.ARTIST,
+                identifier = id?.toString(),
+                displayName = it?.title,
+            )
+        }
         albumAdapter = AlbumAdapter(
             this, title, item.map { it?.albumList },
             isSubFragment = itemType
@@ -83,7 +90,8 @@ class ArtistSubFragment : BaseFragment(), PopupTextProvider {
             this,
             title,
             item.map { it?.songList },
-            isSubFragment = itemType
+            isSubFragment = itemType,
+            queueSource = artistSource,
         )
         songAdapter.decorAdapter.jumpUpPos = { 0 }
         songAdapter.decorAdapter.offsetPos = { albumAdapter.concatAdapter.itemCount }

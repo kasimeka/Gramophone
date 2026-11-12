@@ -51,6 +51,14 @@ object QueueTitles {
     }
 
     /**
+     * Format the default auto-generated name for a numbered queue (e.g. `"New Queue #1"`).
+     */
+    fun defaultTitle(counter: Long): String {
+        require(counter >= 1) { "numbered queue counter must be positive, was $counter" }
+        return "New Queue #$counter"
+    }
+
+    /**
      * Resolve a listener-entered title. Blank titles are rejected; collisions follow the same
      * smallest-free-suffix rule as generated titles. [existingTitles] must not include the queue
      * being renamed, so a rename can keep or reuse its own name.

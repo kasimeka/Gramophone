@@ -32,8 +32,12 @@ import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.getBooleanStrict
 import org.akanework.gramophone.logic.getFile
+import org.akanework.gramophone.logic.gramophoneApplication
+import org.akanework.gramophone.logic.queue.QueuePlaybackRules
 import org.akanework.gramophone.logic.requireMediaStoreId
+import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.ui.MainActivity
+import org.akanework.gramophone.ui.components.AddToQueueSheet
 import org.akanework.gramophone.ui.fragments.ArtistSubFragment
 import uk.akane.libphonograph.items.Artist
 import uk.akane.libphonograph.manipulator.ItemManipulator
@@ -85,13 +89,22 @@ class ArtistAdapter(
     override fun onMenu(item: Artist, popupMenu: PopupMenu) {
         popupMenu.inflate(R.menu.more_menu)
         popupMenu.menu.iterator().forEach {
-            it.isVisible = it.itemId == R.id.play_next || it.itemId == R.id.add_to_queue
+            it.isVisible = (it.itemId == R.id.play_next && QueuePlaybackRules.libraryPlayNextAvailable(
+                mainActivity.gramophoneApplication.queueRepository.lastActiveQueue.value
+            )) || it.itemId == R.id.add_to_queue
                     || it.itemId == R.id.delete
         }
 
         popupMenu.setOnMenuItemClickListener { it1 ->
             when (it1.itemId) {
                 R.id.play_next -> {
+                    if (!QueuePlaybackRules.libraryPlayNextAvailable(
+                            mainActivity.gramophoneApplication.queueRepository
+                                .lastActiveQueue.value
+                        )
+                    ) {
+                        return@setOnMenuItemClickListener true
+                    }
                     val mediaController = mainActivity.getPlayer()
                     mediaController?.addMediaItems(
                         mediaController.currentMediaItemIndex + 1,
@@ -101,10 +114,10 @@ class ArtistAdapter(
                 }
 
                 R.id.add_to_queue -> {
-                    val mediaController = mainActivity.getPlayer()
-                    mediaController?.addMediaItems(
-                        item.songList,
-                    )
+                    AddToQueueSheet(
+                        mainActivity,
+                        item.songList.map(MediaRowCodec::encode),
+                    ).show()
                     true
                 }
 

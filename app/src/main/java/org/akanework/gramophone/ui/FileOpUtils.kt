@@ -6,7 +6,6 @@ import org.akanework.gramophone.ui.adapters.ArtistAdapter
 import org.akanework.gramophone.ui.adapters.DateAdapter
 import org.akanework.gramophone.ui.adapters.DetailedFolderAdapter
 import org.akanework.gramophone.ui.adapters.GenreAdapter
-import org.akanework.gramophone.ui.adapters.PlaylistAdapter
 import org.akanework.gramophone.ui.adapters.SongAdapter
 import org.akanework.gramophone.ui.fragments.AdapterFragment
 
@@ -28,10 +27,6 @@ fun getAdapterType(adapter: AdapterFragment.BaseInterface<*>) =
             LibraryAdapterTypes.GENRE
         }
 
-        adapter is PlaylistAdapter -> {
-            LibraryAdapterTypes.PLAYLIST
-        }
-
         adapter is SongAdapter && !adapter.folder && adapter.isSubFragment == null -> {
             LibraryAdapterTypes.SONG
         }
@@ -42,10 +37,6 @@ fun getAdapterType(adapter: AdapterFragment.BaseInterface<*>) =
 
         adapter is SongAdapter && adapter.isSubFragment == R.id.search -> {
             LibraryAdapterTypes.SEARCH
-        }
-
-        adapter is SongAdapter && adapter.isSubFragment == R.id.playlist -> {
-            LibraryAdapterTypes.PLAYLIST_DYNAMIC
         }
 
         adapter is SongAdapter && adapter.isSubFragment == R.id.genre -> {
@@ -76,10 +67,6 @@ fun getAdapterType(adapter: AdapterFragment.BaseInterface<*>) =
 
         adapter is DetailedFolderAdapter && adapter.isDetailed -> {
             LibraryAdapterTypes.FOLDERS_DETAILED
-        }
-
-        adapter is SongAdapter && adapter.isSubFragment == R.id.edit -> {
-            LibraryAdapterTypes.EDIT
         }
 
         adapter is SongAdapter && adapter.isSubFragment == R.id.songs -> {

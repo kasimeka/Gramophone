@@ -35,15 +35,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.getBooleanStrict
 import org.akanework.gramophone.logic.getFile
 import org.akanework.gramophone.logic.gramophoneApplication
+import org.akanework.gramophone.logic.queue.QueuePlaybackRules
 import org.akanework.gramophone.logic.requireMediaStoreId
 import org.akanework.gramophone.logic.setMediaItemsSeamlessly
 import org.akanework.gramophone.logic.ui.MyRecyclerView
+import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.ui.MediaControllerViewModel
 import org.akanework.gramophone.ui.NowPlayingPresentation
 import org.akanework.gramophone.ui.NowPlayingState
@@ -75,7 +76,8 @@ class SongAdapter(
     allowDiffUtils: Boolean = false,
     rawOrderExposed: Sorter.Type? = if (isSubFragment == null) Sorter.Type.ByTitleAscending else null,
     val folder: Boolean = false,
-    fallbackContext: AppCompatActivity? = null
+    fallbackContext: AppCompatActivity? = null,
+    val queueSource: Flow<org.akanework.gramophone.logic.queue.QueueSource?>? = null,
 ) : BaseAdapter<MediaItem>
     (
     fragment,
@@ -225,18 +227,15 @@ class SongAdapter(
             (context as SongPickerActivity).onSelected(item)
             return
         }
-        val mediaController = mainActivity.getPlayer()
-        val title = runBlocking { queueTitle!!.first() }
-        mediaController?.apply {
-            val songList = getSongList()
-            // If the currently playing song is also the clicked song, then we continue playing the
-            // song and open full player, but we still replace the list. This is intended to copy
-            // UX of Chinese players that open full player when clicking song, and we don't want
-            // this UX to break if list is different for some reason.
-            val currentItem = currentMediaItem
-            setMediaItemsSeamlessly(songList, position, title)
-            prepare()
-            play()
+        val mediaController = mainActivity.getPlayer() ?: return
+        val songList = getSongList()
+        val currentItem = mediaController.currentMediaItem
+        CoroutineScope(Dispatchers.Main).launch {
+            val title = queueTitle?.first() ?: ""
+            val source = queueSource?.first()
+            mediaController.setMediaItemsSeamlessly(songList, position, title, source = source)
+            mediaController.prepare()
+            mediaController.play()
             if (currentItem?.mediaId == songList[position].mediaId && fragment !is SearchFragment) {
                 mainActivity.playerBottomSheet.open()
             }
@@ -245,106 +244,16 @@ class SongAdapter(
 
     override fun onMenu(item: MediaItem, popupMenu: PopupMenu) {
         popupMenu.inflate(R.menu.more_menu)
+        val menuContext = org.akanework.gramophone.ui.SongMenuContext.forLibrary(mainActivity)
+        org.akanework.gramophone.ui.SongMenuLogic.configure(popupMenu, item, menuContext)
 
         popupMenu.setOnMenuItemClickListener { it1 ->
-            when (it1.itemId) {
-                R.id.play_next -> {
-                    val mediaController = mainActivity.getPlayer()
-                    mediaController?.addMediaItem(
-                        mediaController.currentMediaItemIndex + 1,
-                        item,
-                    )
-                    true
-                }
-
-                R.id.add_to_queue -> {
-                    val mediaController = mainActivity.getPlayer()
-                    mediaController?.addMediaItem(
-                        item,
-                    )
-                    true
-                }
-
-                R.id.album -> {
-                    mainActivity.startFragment(GeneralSubFragment()) {
-                        putString("Id", item.mediaMetadata.albumId?.toString())
-                        putInt("Item", R.id.album)
-                    }
-                    true
-                }
-
-                R.id.artist -> {
-                    mainActivity.startFragment(ArtistSubFragment()) {
-                        putString("Id", item.mediaMetadata.artistId?.toString())
-                        putInt("Item", R.id.artist)
-                    }
-                    true
-                }
-
-                R.id.details -> {
-                    mainActivity.startFragment(DetailDialogFragment()) {
-                        putString("Id", item.mediaId)
-                    }
-                    true
-                }
-
-                R.id.delete -> {
-                    CoroutineScope(Dispatchers.Default).launch {
-                        val res = ItemManipulator.deleteSongs(
-                            mainActivity,
-                            listOf(item.getFile()!! to item.requireMediaStoreId())
-                        )
-                        if (res != null) {
-                            withContext(Dispatchers.Main) {
-                                MaterialAlertDialogBuilder(context)
-                                    .setTitle(R.string.delete)
-                                    .setMessage(
-                                        context.getString(
-                                            R.string.delete_really,
-                                            item.mediaMetadata.title
-                                        )
-                                    )
-                                    .setPositiveButton(R.string.delete) { _, _ ->
-                                        res.invoke()
-                                    }
-                                    .setNegativeButton(android.R.string.cancel) { _, _ -> }
-                                    .show()
-                            }
-                        }
-                    }
-                    true
-                }
-
-                R.id.share -> {
-                    val uri = item.requestMetadata.mediaUri
-                        ?: item.localConfiguration?.uri
-                        ?: return@setOnMenuItemClickListener true
-
-                    val mimeType = item.localConfiguration?.mimeType ?: "audio/*"
-
-                    try {
-                        ShareCompat.IntentBuilder(mainActivity)
-                            .setType(mimeType)
-                            .setStream(uri)
-                            .setChooserTitle("Share audio file")
-                            .startChooser()
-                    } catch (e: Exception) {
-                        Toast.makeText(
-                            mainActivity,
-                            "Unable to share: ${e.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    true
-                }
-
-                R.id.add_to_playlist -> {
-                    mainActivity.addToPlaylistDialog(item)
-                    true
-                }
-
-                else -> false
-            }
+            org.akanework.gramophone.ui.SongMenuLogic.handle(
+                mainActivity,
+                item,
+                it1.itemId,
+                menuContext,
+            )
         }
     }
 

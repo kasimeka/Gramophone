@@ -41,12 +41,12 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.clone
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
@@ -73,6 +73,8 @@ class ViewPagerFragment : BaseFragment() {
     val recycledViewPool = RecyclerView.RecycledViewPool()
     private lateinit var viewPager2: ViewPager2
     private lateinit var adapter: ViewPager2Adapter
+    private lateinit var tabLayout: TabLayout
+    private var tabLayoutMediator: TabLayoutMediator? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -80,7 +82,7 @@ class ViewPagerFragment : BaseFragment() {
         savedInstanceState: Bundle?,
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_viewpager, container, false)
-        val tabLayout = rootView.findViewById<TabLayout>(R.id.tab_layout)
+        tabLayout = rootView.findViewById(R.id.tab_layout)
         val topAppBar = rootView.findViewById<MaterialToolbar>(R.id.topAppBar)
         viewPager2 = rootView.findViewById(R.id.fragment_viewpager)
 
@@ -130,9 +132,12 @@ class ViewPagerFragment : BaseFragment() {
                     imageLoader.memoryCache?.clear()
                     val playerLayout = activity.playerBottomSheet
                     activity.updateLibrary {
-                        showRefreshDoneSnackBar(
-                            playerLayout,
-                            runBlocking { activity.reader.songListFlow.first().size })
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            showRefreshDoneSnackBar(
+                                playerLayout,
+                                activity.reader.songListFlow.first().size
+                            )
+                        }
                     }
                 }
 
@@ -166,9 +171,12 @@ class ViewPagerFragment : BaseFragment() {
                                     return@scanEverything
                                 }
                                 activity.updateLibrary(false) {
-                                    showRefreshDoneSnackBar(
-                                        playerLayout,
-                                        runBlocking { activity.reader.songListFlow.first().size })
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        showRefreshDoneSnackBar(
+                                            playerLayout,
+                                            activity.reader.songListFlow.first().size
+                                        )
+                                    }
                                 }
                             }
                         } else {
@@ -178,9 +186,10 @@ class ViewPagerFragment : BaseFragment() {
                             while (!job.isCompleted) {
                                 delay(5000)
                                 CoroutineScope(Dispatchers.Main).launch {
-                                    Toast.makeText(context, context.getString(
-                                        R.string.refreshing_wait),
-                                        Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context, context.getString(R.string.refreshing_wait),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         }
@@ -194,16 +203,26 @@ class ViewPagerFragment : BaseFragment() {
                 R.id.shuffle -> {
                     ShortcutManagerCompat.reportShortcutUsed(requireContext(), "shuffle_all")
                     val controller = activity.getPlayer()
-                    runBlocking { activity.reader.songListFlow.first() }.takeIf { it.isNotEmpty() }
-                        ?.also {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val songs = activity.reader.songListFlow.first()
+                        if (songs.isNotEmpty()) {
+                            val allSongsSource = org.akanework.gramophone.logic.queue.QueueSource(
+                                kind = org.akanework.gramophone.logic.queue.QueueSourceKind.ALL_SONGS,
+                                identifier = "all_songs",
+                                displayName = requireContext().getString(R.string.category_songs),
+                            )
                             controller?.setMediaItemsWithTitle(
-                                it,
+                                songs.shuffled(),
                                 title = requireContext().getString(R.string.category_songs),
-                                shuffleEnabled = true,
+                                original = false,
+                                source = allSongsSource,
                             )
                             controller?.prepare()
                             controller?.play()
-                        } ?: controller?.setMediaItems(listOf())
+                        } else {
+                            controller?.setMediaItems(listOf())
+                        }
+                    }
                 }
 
                 else -> throw IllegalStateException()
@@ -223,7 +242,7 @@ class ViewPagerFragment : BaseFragment() {
             )
         viewPager2.adapter = adapter
 
-        TabLayoutMediator(tabLayout, viewPager2) { tab, position ->
+        tabLayoutMediator = TabLayoutMediator(tabLayout, viewPager2) { tab, position ->
             tab.text = getString(adapter.getLabelResId(position))
             tab.view.post {
                 try {
@@ -241,7 +260,8 @@ class ViewPagerFragment : BaseFragment() {
                 } catch (_: IllegalStateException) {
                 }
             }
-        }.attach()
+        }.also { it.attach() }
+
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(p0: TabLayout.Tab?) {
                 // do nothing
@@ -252,21 +272,42 @@ class ViewPagerFragment : BaseFragment() {
             }
 
             override fun onTabReselected(p0: TabLayout.Tab?) {
-                if (p0 != null)
-                    (childFragmentManager.findFragmentByTag("f${adapter.getItemId(p0.position)}")
-                            as AdapterFragment?)?.onTabReselected()
+                if (p0 == null) return
+                onTabReselected(p0.position)
             }
         })
 
-        if (adapter.itemCount < 2) {
-            tabLayout.visibility = View.GONE
-            viewPager2.isUserInputEnabled = false
-        } else {
-            tabLayout.visibility = View.VISIBLE
-            viewPager2.isUserInputEnabled = true
+        val enoughSections = adapter.itemCount >= 2
+        viewPager2.isUserInputEnabled = enoughSections
+        tabLayout.visibility = if (enoughSections) View.VISIBLE else View.GONE
+        adapter.onTabListChanged = {
+            if (view != null) {
+                val enough = adapter.itemCount >= 2
+                viewPager2.isUserInputEnabled = enough
+                tabLayout.visibility = if (enough) View.VISIBLE else View.GONE
+            }
         }
 
         return rootView
+    }
+
+    fun onTabReselected(position: Int) {
+        (childFragmentManager.findFragmentByTag("f${adapter.getItemId(position)}")
+                as? AdapterFragment)?.onTabReselected()
+    }
+
+    /** Switch to the Queues tab. */
+    fun openQueuesTab() {
+        val queuesId = R.id.playlists.toLong()
+        val position = (0 until adapter.itemCount).firstOrNull { adapter.getItemId(it) == queuesId }
+            ?: return
+        viewPager2.setCurrentItem(position, false)
+    }
+
+    override fun onDestroyView() {
+        tabLayoutMediator?.detach()
+        tabLayoutMediator = null
+        super.onDestroyView()
     }
 
     fun maybeReportFullyDrawn(itemId: Int) {
@@ -317,10 +358,9 @@ class ViewPagerFragment : BaseFragment() {
         if (playerLayout.actuallyVisible)
             snackBar.anchorView = playerLayout
         else if (needsManualSnackBarInset()) {
-            val activity = requireActivity() as MainActivity
             // snack bar only implements proper insets handling for Q+
             snackBar.view.updateMargin {
-                val i = ViewCompat.getRootWindowInsets(activity.window.decorView)
+                val i = ViewCompat.getRootWindowInsets(requireActivity().window.decorView)
                 if (i != null) {
                     bottom += i.clone()
                         .getInsets(WindowInsetsCompat.Type.systemBars()).bottom

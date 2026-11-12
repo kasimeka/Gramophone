@@ -45,11 +45,13 @@ interface QueueRepository {
     /**
      * Create a new queue from [source] and its complete [rows]. This never reuses an existing
      * queue: source-derived titles collide with the smallest free suffix, and numbered sources
-     * take the next monotonic counter value.
+     * take the next monotonic counter value. If [title] is supplied, it is resolved against
+     * existing queue titles.
      */
     suspend fun create(
         source: QueueSource?,
         rows: List<String> = emptyList(),
+        title: String? = null,
         now: Long = System.currentTimeMillis(),
     ): Queue
 
@@ -130,13 +132,20 @@ class StoreQueueRepository(
     override suspend fun create(
         source: QueueSource?,
         rows: List<String>,
+        title: String?,
         now: Long,
     ): Queue = locked {
         val existing = store.queues()
         val existingTitles = existing.map { it.title }
         val numbered = source == null || source.kind.isNumbered
         var nextCounter: Long? = null
-        val title = if (numbered) {
+        val trimmedCustom = title?.trim()?.takeIf { it.isNotEmpty() }
+        val resolvedTitle = if (trimmedCustom != null) {
+            if (numbered) {
+                store.setNumberedCounter(store.numberedCounter() + 1)
+            }
+            QueueTitles.uniqueTitle(trimmedCustom, existingTitles)
+        } else if (numbered) {
             QueueTitles.nextNumberedTitle(store.numberedCounter()).also {
                 nextCounter = it.nextCounter
             }.title
@@ -146,7 +155,7 @@ class StoreQueueRepository(
 
         val manualOrder = (existing.maxOfOrNull { it.manualOrder } ?: 0L) + 1L
         val queue = Queue.create(
-            title = title,
+            title = resolvedTitle,
             source = source,
             rows = rows,
             now = now,

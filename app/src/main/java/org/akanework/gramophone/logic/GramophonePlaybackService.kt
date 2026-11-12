@@ -973,17 +973,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
     /** Create a fresh durable queue for a library play and make it active. */
     private suspend fun createDurableQueue(title: String, source: QueueSource? = null): Queue {
-        val created = queueRepository.create(source = source)
-        val trimmed = title.trim()
-        val queue = if (trimmed.isEmpty() || trimmed == created.title) {
-            created
-        } else {
-            val unique = QueueTitles.uniqueTitle(
-                trimmed,
-                queueRepository.queues.first().filter { it.id != created.id }.map { it.title },
-            )
-            queueRepository.mutate(created.id) { it.copy(title = unique) } ?: created
-        }
+        val queue = queueRepository.create(
+            source = source,
+            title = title.trim().takeIf { it.isNotEmpty() },
+        )
         activeQueuePersistence.activate(queue)
         return queue
     }

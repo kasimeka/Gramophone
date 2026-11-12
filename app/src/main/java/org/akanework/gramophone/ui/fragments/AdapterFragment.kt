@@ -42,7 +42,6 @@ import org.akanework.gramophone.ui.adapters.BaseAdapter
 import org.akanework.gramophone.ui.adapters.DateAdapter
 import org.akanework.gramophone.ui.adapters.DetailedFolderAdapter
 import org.akanework.gramophone.ui.adapters.GenreAdapter
-import org.akanework.gramophone.ui.adapters.PlaylistAdapter
 import org.akanework.gramophone.ui.adapters.SongAdapter
 import org.akanework.gramophone.ui.adapters.Sorter
 
@@ -90,11 +89,13 @@ class AdapterFragment : BaseFragment() {
     }
 
     override fun onDestroyView() {
-        // Detach adapter and listeners so the destroyed view hierarchy is not kept reachable.
+        // Detach adapter/listeners before the view hierarchy is torn down so RecyclerView/FastScroll
+        // plumbing cannot keep the destroyed list (and its item views) reachable after navigation.
         if (::adapter.isInitialized) {
             adapter.onFullyDrawnListener = null
         }
         if (::recyclerView.isInitialized) {
+            recyclerView.setAppBar(null)
             recyclerView.adapter = null
         }
         super.onDestroyView()
@@ -123,14 +124,24 @@ class AdapterFragment : BaseFragment() {
         val id = arguments?.getInt("ID", -1)
         val qTitle = getQueueTitle()
         return when (id) {
-            R.id.songs -> SongAdapter(this, qTitle)
+            R.id.songs -> SongAdapter(
+                this,
+                qTitle,
+                queueSource = kotlinx.coroutines.flow.flowOf(
+                    org.akanework.gramophone.logic.queue.QueueSource(
+                        kind = org.akanework.gramophone.logic.queue.QueueSourceKind.ALL_SONGS,
+                        identifier = "all_songs",
+                        displayName = getString(R.string.category_songs),
+                    )
+                ),
+            )
             R.id.albums -> AlbumAdapter(this, qTitle)
             R.id.artists -> ArtistAdapter(this)
             R.id.genres -> GenreAdapter(this)
             R.id.dates -> DateAdapter(this)
             R.id.folders -> DetailedFolderAdapter(this, false, savedInstanceState)
             R.id.detailed_folders -> DetailedFolderAdapter(this, true, savedInstanceState)
-            R.id.playlists -> PlaylistAdapter(this)
+            R.id.playlists -> throw IllegalArgumentException("playlists tab is queue-only")
             -1, null -> throw IllegalArgumentException("unset ID value")
             else -> throw IllegalArgumentException("invalid ID value")
         }.apply {
@@ -148,11 +159,11 @@ class AdapterFragment : BaseFragment() {
             R.id.dates -> R.string.category_dates
             R.id.folders -> R.string.folders
             R.id.detailed_folders -> R.string.folders
-            R.id.playlists -> R.string.category_playlists
+            R.id.playlists -> R.string.category_queues
             -1, null -> throw IllegalArgumentException("unset ID value")
             else -> throw IllegalArgumentException("invalid ID value")
         }
-        return flowOf(requireContext().getString( stringId))
+        return flowOf(requireContext().getString(stringId))
     }
 
     abstract class BaseInterface<T : RecyclerView.ViewHolder>

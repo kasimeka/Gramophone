@@ -20,7 +20,11 @@ package org.akanework.gramophone.ui.adapters
 import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import org.akanework.gramophone.R
+import org.akanework.gramophone.logic.gramophoneApplication
+import org.akanework.gramophone.logic.queue.QueuePlaybackRules
+import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.ui.MainActivity
+import org.akanework.gramophone.ui.components.AddToQueueSheet
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment
 import uk.akane.libphonograph.items.Genre
 
@@ -59,10 +63,21 @@ class GenreAdapter(
 
     override fun onMenu(item: Genre, popupMenu: PopupMenu) {
         popupMenu.inflate(R.menu.more_menu_less)
+        popupMenu.menu.findItem(R.id.play_next).isVisible =
+            QueuePlaybackRules.libraryPlayNextAvailable(
+                mainActivity.gramophoneApplication.queueRepository.lastActiveQueue.value
+            )
 
         popupMenu.setOnMenuItemClickListener { it1 ->
             when (it1.itemId) {
                 R.id.play_next -> {
+                    if (!QueuePlaybackRules.libraryPlayNextAvailable(
+                            mainActivity.gramophoneApplication.queueRepository
+                                .lastActiveQueue.value
+                        )
+                    ) {
+                        return@setOnMenuItemClickListener true
+                    }
                     val mediaController = mainActivity.getPlayer()
                     mediaController?.addMediaItems(
                         mediaController.currentMediaItemIndex + 1,
@@ -72,10 +87,10 @@ class GenreAdapter(
                 }
 
                 R.id.add_to_queue -> {
-                    val mediaController = mainActivity.getPlayer()
-                    mediaController?.addMediaItems(
-                        item.songList,
-                    )
+                    AddToQueueSheet(
+                        mainActivity,
+                        item.songList.map(MediaRowCodec::encode),
+                    ).show()
                     true
                 }
 

@@ -1,5 +1,6 @@
 package org.akanework.gramophone.ui
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
@@ -102,3 +103,8 @@ fun GramophoneTheme(
         }
     )
 }
+
+/** The stored pure-dark preference, for composables hosted outside a BaseComposeActivity. */
+fun pureDark(context: Context): Boolean = PreferenceManager
+    .getDefaultSharedPreferences(context)
+    .getBooleanStrict("pureDark", false)

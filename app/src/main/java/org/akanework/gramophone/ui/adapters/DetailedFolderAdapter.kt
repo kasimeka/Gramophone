@@ -181,8 +181,23 @@ class DetailedFolderAdapter(
     private val folderAdapter: FolderListAdapter = FolderListAdapter(mainActivity, this)
     private val decorAdapter =
         BaseDecorAdapter<DetailedFolderAdapter>(this, R.plurals.folders_plural)
+    private val folderSource = fileNodePath.map { pathList ->
+        val folderPath = pathList?.joinToString("/") ?: "/"
+        val displayName = pathList?.lastOrNull() ?: "/"
+        org.akanework.gramophone.logic.queue.QueueSource(
+            kind = org.akanework.gramophone.logic.queue.QueueSourceKind.FOLDER,
+            identifier = folderPath,
+            displayName = displayName,
+        )
+    }
     private val songAdapter: SongAdapter =
-        SongAdapter(fragment, qTitle, dataFlow.map { it.songList }, folder = true).apply {
+        SongAdapter(
+            fragment,
+            qTitle,
+            dataFlow.map { it.songList },
+            folder = true,
+            queueSource = folderSource,
+        ).apply {
             onFullyDrawnListener = { reportFullyDrawn() }
             decorAdapter.jumpUpPos = { 0 }
             decorAdapter.offsetPos = { this@DetailedFolderAdapter.decorAdapter.itemCount +

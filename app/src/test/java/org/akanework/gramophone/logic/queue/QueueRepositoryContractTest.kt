@@ -121,6 +121,38 @@ abstract class QueueRepositoryContractTest {
     }
 
     @Test
+    fun createWithTitleUsesTitleAndAdvancesNumberedCounter() = runBlocking {
+        val custom = repository.create(source = null, title = "  My Party Queue  ", now = 1L)
+        val next = repository.create(source = null, now = 2L)
+
+        assertEquals("My Party Queue", custom.title)
+        assertFalse(custom.isModified)
+        assertEquals("new queue #2", next.title)
+    }
+
+    @Test
+    fun createWithLocalizedSourceTitlePreservesUnmodifiedAndResolvesUniqueTitles() = runBlocking {
+        val favSource = QueueSource(QueueSourceKind.FAVOURITES, "favourites", "Favourites")
+        val firstFav = repository.create(source = favSource, title = "Favorites", now = 1L)
+        val secondFav = repository.create(source = favSource, title = "Favorites", now = 2L)
+
+        val allSongsSource = QueueSource(QueueSourceKind.ALL_SONGS, "all_songs", "Songs")
+        val songsQueue = repository.create(source = allSongsSource, title = "Songs", now = 3L)
+
+        val recentSource = QueueSource(QueueSourceKind.RECENTLY_ADDED, "recently_added", "Recently added")
+        val recentQueue = repository.create(source = recentSource, title = "Recently Added", now = 4L)
+
+        assertEquals("Favorites", firstFav.title)
+        assertFalse(firstFav.isModified)
+        assertEquals("Favorites 2", secondFav.title)
+        assertFalse(secondFav.isModified)
+        assertEquals("Songs", songsQueue.title)
+        assertFalse(songsQueue.isModified)
+        assertEquals("Recently Added", recentQueue.title)
+        assertFalse(recentQueue.isModified)
+    }
+
+    @Test
     fun anEmptyQueueIsANormalPersistedQueue() = runBlocking {
         val queue = repository.create(source = null, rows = emptyList(), now = 10L)
 

@@ -25,17 +25,19 @@ import android.widget.TextView
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.edit
 import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.Player.REPEAT_MODE_OFF
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.ui.ItemHeightHelper
 import org.akanework.gramophone.logic.ui.MyRecyclerView
 import org.akanework.gramophone.logic.ui.QuickLinearSmoothScroller
 import org.akanework.gramophone.logic.setMediaItemsWithTitle
+import org.akanework.gramophone.ui.MainActivity
 import org.akanework.gramophone.ui.fragments.AdapterFragment
 import org.akanework.gramophone.ui.getAdapterType
 
@@ -201,68 +203,80 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
         }
         holder.playAll.setOnClickListener {
             if (adapter is SongAdapter) {
-                val controller = adapter.getActivity().getPlayer()
+                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
+                val controller = activity.getPlayer() ?: return@setOnClickListener
                 val songList = adapter.getSongList()
-                controller?.apply {
-                    setMediaItemsWithTitle(
+                activity.lifecycleScope.launch {
+                    val title = adapter.queueTitle!!.first()
+                    val source = adapter.queueSource?.first()
+                    controller.setMediaItemsWithTitle(
                         songList,
-                        title = runBlocking { adapter.queueTitle!!.first() },
-                        shuffleEnabled = false,
+                        title = title,
                         repeatMode = REPEAT_MODE_OFF,
+                        source = source,
                     )
                     if (songList.isNotEmpty()) {
-                        prepare()
-                        play()
+                        controller.prepare()
+                        controller.play()
                     }
                 }
             } else if (adapter is AlbumAdapter) {
+                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
+                val controller = activity.getPlayer() ?: return@setOnClickListener
                 val list = adapter.getAlbumList()
-                val controller = adapter.getActivity().getPlayer()
-                controller?.apply {
+                activity.lifecycleScope.launch {
                     list.takeIf { it.isNotEmpty() }?.also { albums ->
-                        setMediaItemsWithTitle(
+                        val title = adapter.queueTitle.first()
+                        controller.setMediaItemsWithTitle(
                             albums.flatMap { it.songList },
-                            title = runBlocking { adapter.queueTitle.first() },
-                            shuffleEnabled = false,
+                            title = title,
                             repeatMode = REPEAT_MODE_OFF,
                         )
-                        prepare()
-                        play()
-                    } ?: setMediaItems(listOf())
+                        controller.prepare()
+                        controller.play()
+                    } ?: controller.setMediaItems(listOf())
                 }
             }
         }
         holder.shuffleAll.setOnClickListener {
             ShortcutManagerCompat.reportShortcutUsed(context, "shuffle_all")
             if (adapter is SongAdapter) {
+                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
+                val controller = activity.getPlayer() ?: return@setOnClickListener
                 val songList = adapter.getSongList()
-                val controller = adapter.getActivity().getPlayer()
-                controller?.apply {
-                    setMediaItemsWithTitle(
-                        songList,
-                        title = runBlocking { adapter.queueTitle!!.first() },
-                        shuffleEnabled = true,
+                activity.lifecycleScope.launch {
+                    val title = adapter.queueTitle!!.first()
+                    val source = adapter.queueSource?.first()
+                    controller.setMediaItemsWithTitle(
+                        songList.shuffled(),
+                        title = title,
+                        original = false,
+                        source = source,
                     )
                     if (songList.isNotEmpty()) {
-                        prepare()
-                        play()
+                        controller.prepare()
+                        controller.play()
                     }
                 }
             } else if (adapter is AlbumAdapter) {
+                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
+                val controller = activity.getPlayer() ?: return@setOnClickListener
                 val list = adapter.getAlbumList()
-                val controller = adapter.getActivity().getPlayer()
-                controller?.apply {
+                activity.lifecycleScope.launch {
                     list.takeIf { it.isNotEmpty() }?.also { albums ->
-                        setMediaItemsWithTitle(
-                            albums.shuffled().flatMap { it.songList },
-                            title = context.getString(R.string.shuffled,
-                                    runBlocking { adapter.queueTitle.first() }),
-                            shuffleEnabled = false,
-                            repeatMode = REPEAT_MODE_OFF,
+                        val title = context.getString(
+                            R.string.shuffled,
+                            adapter.queueTitle.first(),
                         )
-                        prepare()
-                        play()
-                    } ?: setMediaItems(listOf())
+                        controller.setMediaItemsWithTitle(
+                            albums.flatMap { it.songList }.shuffled(),
+                            title = title,
+                            repeatMode = REPEAT_MODE_OFF,
+                            original = false,
+                        )
+                        controller.prepare()
+                        controller.play()
+                    } ?: controller.setMediaItems(listOf())
                 }
             }
         }
@@ -338,7 +352,6 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
         view: View,
     ) : RecyclerView.ViewHolder(view) {
         val sortButton: MaterialButton = view.findViewById(R.id.sort)
-        val createPlaylist: MaterialButton = view.findViewById(R.id.create_playlist)
         val playAll: MaterialButton = view.findViewById(R.id.play_all)
         val shuffleAll: MaterialButton = view.findViewById(R.id.shuffle_all)
         val jumpUp: MaterialButton = view.findViewById(R.id.jumpUp)

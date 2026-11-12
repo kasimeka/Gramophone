@@ -65,6 +65,13 @@ class SearchFragment : BaseFragment() {
         val recyclerView = rootView.findViewById<MyRecyclerView>(R.id.recyclerview)
         val searchTextFlow = MutableStateFlow(arguments?.getString("query", "") ?: "")
         qTitle = searchTextFlow.map { requireContext().getString(R.string.search_query, it) }
+        val searchSource = searchTextFlow.map { query ->
+            org.akanework.gramophone.logic.queue.QueueSource(
+                kind = org.akanework.gramophone.logic.queue.QueueSourceKind.SEARCH_RESULTS,
+                identifier = query.trim(),
+                displayName = query.trim(),
+            )
+        }
         val songAdapter =
             SongAdapter(
                 this, qTitle, mainActivity.reader.songListFlow.combine(searchTextFlow.map {
@@ -82,7 +89,8 @@ class SearchFragment : BaseFragment() {
                     }
                 },
                 isSubFragment = R.id.search, allowDiffUtils = true,
-                rawOrderExposed = Sorter.Type.ByTitleAscending
+                rawOrderExposed = Sorter.Type.ByTitleAscending,
+                queueSource = searchSource,
             )
         val returnButton = rootView.findViewById<Button>(R.id.return_button)
 
