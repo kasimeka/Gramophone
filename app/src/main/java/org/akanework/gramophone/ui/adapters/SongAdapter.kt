@@ -95,11 +95,22 @@ class SongAdapter(
     allowDiffUtils = allowDiffUtils,
     hasMenu = isSubFragment != R.id.songs,
     fallbackContext = fallbackContext
-), SharedPreferences.OnSharedPreferenceChangeListener {
+), SharedPreferences.OnSharedPreferenceChangeListener, DecorMediaProvider {
 
     init {
         lateInit()
     }
+
+    override val supportsMediaActions: Boolean
+        get() = isSubFragment != R.id.songs
+
+    override fun getRepresentedSongs(): List<MediaItem> = getSongList()
+
+    override val queueTitleFlow: Flow<String>?
+        get() = queueTitle
+
+    override val queueSourceFlow: Flow<org.akanework.gramophone.logic.queue.QueueSource?>?
+        get() = queueSource
 
     fun getSongList() = list?.second ?: emptyList()
 

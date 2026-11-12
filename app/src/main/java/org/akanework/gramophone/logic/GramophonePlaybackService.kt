@@ -204,6 +204,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         const val SERVICE_QB_DEL = "qb_delete"
         const val SERVICE_QB_EDIT = "qb_edit"
         const val SERVICE_QB_SHUFFLE = "qb_shuffle"
+        const val SERVICE_QB_REORDER = "qb_reorder"
         const val SERVICE_QB_UNDO_EDIT = "qb_undo_edit"
         const val SERVICE_QB_CLEAR_EDIT_UNDO = "qb_clear_edit_undo"
         const val SERVICE_QB_RENAME_QUEUE = "qb_rename"
@@ -844,6 +845,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         availableSessionCommands.add(SessionCommand(SERVICE_QB_DEL, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_EDIT, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_SHUFFLE, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_REORDER, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_UNDO_EDIT, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_CLEAR_EDIT_UNDO, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_RENAME_QUEUE, Bundle.EMPTY))
@@ -1398,6 +1400,72 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         }
 
         return applyInactiveQueueShuffleResult(durable, durable.id, shufflePlay, playDifferentSong, command)
+    }
+
+    /** Reorder a durable queue by metadata sort type or `"REVERSE"`, marking it user-modified. */
+    private suspend fun applyQueueReorder(command: SessionCommand): Boolean {
+        val player = endedWorkaroundPlayer ?: return false
+        val durable = durableQueueForCommand(command) ?: return false
+        val sortTypeName = command.customExtras.getString("sortType") ?: return false
+        val isActive = isDurableQueueActive(durable.id)
+
+        fun computeOrder(items: List<MediaItem>): List<Int>? {
+            if (items.size <= 1) return null
+            if (sortTypeName == "REVERSE") {
+                return items.indices.reversed().toList()
+            }
+            val type = runCatching {
+                org.akanework.gramophone.ui.adapters.Sorter.Type.valueOf(sortTypeName)
+            }.getOrNull() ?: return null
+            val (comparator, reverse) = org.akanework.gramophone.ui.adapters.Sorter(
+                org.akanework.gramophone.ui.adapters.SongAdapter.MediaItemHelper,
+                null,
+            ).getComparator(type)
+            val sorted = if (comparator != null) {
+                items.indices.sortedWith { a, b -> comparator.compare(items[a], items[b]) }
+            } else {
+                items.indices.toList()
+            }
+            return if (reverse) sorted.reversed() else sorted
+        }
+
+        if (isActive) {
+            val items = activeQueueMediaItems(player)
+            val order = withContext(Dispatchers.Default) { computeOrder(items) } ?: return false
+            if (order == items.indices.toList()) return false
+            lastQueueEditUndo = null
+            lastInactiveQueueEditUndo = null
+            withoutMarkingUserModified {
+                PlayerQueueOrderTarget(player).applyDisplayedOrder(order)
+            }
+            activeQueuePersistence.saveNow(markModified = true)
+            handler.post {
+                scope.launch { broadcastQueueSongsRefresh() }
+            }
+            return true
+        }
+
+        var applied = false
+        queueRepository.mutate(durable.id) { current ->
+            if (current.rows.size <= 1) return@mutate current
+            val items = current.rows.mapNotNull(MediaRowCodec::decode)
+            if (items.size != current.rows.size) return@mutate current
+            val order = computeOrder(items) ?: return@mutate current
+            if (order == items.indices.toList()) return@mutate current
+            val target = StoredQueueOrderTarget(current)
+            target.applyDisplayedOrder(order)
+            applied = true
+            target.queue.copy(isModified = true)
+        }
+        if (!applied) return false
+        lastQueueEditUndo = null
+        lastInactiveQueueEditUndo = null
+        handler.post {
+            scope.launch {
+                broadcastQueueSongsRefresh(queueId = inactiveQueueIdForRefresh(command))
+            }
+        }
+        return true
     }
 
     /**
@@ -2051,6 +2119,13 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
                 SERVICE_QB_SHUFFLE -> {
                     val status = applyQueueShuffle(customCommand)
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", status)
+                    }
+                }
+
+                SERVICE_QB_REORDER -> {
+                    val status = applyQueueReorder(customCommand)
                     SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
                         res.extras.putBoolean("status", status)
                     }

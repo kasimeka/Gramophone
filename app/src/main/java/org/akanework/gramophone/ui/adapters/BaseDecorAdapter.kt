@@ -23,23 +23,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.content.edit
-import androidx.core.content.pm.ShortcutManagerCompat
-import androidx.lifecycle.lifecycleScope
-import androidx.media3.common.Player.REPEAT_MODE_OFF
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.ui.ItemHeightHelper
 import org.akanework.gramophone.logic.ui.MyRecyclerView
 import org.akanework.gramophone.logic.ui.QuickLinearSmoothScroller
-import org.akanework.gramophone.logic.setMediaItemsWithTitle
-import org.akanework.gramophone.ui.MainActivity
 import org.akanework.gramophone.ui.fragments.AdapterFragment
-import org.akanework.gramophone.ui.getAdapterType
 
 open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
     protected val adapter: T,
@@ -49,10 +39,21 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
     protected val context: Context = adapter.context
     private val dpHeight = context.resources.getDimensionPixelSize(R.dimen.decor_height)
     private var recyclerView: MyRecyclerView? = null
-    private var prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
     var jumpUpPos: (() -> Int)? = null
     var jumpDownPos: (() -> Int)? = null
     var offsetPos: (() -> Int)? = null
+
+    private val binder = DecorPanelBinder(
+        context = context,
+        adapter = adapter,
+        pluralStr = pluralStr,
+        onSortPressed = { onSortButtonPressed(it) },
+        onExtraMenuItem = { onExtraMenuButtonPressed(it) },
+        onGoToPlayingSong = if (adapter is SongAdapter) { { goToPlayingSong() } } else null,
+        jumpUpSupplier = { jumpUpPos },
+        jumpDownSupplier = { jumpDownPos },
+        onScrollToPosition = { scrollToViewPosition(it) },
+    )
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
@@ -63,231 +64,7 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val count = adapter.itemCountForDecor
-        holder.playAll.visibility =
-            if (adapter is SongAdapter && adapter.isSubFragment != R.id.songs ||
-                adapter is AlbumAdapter) View.VISIBLE else View.GONE
-        holder.shuffleAll.visibility =
-            if (adapter is SongAdapter && adapter.isSubFragment != R.id.songs ||
-                adapter is AlbumAdapter) View.VISIBLE else View.GONE
-        holder.counter.text = context.resources.getQuantityString(pluralStr, count, count)
-        if (adapter is SongAdapter) {
-            holder.counter.setOnClickListener {
-                goToPlayingSong()
-            }
-        }
-        holder.sortButton.visibility =
-            if (adapter.sortType.value != Sorter.Type.None || adapter.canChangeLayout) View.VISIBLE else View.GONE
-        holder.sortButton.setOnClickListener { view ->
-            val popupMenu = PopupMenu(context, view)
-            popupMenu.inflate(R.menu.sort_menu)
-            val buttonMap = mapOf(
-                Pair(R.id.natural, Sorter.Type.NaturalOrder),
-                Pair(R.id.name, Sorter.Type.ByTitleAscending),
-                Pair(R.id.artist, Sorter.Type.ByArtistAscending),
-                Pair(R.id.artist_year, Sorter.Type.ByArtistYearAscending),
-                Pair(R.id.album, Sorter.Type.ByAlbumTitleAscending),
-                Pair(R.id.album_artist, Sorter.Type.ByAlbumArtistAscending),
-                Pair(R.id.album_artist_year, Sorter.Type.ByAlbumArtistYearAscending),
-                Pair(R.id.album_year, Sorter.Type.ByAlbumYearDescending),
-                Pair(R.id.size, Sorter.Type.BySizeDescending),
-                Pair(R.id.add_date, Sorter.Type.ByAddDateDescending),
-                Pair(R.id.release_date, Sorter.Type.ByReleaseDateDescending),
-                Pair(R.id.mod_date, Sorter.Type.ByModifiedDateDescending),
-                Pair(R.id.file_path, Sorter.Type.ByFilePathAscending)
-            )
-            val layoutMap = mapOf(
-                Pair(R.id.list, BaseAdapter.LayoutType.LIST),
-                Pair(R.id.compact_list, BaseAdapter.LayoutType.COMPACT_LIST),
-                Pair(R.id.grid, BaseAdapter.LayoutType.GRID),
-                Pair(R.id.compact_grid, BaseAdapter.LayoutType.COMPACT_GRID)
-            )
-            buttonMap.forEach {
-                popupMenu.menu.findItem(it.key).isVisible = adapter.sortTypes.contains(it.value)
-            }
-            layoutMap.forEach {
-                popupMenu.menu.findItem(it.key).isVisible = adapter.canChangeLayout
-            }
-            popupMenu.menu.findItem(R.id.display).isVisible = adapter.canChangeLayout
-
-            val currentSort = adapter.sortType.value
-            val activeEntry = buttonMap.entries.find { it.value == currentSort || Sorter.Type.inverse(it.value) == currentSort }
-
-            if (activeEntry == null) {
-                throw IllegalStateException("Invalid sortType ${adapter.sortType.value.name}")
-            }
-
-            popupMenu.menu.findItem(activeEntry.key).isChecked = true
-
-            if (adapter.canChangeLayout) {
-                when (adapter.layoutType) {
-                    in layoutMap.values -> {
-                        popupMenu.menu.findItem(
-                            layoutMap.entries
-                                .first { it.value == adapter.layoutType }.key
-                        ).isChecked = true
-                    }
-
-                    else -> throw IllegalStateException("Invalid layoutType ${adapter.layoutType?.name}")
-                }
-            }
-
-            val reverseItem = popupMenu.menu.findItem(R.id.reverse_order)
-            val inverse = Sorter.Type.inverse(adapter.sortType.value)
-            if (inverse == null) {
-                reverseItem.isVisible = false
-            } else {
-                reverseItem.isChecked = currentSort != activeEntry.value && currentSort != Sorter.Type.None
-            }
-
-            popupMenu.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    in buttonMap.keys -> {
-                        if (!menuItem.isChecked) {
-                            val baseType = buttonMap[menuItem.itemId]!!
-                            val reverse = prefs.getBoolean("S" + getAdapterType(adapter) +
-                                    "_reverse_" + baseType, false)
-                            val targetType = if (!reverse) baseType else
-                                Sorter.Type.inverse(baseType) ?: baseType
-                            reverseItem.isChecked = reverse
-                            adapter.sort(targetType)
-                            menuItem.isChecked = true
-                            prefs.edit {
-                                putString(
-                                    "S" + getAdapterType(adapter).toString(),
-                                    targetType.toString()
-                                )
-                            }
-                        }
-                        true
-                    }
-
-                    in layoutMap.keys -> {
-                        if (!menuItem.isChecked) {
-                            adapter.layoutType = layoutMap[menuItem.itemId]!!
-                            menuItem.isChecked = true
-                            prefs.edit {
-                                putString(
-                                    "L" + getAdapterType(adapter).toString(),
-                                    layoutMap[menuItem.itemId].toString()
-                                )
-                            }
-                        }
-                        true
-                    }
-
-                    R.id.reverse_order -> {
-                        menuItem.isChecked = !menuItem.isChecked
-                        val activeId = buttonMap.entries.first {
-                            it.value == adapter.sortType.value || Sorter.Type.inverse(it.value) == adapter.sortType.value 
-                        }.key
-                        val baseType = buttonMap[activeId]!!
-                        val targetType = if (menuItem.isChecked) Sorter.Type.inverse(baseType) ?: baseType else baseType
-                        adapter.sort(targetType)
-                        prefs.edit {
-                            putBoolean("S" + getAdapterType(adapter) + "_reverse_" + baseType,
-                                menuItem.isChecked)
-                            putString(
-                                "S" + getAdapterType(adapter).toString(),
-                                targetType.toString()
-                            )
-                        }
-                        true
-                    }
-
-                    else -> onExtraMenuButtonPressed(menuItem)
-                }
-            }
-            onSortButtonPressed(popupMenu)
-            popupMenu.show()
-        }
-        holder.playAll.setOnClickListener {
-            if (adapter is SongAdapter) {
-                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
-                val controller = activity.getPlayer() ?: return@setOnClickListener
-                val songList = adapter.getSongList()
-                activity.lifecycleScope.launch {
-                    val title = adapter.queueTitle!!.first()
-                    val source = adapter.queueSource?.first()
-                    controller.setMediaItemsWithTitle(
-                        songList,
-                        title = title,
-                        repeatMode = REPEAT_MODE_OFF,
-                        source = source,
-                    )
-                    if (songList.isNotEmpty()) {
-                        controller.prepare()
-                        controller.play()
-                    }
-                }
-            } else if (adapter is AlbumAdapter) {
-                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
-                val controller = activity.getPlayer() ?: return@setOnClickListener
-                val list = adapter.getAlbumList()
-                activity.lifecycleScope.launch {
-                    list.takeIf { it.isNotEmpty() }?.also { albums ->
-                        val title = adapter.queueTitle.first()
-                        controller.setMediaItemsWithTitle(
-                            albums.flatMap { it.songList },
-                            title = title,
-                            repeatMode = REPEAT_MODE_OFF,
-                        )
-                        controller.prepare()
-                        controller.play()
-                    } ?: controller.setMediaItems(listOf())
-                }
-            }
-        }
-        holder.shuffleAll.setOnClickListener {
-            ShortcutManagerCompat.reportShortcutUsed(context, "shuffle_all")
-            if (adapter is SongAdapter) {
-                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
-                val controller = activity.getPlayer() ?: return@setOnClickListener
-                val songList = adapter.getSongList()
-                activity.lifecycleScope.launch {
-                    val title = adapter.queueTitle!!.first()
-                    val source = adapter.queueSource?.first()
-                    controller.setMediaItemsWithTitle(
-                        songList.shuffled(),
-                        title = title,
-                        original = false,
-                        source = source,
-                    )
-                    if (songList.isNotEmpty()) {
-                        controller.prepare()
-                        controller.play()
-                    }
-                }
-            } else if (adapter is AlbumAdapter) {
-                val activity = adapter.getActivity() as? MainActivity ?: return@setOnClickListener
-                val controller = activity.getPlayer() ?: return@setOnClickListener
-                val list = adapter.getAlbumList()
-                activity.lifecycleScope.launch {
-                    list.takeIf { it.isNotEmpty() }?.also { albums ->
-                        val title = context.getString(
-                            R.string.shuffled,
-                            adapter.queueTitle.first(),
-                        )
-                        controller.setMediaItemsWithTitle(
-                            albums.flatMap { it.songList }.shuffled(),
-                            title = title,
-                            repeatMode = REPEAT_MODE_OFF,
-                            original = false,
-                        )
-                        controller.prepare()
-                        controller.play()
-                    } ?: controller.setMediaItems(listOf())
-                }
-            }
-        }
-        holder.jumpUp.visibility = if (jumpUpPos != null) View.VISIBLE else View.GONE
-        holder.jumpUp.setOnClickListener {
-            scrollToViewPosition(jumpUpPos!!())
-        }
-        holder.jumpDown.visibility = if (jumpDownPos != null) View.VISIBLE else View.GONE
-        holder.jumpDown.setOnClickListener {
-            scrollToViewPosition(jumpDownPos!!())
-        }
+        binder.bind(holder)
     }
 
     fun goToPlayingSong() {
@@ -298,11 +75,7 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
-        holder.sortButton.setOnClickListener(null)
-        holder.playAll.setOnClickListener(null)
-        holder.shuffleAll.setOnClickListener(null)
-        holder.jumpUp.setOnClickListener(null)
-        holder.jumpDown.setOnClickListener(null)
+        binder.unbind(holder)
         super.onViewRecycled(holder)
     }
 
@@ -351,6 +124,7 @@ open class BaseDecorAdapter<T : AdapterFragment.BaseInterface<*>>(
     class ViewHolder(
         view: View,
     ) : RecyclerView.ViewHolder(view) {
+        val addToQueue: MaterialButton = view.findViewById(R.id.add_to_queue)
         val sortButton: MaterialButton = view.findViewById(R.id.sort)
         val playAll: MaterialButton = view.findViewById(R.id.play_all)
         val shuffleAll: MaterialButton = view.findViewById(R.id.shuffle_all)

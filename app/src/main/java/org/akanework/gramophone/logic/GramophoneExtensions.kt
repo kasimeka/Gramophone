@@ -86,6 +86,7 @@ import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_EDIT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_PLAY_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_RENAME_QUEUE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_REORDER
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_SHUFFLE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_UNDO_EDIT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QUERY_TIMER
@@ -518,6 +519,15 @@ fun MediaController.shuffleQueue(
             if (queueUuid != null) customExtras.putString("queueUuid", queueUuid.toString())
             if (shufflePlay) customExtras.putBoolean("shufflePlay", true)
             if (playDifferentSong) customExtras.putBoolean("playDifferentSong", true)
+        }
+    )
+
+/** Reorder a durable queue by metadata sort type or `"REVERSE"`. */
+fun MediaController.reorderQueue(queueUuid: UUID, sortType: String): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_REORDER, Bundle.EMPTY).apply {
+            customExtras.putString("queueUuid", queueUuid.toString())
+            customExtras.putString("sortType", sortType)
         }
     )
 

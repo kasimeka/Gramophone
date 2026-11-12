@@ -55,11 +55,23 @@ class AlbumAdapter(
     pluralStr = R.plurals.albums,
     defaultLayoutType = LayoutType.GRID,
     isSubFragment = isSubFragment
-) {
+), DecorMediaProvider {
 
     init {
         lateInit()
     }
+
+    override val supportsMediaActions: Boolean
+        get() = true
+
+    override fun getRepresentedSongs(): List<androidx.media3.common.MediaItem> =
+        getAlbumList().flatMap { it.songList }
+
+    override val queueTitleFlow: Flow<String>
+        get() = queueTitle
+
+    override val useShuffledTitleTemplate: Boolean
+        get() = true
 
     fun getAlbumList() = list?.second ?: emptyList()
 

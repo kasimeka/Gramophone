@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -74,7 +75,15 @@ import org.akanework.gramophone.ui.pureDark
 class AddToQueueSheet(
     private val activity: MainActivity,
     private val songRows: List<String>,
+    private val preloadedItems: List<MediaItem>? = null,
 ) : BottomSheetDialog(activity) {
+
+    constructor(activity: MainActivity, items: List<MediaItem>) : this(
+        activity = activity,
+        songRows = items.map(MediaRowCodec::encode),
+        preloadedItems = items,
+    )
+
     init {
         val context = activity
         setContentView(ComposeView(context).apply {
@@ -86,6 +95,7 @@ class AddToQueueSheet(
                     AddToQueuePicker(
                         activity = activity,
                         songRows = songRows,
+                        preloadedItems = preloadedItems,
                         onDismiss = { dismiss() },
                     )
                 }
@@ -100,6 +110,7 @@ class AddToQueueSheet(
 private fun AddToQueuePicker(
     activity: MainActivity,
     songRows: List<String>,
+    preloadedItems: List<MediaItem>? = null,
     onDismiss: () -> Unit,
 ) {
     val repository = remember { activity.gramophoneApplication.queueRepository }
@@ -113,7 +124,7 @@ private fun AddToQueuePicker(
         if (queue.id == activeQueue?.id) {
             // The player is the mutation seam for the active queue; the service mirrors it back.
             val player = activity.getPlayer()
-            val items = songRows.mapNotNull(MediaRowCodec::decode)
+            val items = preloadedItems ?: songRows.mapNotNull(MediaRowCodec::decode)
             if (items.isNotEmpty()) {
                 // An ended, play-when-ready queue would otherwise resume when a row is appended.
                 if (player?.playbackState == Player.STATE_ENDED) player.pause()

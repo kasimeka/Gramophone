@@ -22,9 +22,27 @@
         android:layout_height="match_parent"
         android:layout_gravity="end|center_vertical"
         android:layout_marginEnd="9dp"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/add_to_queue"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/rp_buttons"
+            android:contentDescription="@string/add_to_queue"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:visibility="gone"
+            app:icon="@drawable/ic_playlist_add"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconTint="?attr/colorPrimary"
+            app:tooltipText="@string/add_to_queue"
+            tools:visibility="visible" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/play_all"

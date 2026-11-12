@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.scrollBy
@@ -63,6 +65,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -109,10 +112,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ShareCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
@@ -144,13 +150,17 @@ import org.akanework.gramophone.logic.queue.QueuePlaybackRules
 import org.akanework.gramophone.logic.queue.QueuePlaybackState
 import org.akanework.gramophone.logic.queue.QueueRepository
 import org.akanework.gramophone.logic.renameQueue
+import org.akanework.gramophone.logic.reorderQueue
+import org.akanework.gramophone.logic.setMediaItemsWithTitle
 import org.akanework.gramophone.logic.shuffleQueue
 import org.akanework.gramophone.logic.undoQueueEdit
+import org.akanework.gramophone.logic.ui.DecorPanelRules
 import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.ui.GramophoneTheme
 import org.akanework.gramophone.ui.MainActivity
 import org.akanework.gramophone.ui.NowPlayingPresentation
 import org.akanework.gramophone.ui.SongMenuLogic
+import org.akanework.gramophone.ui.adapters.Sorter
 import org.akanework.gramophone.ui.components.AddToQueueSheet
 import org.akanework.gramophone.ui.components.QueueListContent
 import org.akanework.gramophone.ui.components.compose.QueueSongRow
@@ -460,10 +470,11 @@ private fun QueueDetailScreen(
             )
             if (target != null) {
                 hasScrolledInitial = true
+                val listTarget = target + 1
                 snapshotFlow { listState.layoutInfo.totalItemsCount }
-                    .filter { it > target }
+                    .filter { it > listTarget }
                     .first()
-                listState.animateScrollToItem(target)
+                listState.animateScrollToItem(listTarget)
             }
         }
     }
@@ -477,10 +488,11 @@ private fun QueueDetailScreen(
                     ?: activity.getPlayer()?.currentMediaItemIndex?.takeIf { it >= 0 },
             )
             if (target != null) {
+                val listTarget = target + 1
                 snapshotFlow { listState.layoutInfo.totalItemsCount }
-                    .filter { it > target }
+                    .filter { it > listTarget }
                     .first()
-                listState.animateScrollToItem(target)
+                listState.animateScrollToItem(listTarget)
             }
         }
     }
@@ -646,6 +658,19 @@ private fun QueueDetailScreen(
         }
     }
 
+    fun reorderQueueBy(sortType: String) {
+        scope.launch(Dispatchers.IO) {
+            activity.getPlayer()?.reorderQueue(loadedQueue.id, sortType)
+        }
+    }
+
+    fun addAllToQueue() {
+        val currentRows = latestDisplayRowsState.value.map { it.encoded }
+        if (DecorPanelRules.canAddToQueue(currentRows.size)) {
+            AddToQueueSheet(activity, currentRows).show()
+        }
+    }
+
     fun addToQueue(encoded: String) {
         AddToQueueSheet(activity, listOf(encoded)).show()
     }
@@ -783,7 +808,7 @@ private fun QueueDetailScreen(
                                                 isActive = isActive,
                                                 currentRow = playerState.currentRow,
                                             )
-                                            target?.let { listState.animateScrollToItem(it) }
+                                            target?.let { listState.animateScrollToItem(it + 1) }
                                         }
                                     },
                                 ) {
@@ -903,7 +928,7 @@ private fun QueueDetailScreen(
                     deltaY = deltaY,
                     rowHeightPx = rowHeightPx,
                     isScrollCompensation = isScrollCompensation,
-                    firstVisibleItemIndex = listState.firstVisibleItemIndex,
+                    firstVisibleItemIndex = (listState.firstVisibleItemIndex - 1).coerceAtLeast(0),
                     firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
                 )
 
@@ -963,6 +988,24 @@ private fun QueueDetailScreen(
                     ),
                     modifier = Modifier.fillMaxSize(),
                 ) {
+                    item(key = "queue_decor_panel") {
+                        QueueDetailDecorPanel(
+                            songCount = displayRows.size,
+                            canScrollToCurrent = isActive && playerState.currentRow != null,
+                            onScrollToCurrent = {
+                                scope.launch {
+                                    val target = QueuePlaybackRules.nowPlayingScrollTarget(
+                                        rowCount = latestDisplayRowsState.value.size,
+                                        isActive = isActive,
+                                        currentRow = playerState.currentRow,
+                                    )
+                                    target?.let { listState.animateScrollToItem(it + 1) }
+                                }
+                            },
+                            onAddAllToQueue = ::addAllToQueue,
+                            onReorder = ::reorderQueueBy,
+                        )
+                    }
                     itemsIndexed(items = displayRows, key = { _, row -> row.key }) { index, row ->
                         val encoded = row.encoded
                         val decoded = remember(encoded) { MediaRowCodec.decode(encoded) }
@@ -1025,7 +1068,7 @@ private fun QueueDetailScreen(
 
                 QueueFastScrollbar(
                     listState = listState,
-                    totalItems = displayRows.size,
+                    totalItems = displayRows.size + 1,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .fillMaxHeight()
@@ -1091,6 +1134,112 @@ private fun SwipeDismissibleSnackbar(data: SnackbarData) {
             backgroundContent = {},
         ) {
             Snackbar(data)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QueueDetailDecorPanel(
+    songCount: Int,
+    canScrollToCurrent: Boolean,
+    onScrollToCurrent: () -> Unit,
+    onAddAllToQueue: () -> Unit,
+    onReorder: (String) -> Unit,
+) {
+    var reorderMenuOpen by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .padding(start = 24.dp, end = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.songs, songCount, songCount),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .then(
+                    if (canScrollToCurrent) {
+                        Modifier.clickable(onClick = onScrollToCurrent)
+                    } else {
+                        Modifier
+                    }
+                ),
+        )
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+            tooltip = { PlainTooltip { Text(stringResource(R.string.add_to_queue)) } },
+            state = rememberTooltipState(),
+        ) {
+            IconButton(
+                onClick = onAddAllToQueue,
+                enabled = DecorPanelRules.canAddToQueue(songCount),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_playlist_add),
+                    contentDescription = stringResource(R.string.add_to_queue),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+        Box {
+            TooltipBox(
+                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                tooltip = { PlainTooltip { Text(stringResource(R.string.sort)) } },
+                state = rememberTooltipState(),
+            ) {
+                IconButton(
+                    onClick = { reorderMenuOpen = true },
+                    enabled = songCount > 1,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_sort),
+                        contentDescription = stringResource(R.string.sort),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+            DropdownMenu(
+                expanded = reorderMenuOpen,
+                onDismissRequest = { reorderMenuOpen = false },
+            ) {
+                val options = listOf(
+                    R.string.sort_by_name to Sorter.Type.ByTitleAscending.name,
+                    R.string.sort_by_artist to Sorter.Type.ByArtistAscending.name,
+                    R.string.sort_by_album to Sorter.Type.ByAlbumTitleAscending.name,
+                    R.string.sort_by_album_artist to Sorter.Type.ByAlbumArtistAscending.name,
+                    R.string.sort_by_album_year to Sorter.Type.ByAlbumYearDescending.name,
+                    R.string.sort_by_add_date to Sorter.Type.ByAddDateDescending.name,
+                    R.string.sort_by_release_date to Sorter.Type.ByReleaseDateDescending.name,
+                    R.string.sort_by_modified_date to Sorter.Type.ByModifiedDateDescending.name,
+                )
+                options.forEach { (labelRes, sortType) ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(labelRes)) },
+                        onClick = {
+                            reorderMenuOpen = false
+                            onReorder(sortType)
+                        },
+                    )
+                }
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.reverse_order)) },
+                    onClick = {
+                        reorderMenuOpen = false
+                        onReorder("REVERSE")
+                    },
+                )
+            }
         }
     }
 }
