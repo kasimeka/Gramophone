@@ -1123,7 +1123,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 lastQueueEditUndo = QueueEditUndoState(
                     queueUuid, operation, order, mediaItems
                 )
-                target.applyDisplayedOrder(result.order)
+                target.moveDisplayedRow(position, to)
             }
         }
 
@@ -1132,7 +1132,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             // An empty active queue has no player snapshot to mirror; persist the cleared rows.
             activeQueuePersistence.saveClearedNow(queueUuid)
         } else {
-            activeQueuePersistence.saveNow(markModified = true)
+            activeQueuePersistence.markStructuralDirty(markModified = true)
         }
         return true
     }
@@ -1327,6 +1327,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
      */
     private suspend fun applyQueueShuffle(command: SessionCommand): Boolean {
         val shufflePlay = command.customExtras.getBoolean("shufflePlay", false)
+        val playDifferentSong = command.customExtras.getBoolean("playDifferentSong", false)
         val player = endedWorkaroundPlayer ?: return false
         val durable = durableQueueForCommand(command)
         if (durable == null && command.customExtras.containsKey("queueUuid")) return false
@@ -1341,58 +1342,29 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             val currentPosition = currentRaw.takeIf { it != C.INDEX_UNSET }
 
             if (shufflePlay) {
-                if (player.isPlaying) {
-                    // A song is currently playing: keep it as the current item/position, but
-                    // reshuffle the rest so the queue order changes without disruption.
-                    val currentIdx = currentPosition?.takeIf { it in order.indices } ?: 0
-                    val newOrder = withContext(Dispatchers.Default) {
-                        val shuffledOthers = order.indices.filter { it != currentIdx }.shuffled()
-                        MutableList(order.size) { 0 }.also { out ->
-                            var j = 0
-                            for (i in order.indices) {
-                                out[i] = if (i == currentIdx) order[i] else order[shuffledOthers[j++]]
-                            }
-                        }
-                    }
-                    lastQueueEditUndo = null
-                    lastInactiveQueueEditUndo = null
-                    val target = PlayerQueueOrderTarget(player)
-                    val items = target.snapshotMediaItems()
-                    val reordered = withContext(Dispatchers.Default) {
-                        newOrder.map { items[it] }
-                    }
-                    withoutMarkingUserModified {
-                        target.applyReorderedItems(items, reordered)
-                    }
-                    player.play()
-                } else {
-                    // Active but paused: always play, and start a different song than the last-paused one.
-                    val lastPaused = currentPosition
-                        ?: durable?.normalizedBookmark()?.row?.takeIf { it in order.indices }
-                        ?: 0
-                    val anchor = if (order.size <= 1) {
-                        lastPaused
+                val currentIdx = currentPosition
+                    ?.takeIf { it in order.indices }
+                    ?: durable?.normalizedBookmark()?.row?.takeIf { it in order.indices }
+                    ?: 0
+
+                val result = withContext(Dispatchers.Default) {
+                    if (playDifferentSong) {
+                        QueueOrderEditor.shufflePlayDifferentSong(order, currentIdx)
                     } else {
-                        withContext(Dispatchers.Default) {
-                            order.indices.filter { it != lastPaused }.random()
-                        }
+                        QueueOrderEditor.shuffleEverything(order, currentIdx)
                     }
-                    val result = withContext(Dispatchers.Default) {
-                        QueueOrderEditor.shuffleEverything(order, anchor)
-                    } as? QueueEditResult.Applied ?: return false
-                    // Snapshot items on the player thread once, build reordered list off-main.
-                    val target = PlayerQueueOrderTarget(player)
-                    val items = target.snapshotMediaItems()
-                    val reordered = withContext(Dispatchers.Default) {
-                        result.order.map { items[it] }
-                    }
-                    lastQueueEditUndo = null
-                    lastInactiveQueueEditUndo = null
-                    withoutMarkingUserModified {
-                        player.exoPlayer.setMediaItems(reordered, 0, 0L)
-                    }
-                    player.play()
+                } as? QueueEditResult.Applied ?: return false
+                lastQueueEditUndo = null
+                lastInactiveQueueEditUndo = null
+                val target = PlayerQueueOrderTarget(player)
+                val items = target.snapshotMediaItems()
+                val reordered = withContext(Dispatchers.Default) {
+                    result.order.map { items[it] }
                 }
+                withoutMarkingUserModified {
+                    player.exoPlayer.setMediaItems(reordered, 0, 0L)
+                }
+                player.play()
                 handler.post {
                     activeQueuePersistence.saveNow(markModified = false)
                     scope.launch { broadcastQueueSongsRefresh() }
@@ -1403,25 +1375,35 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             val result = withContext(Dispatchers.Default) {
                 QueueOrderEditor.shuffleEverything(order, currentPosition)
             } as? QueueEditResult.Applied ?: return false
-            // Shuffle is toast-only feedback: do not retain undo snapshots.
-            lastQueueEditUndo = null
-            lastInactiveQueueEditUndo = null
             val target = PlayerQueueOrderTarget(player)
             val items = target.snapshotMediaItems()
-            val reordered = withContext(Dispatchers.Default) {
-                result.order.map { items[it] }
+            // A plain shuffle is undoable, like a reorder. Shuffle-play returned above.
+            lastQueueEditUndo = durable?.let {
+                QueueEditUndoState(it.id, QueueEditOperation.MOVE, order, items)
             }
-            withoutMarkingUserModified {
-                target.applyReorderedItems(items, reordered)
+            lastInactiveQueueEditUndo = null
+            // The playing row moves to the front and everything after it is replaced, so ExoPlayer
+            // never reloads the current period: playback continues without a restart or stutter.
+            val currentIndex = player.exoPlayer.currentMediaItemIndex
+            val tail = result.order.drop(1).map { items[it] }
+            if (currentIndex > 0) {
+                withoutMarkingUserModified {
+                    player.exoPlayer.moveMediaItem(currentIndex, 0)
+                }
+            }
+            if (tail.isNotEmpty()) {
+                withoutMarkingUserModified {
+                    player.exoPlayer.replaceMediaItems(1, items.size, tail)
+                }
             }
             handler.post {
-                activeQueuePersistence.saveNow(markModified = false)
+                activeQueuePersistence.markStructuralDirty()
                 scope.launch { broadcastQueueSongsRefresh() }
             }
             return true
         }
 
-        return applyInactiveQueueShuffleResult(durable, durable.id, shufflePlay, command)
+        return applyInactiveQueueShuffleResult(durable, durable.id, shufflePlay, playDifferentSong, command)
     }
 
     /**
@@ -1432,6 +1414,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         durable: Queue,
         durableId: UUID,
         shufflePlay: Boolean,
+        playDifferentSong: Boolean,
         command: SessionCommand,
     ): Boolean {
         var applied = false
@@ -1443,17 +1426,13 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             if (!playable) return@mutate current
             val target = StoredQueueOrderTarget(current)
             val order = target.displayedOrder()
-            val result = if (shufflePlay) {
-                val lastPaused = current.normalizedBookmark().row
+            val currentPos = target.currentPosition()
+                ?: current.normalizedBookmark().row
                     .coerceIn(0, (order.size - 1).coerceAtLeast(0))
-                val anchor = if (order.size <= 1) {
-                    lastPaused
-                } else {
-                    order.indices.filter { it != lastPaused }.random()
-                }
-                QueueOrderEditor.shuffleEverything(order, anchor)
+            val result = if (shufflePlay && playDifferentSong) {
+                QueueOrderEditor.shufflePlayDifferentSong(order, currentPos)
             } else {
-                QueueOrderEditor.shuffleEverything(order, target.currentPosition())
+                QueueOrderEditor.shuffleEverything(order, currentPos)
             } as? QueueEditResult.Applied ?: return@mutate current
             before = current
             target.applyDisplayedOrder(result.order)
@@ -1689,11 +1668,16 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
                             withContext(Dispatchers.Main) {
                                 withoutMarkingUserModified {
-                                    if (replica != null && isShuffledPlay) {
-                                        val startIdx = if (position >= 0) position else 0
+                                    if (isShuffledPlay) {
+                                        val randomOrder = if (items.isNotEmpty()) {
+                                            QueueOrderEditor.shufflePlayRandom(items.indices.toList()).order
+                                        } else {
+                                            emptyList()
+                                        }
+                                        val shuffledItems = randomOrder.map { items[it] }
                                         player.setMediaItems(
-                                            items,
-                                            startIndex = startIdx,
+                                            shuffledItems,
+                                            startIndex = 0,
                                             startPositionMs = C.TIME_UNSET,
                                             title = queue.title,
                                             ended = false,
@@ -1701,13 +1685,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                                             playbackParameters = null,
                                         )
                                         adoptPlayerQueue(queue)
-                                        // In-place automated shuffle preserves unmodified state
-                                        applyQueueShuffle(
-                                            SessionCommand(SERVICE_QB_SHUFFLE, Bundle().apply {
-                                                putBoolean("shufflePlay", true)
-                                                putString("queueUuid", queue.id.toString())
-                                            })
-                                        )
+                                        handler.post {
+                                            scope.launch { broadcastQueueSongsRefresh() }
+                                        }
                                     } else if (seamless) {
                                         player.setMediaItemsSeamlessly(
                                             items,
@@ -1732,7 +1712,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                                         adoptPlayerQueue(queue)
                                     }
                                 }
-                                activeQueuePersistence.saveNowAwait(markModified = false)
+                                // The player applies the new playlist asynchronously, so a save here
+                                // would capture the previous order. The timeline-driven save picks up
+                                // the applied order instead.
+                                activeQueuePersistence.markStructuralDirty()
                             }
                             SessionResult(SessionResult.RESULT_SUCCESS)
                         }
@@ -2055,9 +2038,17 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 SERVICE_QB_EDIT -> {
                     val status = applyQueueEdit(customCommand)
                     if (status) {
-                        broadcastQueueSongsRefresh(
-                            queueId = inactiveQueueIdForRefresh(customCommand)
-                        )
+                        val inactiveId = inactiveQueueIdForRefresh(customCommand)
+                        val operation = runCatching {
+                            QueueEditOperation.valueOf(
+                                customCommand.customExtras.getString("operation")!!,
+                            )
+                        }.getOrNull()
+                        // Active detail UI is optimistic/player-driven; avoid heavy legacy refresh on
+                        // every in-place move/edit. Inactive queues still refresh for compatibility.
+                        if (inactiveId != null || operation != QueueEditOperation.MOVE) {
+                            broadcastQueueSongsRefresh(queueId = inactiveId)
+                        }
                     }
                     SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
                         res.extras.putBoolean("status", status)
@@ -2440,8 +2431,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                         activeQueuePersistence.saveNowAwait(markModified = false)
                     }
                 }
-            } else {
-                activeQueuePersistence.saveNow(
+            } else if (activeQueuePersistence.activeQueueId() != null) {
+                // Playlist changes include in-place moves/reorders; debounce persistence off the
+                // interaction path. Checkpoints (queue switch, stop/destroy) still flush explicitly.
+                activeQueuePersistence.markStructuralDirty(
                     markModified = suppressUserModifiedTimelineDepth == 0
                 )
             }

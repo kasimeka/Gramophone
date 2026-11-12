@@ -19,6 +19,7 @@ package org.akanework.gramophone.logic.utils.exoplayer
 
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import org.akanework.gramophone.logic.queue.QueueOrderEditor
 import org.akanework.gramophone.logic.queue.QueueOrderTarget
 
 /**
@@ -42,9 +43,26 @@ class PlayerQueueOrderTarget(
     }
 
     override fun applyDisplayedOrder(order: List<Int>) {
+        require(order.size == size) {
+            "displayed order size ${order.size} does not match media item count $size"
+        }
         val items = snapshotMediaItems()
         val reordered = order.map { items[it] }
-        applyReorderedItems(items, reordered)
+        val currentIndex = exoPlayer.currentMediaItemIndex
+        val currentPosition = exoPlayer.currentPosition.coerceAtLeast(0L)
+        val playWhenReady = exoPlayer.playWhenReady
+        val playbackState = exoPlayer.playbackState
+        val newIndex = if (currentIndex in order.indices) {
+            order.indexOf(currentIndex).takeIf { it >= 0 } ?: 0
+        } else {
+            0
+        }
+
+        exoPlayer.setMediaItems(reordered, newIndex, currentPosition)
+        exoPlayer.playWhenReady = playWhenReady
+        if (playbackState == androidx.media3.common.Player.STATE_IDLE) {
+            exoPlayer.prepare()
+        }
     }
 
     /**
@@ -55,8 +73,8 @@ class PlayerQueueOrderTarget(
         (0 until exoPlayer.mediaItemCount).map { exoPlayer.getMediaItemAt(it) }
 
     /**
-     * Apply a precomputed reorder as one bulk timeline replacement, preserving the current item and
-     * playback position/state. [currentItems] must be the timeline snapshot the reorder was derived
+     * Apply a precomputed reorder, preserving the current item and playback position/state without
+     * reloading the media pipeline. [currentItems] must be the timeline snapshot the reorder was derived
      * from, in the same order.
      */
     fun applyReorderedItems(currentItems: List<MediaItem>, reordered: List<MediaItem>) {
@@ -64,6 +82,18 @@ class PlayerQueueOrderTarget(
             "reordered item count ${reordered.size} does not match media item count ${currentItems.size}"
         }
         if (reordered.indices.all { reordered[it] === currentItems[it] }) return
+
+        val remaining = currentItems.indices.toMutableList()
+        val order = reordered.map { item ->
+            val idx = remaining.indexOfFirst { currentItems[it] === item }
+                .takeIf { it != -1 }
+                ?: remaining.indexOfFirst { currentItems[it] == item }
+            if (idx != -1) remaining.removeAt(idx) else -1
+        }
+        if (order.all { it != -1 } && order.toSet().size == order.size && order.size == size) {
+            applyDisplayedOrder(order)
+            return
+        }
 
         val currentIndex = exoPlayer.currentMediaItemIndex
         val currentPosition = exoPlayer.currentPosition.coerceAtLeast(0L)

@@ -192,4 +192,69 @@ class QueueOrderEditorTest {
 
         assertEquals(order.drop(1).toSet(), seen)
     }
+
+    @Test
+    fun shufflePlayRandomReturnsPermutationStartingWithRandomTrack() {
+        val order = (0 until 10).toList()
+        val firstRows = mutableSetOf<Int>()
+        repeat(100) { seed ->
+            val result = QueueOrderEditor.shufflePlayRandom(order, Random(seed))
+            assertEquals(order.size, result.order.size)
+            assertEquals(order.toSet(), result.order.toSet())
+            firstRows.add(result.order.first())
+        }
+        // Over 100 seeds across 10 elements, we should see multiple different starting tracks
+        assertTrue(firstRows.size > 1)
+    }
+
+    @Test
+    fun shufflePlayRandomSingleItemReturnsSameItem() {
+        val result = QueueOrderEditor.shufflePlayRandom(listOf(42))
+        assertEquals(listOf(42), result.order)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun shufflePlayRandomEmptyThrows() {
+        QueueOrderEditor.shufflePlayRandom(emptyList())
+    }
+
+    @Test
+    fun planInPlaceMovesEmptyOrSingleReturnsNoMoves() {
+        assertEquals(emptyList<Pair<Int, Int>>(), QueueOrderEditor.planInPlaceMoves(emptyList()))
+        assertEquals(emptyList<Pair<Int, Int>>(), QueueOrderEditor.planInPlaceMoves(listOf(0)))
+    }
+
+    @Test
+    fun planInPlaceMovesAlreadyOrderedReturnsNoMoves() {
+        assertEquals(emptyList<Pair<Int, Int>>(), QueueOrderEditor.planInPlaceMoves(listOf(0, 1, 2, 3, 4)))
+    }
+
+    @Test
+    fun planInPlaceMovesReconstructsPermutationAccurately() {
+        val sizes = listOf(2, 3, 4, 5, 8, 15, 50)
+        for (size in sizes) {
+            val original = (0 until size).toList()
+            repeat(10) { seed ->
+                val targetOrder = original.shuffled(Random(seed))
+                val moves = QueueOrderEditor.planInPlaceMoves(targetOrder)
+                assertTrue(moves.size <= size - 1)
+
+                val simulated = original.toMutableList()
+                for ((from, to) in moves) {
+                    simulated.add(to, simulated.removeAt(from))
+                }
+                assertEquals(targetOrder, simulated)
+            }
+        }
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun planInPlaceMovesThrowsOnDuplicateRows() {
+        QueueOrderEditor.planInPlaceMoves(listOf(0, 1, 1, 2))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun planInPlaceMovesThrowsOnOutOfRangeRows() {
+        QueueOrderEditor.planInPlaceMoves(listOf(0, 1, 4, 2))
+    }
 }

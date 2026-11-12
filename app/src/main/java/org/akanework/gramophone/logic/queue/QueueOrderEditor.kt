@@ -118,6 +118,45 @@ object QueueOrderEditor {
     }
 
     /**
+     * Shuffle-play starting from a randomly selected row: picks a random track from [order] to be
+     * the first track playing at position 0, and shuffles the rest of the queue after it.
+     */
+    fun shufflePlayRandom(
+        order: List<Int>,
+        random: Random = Random.Default,
+    ): QueueEditResult.Applied {
+        require(order.isNotEmpty()) { "order must not be empty" }
+        if (order.size == 1) return QueueEditResult.Applied(order)
+        val anchor = order.indices.random(random)
+        val permutation = QueueShuffle.shuffledOrder(order.size, anchor, random)
+        return QueueEditResult.Applied(permutation.map { order[it] })
+    }
+
+    /**
+     * Compute a sequence of in-place single-row moves (`from` to `to`) that transforms the current
+     * natural order `0 until order.size` into [order].
+     *
+     * Executing these moves in sequence using `moveMediaItem(from, to)` modifies the player's
+     * timeline in-place without tearing down media sources, rebuffering, or causing playback
+     * stutter.
+     */
+    fun planInPlaceMoves(order: List<Int>): List<Pair<Int, Int>> {
+        require(order.size == order.toSet().size) { "order contains duplicate rows" }
+        require(order.all { it in 0 until order.size }) { "order contains invalid row index" }
+        val current = (0 until order.size).toMutableList()
+        val moves = mutableListOf<Pair<Int, Int>>()
+        for (targetIndex in 0 until order.size - 1) {
+            val originalIndex = order[targetIndex]
+            val currentIndex = current.indexOf(originalIndex)
+            if (currentIndex != targetIndex) {
+                moves.add(currentIndex to targetIndex)
+                current.add(targetIndex, current.removeAt(currentIndex))
+            }
+        }
+        return moves
+    }
+
+    /**
      * Move the row at [from] to [to] in the displayed order, as a drag-reorder does. The current
      * row keeps its identity, so playback and the bookmark follow it.
      */
