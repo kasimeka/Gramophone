@@ -123,6 +123,8 @@
     <string name="settings_library">Bibliothèque</string>
     <string name="settings_lyrics_bold_summary">Utiliser une police plus grosse pour les paroles</string>
     <string name="settings_customization">Personnalisation</string>
+    <string name="settings_play_on_launch_summary">Lancer la musique au démarrage</string>
+    <string name="settings_play_on_launch">Lire au démarrage</string>
     <string name="settings_blacklist">Liste d\'exclusion</string>
     <string name="settings_blacklist_folder">Exclure des dossiers</string>
     <string name="settings_blacklist_folder_summary">Filtre les morceaux de certains dossiers</string>
@@ -499,7 +501,6 @@
     <string name="mount_storage">Veuillez insérer une carte SD pour utiliser cette fonctionnalité</string>
     <string name="failed_to_restore">Échec de la restauration des modifications : %s</string>
     <string name="playlist_empty">La liste de lecture est vide</string>
-    <string name="playlist_empty_msg">Ajoutez des chansons en appuyant sur « Ajouter à une liste de lecture » dans le menu à trois points d’un morceau.</string>
     <string name="search_desc">Artistes, albums et morceaux</string>
     <string name="search_hint">Rechercher des chansons et des artistes</string>
     <string name="picker_activity">Choisir un morceau</string>

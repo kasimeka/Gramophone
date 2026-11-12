@@ -28,8 +28,34 @@
     <string name="category_artists">Artists</string>
     <!-- Tab on home screen showing a list of genres -->
     <string name="category_genres">Genres</string>
-    <!-- Tab on home screen showing a list of playlists -->
-    <string name="category_playlists">Playlists</string>
+    <!-- Tab on home screen showing the durable queue collection -->
+    <string name="category_queues">Queues</string>
+    <!-- Queue list row: the active queue is currently playing -->
+    <string name="queue_state_playing">Playing</string>
+    <!-- Queue list row: the queue has a saved position and is not playing -->
+    <string name="queue_state_paused">Paused</string>
+    <!-- Queue list row: the queue has never been played -->
+    <string name="queue_state_never_played">Never played</string>
+    <!-- Queue list row: the queue reached its end -->
+    <string name="queue_state_ended">Ended</string>
+    <!-- Queue list row: the queue has no songs -->
+    <string name="queue_state_empty">Empty</string>
+    <!-- Queue list row: bookmark row and playback offset, e.g. "Song 3 · 1:23" -->
+    <string name="queue_row_bookmark">Song %1$d · %2$s</string>
+    <!-- Queue list row: bookmarked song row without a playback timestamp -->
+    <string name="queue_row_bookmark_song">Song %1$d</string>
+    <!-- Empty state of the Queues tab -->
+    <string name="queue_list_empty">No queues yet</string>
+    <!-- Accessibility label for the plus that creates an empty queue -->
+    <string name="new_queue">New queue</string>
+    <!-- Default title format for auto-generated numbered queues in dialogs -->
+    <string name="new_queue_n">New Queue #%d</string>
+    <!-- Empty state of a queue detail screen -->
+    <string name="queue_detail_empty">This queue is empty</string>
+    <!-- Dialog title for entering a new queue name -->
+    <string name="rename_queue">Rename queue</string>
+    <!-- Text field label in the rename queue dialog -->
+    <string name="queue_name">Queue name</string>
     <!-- Used in place of the artist name if the artist can't be found unexpectedly -->
     <string name="unknown_artist">Unknown artist</string>
     <!-- Tab on home screen showing a list of years (2002, 2003, etc.) -->
@@ -105,8 +131,8 @@
     <string name="shuffle">Shuffle</string>
     <!-- Tooltip of repeat mode 3-state clickable toggle button -->
     <string name="repeat_mode">Repeat mode</string>
-    <!-- Used in place of the playlist if the playlist can't be found unexpectedly -->
-    <string name="unknown_playlist">Unknown playlist</string>
+    <!-- Fallback name when a queue has no title -->
+    <string name="unknown_queue">Unknown queue</string>
     <string name="gramophone_crashed" translatable="false">Crash log</string>
     <string name="crash_gramophone_version" translatable="false">Gramophone version</string>
     <string name="crash_phone_model" translatable="false">Model</string>
@@ -270,7 +296,9 @@
     <!-- Toggle in lyrics settings to make all lyrics display in center instead of left. Subtitle -->
     <string name="settings_lyrics_center_summary">Use center alignment for lyrics</string>
     <!-- Toggle in behavior settings to make app start playing music when opening it. Title -->
+    <string name="settings_play_on_launch">Play on launch</string>
     <!-- Toggle in behavior settings to make app start playing music when opening it. Subtitle -->
+    <string name="settings_play_on_launch_summary">Play music on launch</string>
     <!-- Window title of submenu in behavior settings to exclude songs that are in specific folders -->
     <string name="settings_blacklist">Blacklist</string>
     <!-- Toggle in behavior settings to exclude songs that are in specific folders. Subtext -->
@@ -299,8 +327,6 @@
     <string name="dialog_lyrics">Lyrics</string>
     <!-- Error message when deleting song upon user request failed unexpectedly -->
     <string name="delete_failed">Deleting song failed: %s</string>
-    <!-- Error message when deleting playlist upon user request failed unexpectedly -->
-    <string name="delete_failed_playlist">Deleting playlist failed: %s</string>
     <!-- Settings toggle to use photos permission to read jpg files as album cover. Title -->
     <string name="album_covers_enhance">Enhanced album cover loading</string>
     <!-- Settings toggle to use photos permission to read jpg files as album cover. Subtext -->
@@ -330,8 +356,8 @@
     <string name="lock_tempo_pitch">Lock tempo and pitch</string>
     <!-- Used in playback speed to restore default tempo and pitch -->
     <string name="reset">Reset</string>
-    <!-- Accessibility tooltip for queue button showing which songs are playing next and before -->
-    <string name="current_playlist">Current playlist</string>
+    <!-- Accessibility tooltip for queue button -->
+    <string name="current_playlist">Queues</string>
     <!-- Error notification when app is closed but user wants to play music and system denied it. Title -->
     <string name="fgs_failed_title">Failed to resume music playback</string>
     <!-- Error notification when app is closed but user wants to play music and system denied it. Subtext -->
@@ -354,6 +380,7 @@
     <string name="tab_order">Configure tab order</string>
     <!-- Choose order of tabs in appearance settings. Subtext -->
     <string name="tab_order_summary">The app will show the first tab on startup. Tabs after the divider will be hidden.</string>
+    <string name="tab_order_queues_permanent">Queues is always available and can\'t be hidden.</string>
     <!-- Accessibility label for seek bar in settings -->
     <string name="seekbar">Seekbar</string>
     <!-- Accessibility label for divider which is semantically important in tab order dialog -->
@@ -372,8 +399,24 @@
     <string name="scroll_to_songs">Scroll to songs</string>
     <!-- Tooltip for play button in full player -->
     <string name="play">Play</string>
+    <string name="pause">Pause</string>
     <!-- Tooltip for three dots button opening context menu -->
     <string name="more">More</string>
+    <!-- Accessibility label for the queue row three-dot menu -->
+    <string name="more_options">More options</string>
+    <!-- Accessibility label for the queue row drag handle -->
+    <string name="reorder">Reorder</string>
+    <!-- Queue row menu item removing a song from the queue -->
+    <string name="remove_from_queue">Remove from queue</string>
+    <!-- Snackbar confirmation after moving a song to play next -->
+    <string name="will_play_next">Will play next</string>
+    <!-- Snackbar confirmation after removing a song from the queue -->
+    <string name="removed_from_queue">Removed from queue</string>
+    <!-- Snackbar confirmation after reordering the queue -->
+    <!-- Toast confirmation after shuffling the queue from the full player, which has no undo -->
+    <string name="queue_shuffled">Queue shuffled</string>
+    <!-- Snackbar action reversing the last queue edit -->
+    <string name="undo">Undo</string>
     <!-- Tooltip for x button removing song from queue/playlist -->
     <string name="remove">Remove</string>
     <!-- Tooltip for skip to next button in full player -->
@@ -1037,9 +1080,7 @@
     <string name="log_will_auto_send">Logs will be sent automatically, explain the issue instead</string>
     <!-- Used in crash report screen to explain the user doesn't need to worry about sending logs -->
     <string name="log_attachment">Logs will be sent as attachment automatically</string>
-    <!-- Tooltip of plus button in playlist list to create a new playlist. Also used in playlist
-     selection dialog after user pressed "Add to playlist" on a song. -->
-    <string name="create_playlist">Create playlist…</string>
+
     <!-- Context menu item to rename a playlist -->
     <string name="rename">Rename</string>
     <!-- Loading message if user asked to refresh songs -->
@@ -1051,21 +1092,8 @@
     <string name="did_you_know">Did you know…</string>
     <!-- Explainer used for dialog explaining when to use refresh feature and when to use quick refresh -->
     <string name="refresh_did_you_know">Gramophone asks for an updated song list on every app start, and while Gramophone is running, it will detect new media automatically as well. This \"Refresh\" button will not reload the media in Gramophone, instead, it will ask your system to re-scan all files from all attached permanent storage devices (this is why it takes some time). This means, unless your system or other apps are malfunctioning, you will never need to use this feature.\n\nMissing some songs? Make sure to check "Settings > Behaviour" for the minimum length filter and folder blacklist, and confirm these settings are set to an expected value. For more possible reasons, please check our FAQ.</string>
-    <!-- Error message when renaming playlist upon user request failed unexpectedly -->
-    <string name="rename_failed_playlist">Failed to rename playlist: %s</string>
-    <!-- Text field hint used for dialog where playlist is renamed or created -->
-    <string name="playlist_name">Name of playlist</string>
-    <!-- Error message when creating playlist upon user request failed unexpectedly -->
-    <string name="create_failed_playlist">Failed to create playlist: %s</string>
-    <!-- Dialog title for entering name when renaming playlist -->
-    <string name="rename_playlist">Rename playlist</string>
-    <!-- Error message when changing songs in the playlist upon user request failed unexpectedly -->
-    <string name="edit_playlist_failed">Editing playlist failed: %s</string>
-    <!-- Error message when changing songs in the special "Favourites" playlist upon user request
-    failed unexpectedly -->
+    <!-- Error message when changing Favourites upon user request failed unexpectedly -->
     <string name="edit_favorites_failed">Editing favorites failed: %s</string>
-    <!-- Context menu item to add song to playlist -->
-    <string name="add_to_playlist">Add to playlist</string>
     <!-- Error if no internet browser is installed but user clicks a link -->
     <string name="no_app_found">No app found that can do this</string>
     <!-- Shown below the lead developer's nickname in about screen -->
@@ -1131,8 +1159,7 @@
     <string name="sort_by_album_year">Album year</string>
     <!-- Sort songs by the album artist, and then the album's release year -->
     <string name="sort_by_album_artist_year"><![CDATA[Album artist -> year]]></string>
-    <!-- Error in renaming playlist dialog when an letter is used which isn't supported by FAT32 -->
-    <string name="forbidden_symbol_error">Invalid character in the name</string>
+
     <!-- Used in about screen to credit every translator with their Weblate display name -->
     <string name="translators">Translators</string>
     <!-- Used in audio settings, this is a technical/"brand" name for an interoperable audio
@@ -1247,10 +1274,9 @@
     <string name="failed_to_restore">Failed to restore changes: %s</string>
     <!-- Dialog title when user opens playlist editor but playlist is empty, because playlist editor
     isn't used to add new songs but only to move or delete them. Hint user at proper way. -->
-    <string name="playlist_empty">Playlist is empty</string>
     <!-- Dialog text when user opens playlist editor but playlist is empty, because playlist editor
     isn't used to add new songs but only to move or delete them. Hint user at proper way. -->
-    <string name="playlist_empty_msg">Add some songs by clicking on \"Add to playlist\" in the three-dot menu of a song.</string>
+
     <!-- In system settings of old Android versions, you can check Gramophone in the list of apps
     supporting local search. This string explains what can be searched when doing so -->
     <string name="search_desc">Artists, albums and tracks</string>
@@ -1260,17 +1286,14 @@ supporting local search. This string is displayed in the search bar when using G
     <!-- Shown in system's file upload dialog, used by browsers or similar, to allow user to choose
      a song using the familiar Gramophone user interface. App icon is next to it -->
     <string name="picker_activity">Choose music track</string>
-    <!-- Shown in system's file upload dialog, used by browsers or similar, to allow user to choose
-     a playlist using the familiar Gramophone user interface. App icon is next to it -->
-    <string name="playlist_picker_activity">Choose playlist</string>
+
     <!-- Settings category in appearance settings relating to specific tabs on home page -->
     <string name="settings_preference_category_folders_filesystem"><![CDATA[Folder & filesystem tabs]]></string>
     <!-- Toggle in the "folder & filesystem tabs" category in appearance settings. Title -->
     <string name="show_file_names">Show file names</string>
     <!-- Toggle in the "folder & filesystem tabs" category in appearance settings. Subtext -->
     <string name="show_file_names_summary">Show file names in the place of song names in the folder and filesystem tabs</string>
-    <!-- Error if trying to rename/create playlist but the name is already used by some other playlist -->
-    <string name="another_with_name">Name is already in use</string>
+
     <!-- Slider in lyric settings to change font size for lyrics -->
     <string name="settings_font_size">Font size</string>
     <!-- Positive dialog action in sleep timer dialog to store the settings -->
@@ -1300,7 +1323,6 @@ supporting local search. This string is displayed in the search bar when using G
     <!-- Pin this queue so it does not get automatically removed after some period of time -->
     <string name="mq_pin_queue">Pin queue</string>
     <string name="shuffled">%s (shuffled)</string>
-    <string name="loading_playlists">Loading playlists...</string>
     <!-- Option to enable reordering mode for items in a list -->
     <string name="edit_mode">Enter edit mode</string>
 </resources>

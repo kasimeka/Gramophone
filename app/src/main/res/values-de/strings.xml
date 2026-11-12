@@ -103,6 +103,8 @@
     <string name="settings_player_options_summary">Ausgabequalität, Wiedergabeverhalten</string>
     <string name="unknown_title">Unbekannter Titel</string>
     <string name="settings_lyrics_center">Zentriert</string>
+    <string name="settings_play_on_launch_summary">Beim Start Musik wiedergeben</string>
+    <string name="settings_play_on_launch">Beim Start wiedergeben</string>
     <string name="settings_experimental_settings_summary">Testfunktionen, Sonstiges</string>
     <string name="settings_lyrics_bold_summary">Für Liedtexte eine höhere Schriftstärke verwenden</string>
     <string name="settings_category_basic_info">Basisinformation</string>
@@ -467,7 +469,6 @@
     <string name="settings_preference_category_folders_filesystem"><![CDATA[Order- &amp; Dateisystem-Tabs]]></string>
     <string name="search_hint">Titel und Interpreten suchen</string>
     <string name="search_desc">Interpreten, Alben und Titel</string>
-    <string name="playlist_empty_msg">Füge einige Lieder hinzu, indem Du \"Zur Wiedergabeliste hinzufügen\" im Kontextmenü eines Lieds wählst.</string>
     <string name="failed_to_restore">Konnte Änderungen nicht wiederherstellen: %s</string>
     <string name="mount_storage">Bitte setze eine SD-Karte ein, um diese Funktion zu nutzen</string>
     <string name="restore_edits_msg">Es gibt ungespeicherte Änderungen für die Wiedergabeliste \"%s\". Willst Du diese Änderungen wiederherstellen, oder verwerfen und mit einer frischen Version der Wiedergabeliste starten?</string>

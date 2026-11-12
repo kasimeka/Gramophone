@@ -114,8 +114,10 @@
     <string name="settings_lyrics_bold_summary">Usa un estil de lletra més gruixut per a les lletres</string>
     <string name="settings_lyrics_center">Alineació central</string>
     <string name="settings_lyrics_center_summary">Usa l\'alineació central per a les lletres</string>
+    <string name="settings_play_on_launch">Reprodueix en llançar</string>
     <string name="settings_blacklist">Llista negra</string>
     <string name="settings_category_basic_info">Informació bàsica</string>
+    <string name="settings_play_on_launch_summary">Reprodueix música en el llançament</string>
     <string name="settings_crash_application">Aplicació de fallades</string>
     <string name="album_cover">Caràtules d\'àlbums</string>
     <string name="dialog_edit_metadata">Edita</string>
@@ -495,7 +497,6 @@
     <string name="mount_storage">Inseriu una targeta SD per a fer servir aquesta funció</string>
     <string name="failed_to_restore">Ha fallat en restaurar els canvis: %s</string>
     <string name="playlist_empty">La llista de reproducció és buida</string>
-    <string name="playlist_empty_msg">Afegiu cançons fent clic a «Afegeix a la llista de reproducció» al menú de tres punts d\'una cançó.</string>
     <string name="delete_really_artist">Segur que voleu suprimir totes les cançons de «%s»? Aquesta acció no es pot desfer.</string>
     <string name="search_desc">Artistes, àlbums i pistes</string>
     <string name="picker_activity">Tria una pista de música</string>

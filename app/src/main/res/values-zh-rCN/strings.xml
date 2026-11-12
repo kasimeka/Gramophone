@@ -115,6 +115,8 @@
     <string name="settings_lyrics_bold_summary">为歌词使用更粗的字体</string>
     <string name="settings_lyrics_center">居中对齐</string>
     <string name="settings_lyrics_center_summary">为歌词使用居中对齐</string>
+    <string name="settings_play_on_launch">启动时播放</string>
+    <string name="settings_play_on_launch_summary">在启动时播放歌曲</string>
     <string name="settings_blacklist_folder">黑名单文件夹</string>
     <string name="settings_blacklist">黑名单</string>
     <string name="settings_category_misc">其他</string>
@@ -485,7 +487,6 @@
     <string name="mount_storage">请插入 SD 卡以使用此功能</string>
     <string name="failed_to_restore">无法恢复更改：%s</string>
     <string name="playlist_empty">播放列表为空</string>
-    <string name="playlist_empty_msg">点击歌曲三点菜单中的“添加到播放列表”添加一些歌曲。</string>
     <string name="delete_really_artist">确定要删除“%s”的所有歌曲吗？此操作无法撤销。</string>
     <string name="search_desc">音乐人、专辑和曲目</string>
     <string name="search_hint">搜索歌曲和音乐人</string>

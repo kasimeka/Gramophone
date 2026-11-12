@@ -127,6 +127,8 @@
     <string name="settings_lyrics_bold_summary">Usar un tipo de letra máis groso</string>
     <string name="settings_lyrics_center">Aliñar ao centro</string>
     <string name="settings_lyrics_center_summary">Usar aliñamento no centro para letras</string>
+    <string name="settings_play_on_launch">Reproducir ao inicio</string>
+    <string name="settings_play_on_launch_summary">Reproducir a música ao iniciar</string>
     <string name="settings_blacklist">Omisións</string>
     <string name="settings_blacklist_folder_summary">Filtrar as cancións de certos cartafoles</string>
     <string name="settings_blacklist_folder">Omitir cartafoles</string>
@@ -489,7 +491,6 @@
     <string name="mount_storage">Inserta unha tarxeta SD para usar esta característica</string>
     <string name="failed_to_restore">Fallou o restablecemento: %s</string>
     <string name="playlist_empty">Lista de reprodución baleira</string>
-    <string name="playlist_empty_msg">Engade algunhas cancións premento en «Engadir á lista de reprodución» no menú de tres puntos da canción.</string>
     <string name="edit_favorites_failed">Fallou a edición das favoritas: %s</string>
     <string name="delete_really_artist">Queres eliminar todas as cancións de «%s»? Esta acción non é reversible.</string>
     <string name="search_desc">Artistas, álbums e cancións</string>

@@ -123,6 +123,8 @@
     <string name="settings_blacklist_folder_summary">Lọc bài hát trong một số thư mục</string>
     <string name="settings_category_full_player">Trình phát đầy đủ</string>
     <string name="settings_category_misc">Khác</string>
+    <string name="settings_play_on_launch_summary">Tự động phát khi mở ứng dụng</string>
+    <string name="settings_play_on_launch">Phát khi mở ứng dụng</string>
     <string name="album_cover">Ảnh album</string>
     <string name="delete_failed">Lỗi xóa bài: %s</string>
     <string name="dialog_edit_metadata">Chỉnh sửa</string>
@@ -362,7 +364,6 @@
     <string name="mount_storage">Vui lòng lắp thẻ SD để sử dụng tính năng này</string>
     <string name="failed_to_restore">Không thể khôi phục các thay đổi: %s</string>
     <string name="playlist_empty">Danh sách phát trống</string>
-    <string name="playlist_empty_msg">Thêm bài hát bằng cách nhấp vào \"Thêm vào danh sách phát\" trong menu ba chấm của bài hát.</string>
     <string name="search_desc">Nghệ sĩ, album và bài hát</string>
     <string name="search_hint">Tìm kiếm bài hát và nghệ sĩ</string>
     <string name="picker_activity">Chọn bản nhạc</string>

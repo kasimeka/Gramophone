@@ -75,6 +75,8 @@
     <string name="dialog_edit_metadata">편집</string>
     <string name="dialog_lyrics">가사</string>
     <string name="delete_failed">곡 삭제 실패: %s</string>
+    <string name="settings_play_on_launch">앱을 실행할 때 재생</string>
+    <string name="settings_play_on_launch_summary">앱을 실행하면 자동으로 음악 재생</string>
     <string name="album_covers_enhance">개선된 방식으로 앨범 커버 불러오기</string>
     <string name="album_covers_enhance_desc">고품질 곡 커버를 표시하고 앨범 커버와 곡 커버가 서로 다를 수 있도록 합니다(사진 접근 권한 필요)</string>
     <string name="settings_trim_lyrics">가사 양 끝의 공백 제거</string>
@@ -494,7 +496,6 @@
     <string name="mount_storage">이 기능을 사용하려면 SD 카드를 삽입해 주세요</string>
     <string name="failed_to_restore">변경 사항 복원 실패: %s</string>
     <string name="playlist_empty">재생 목록이 비어 있습니다</string>
-    <string name="playlist_empty_msg">곡의 점 3개 메뉴에서 \"재생 목록에 추가\"를 눌러 곡을 추가하세요.</string>
     <string name="search_desc">아티스트, 앨범 및 트랙</string>
     <string name="search_hint">곡 및 아티스트 검색</string>
     <string name="picker_activity">음악 트랙 선택</string>

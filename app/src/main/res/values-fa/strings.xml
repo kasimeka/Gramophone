@@ -128,6 +128,8 @@
     <string name="opensource_info">متن‌باز شده با قوانین GPL-3.0\nگواهی پخش %s</string>
     <string name="settings_player_options_summary">کیفیت خروجی، رفتار پخش کننده</string>
     <string name="category_playlists">فهرست‌های پخش</string>
+    <string name="settings_play_on_launch_summary">پخش آهنگ در اجرا</string>
+    <string name="settings_play_on_launch">پخش در اجرا</string>
     <string name="grant_images"><![CDATA[لطفا اجازۀ دسترسی به «تصاویر و ویدیوها» را بپذیرید]]></string>
     <string name="home_menu_refresh">بازخوانی</string>
     <string name="refreshed_songs">%1$d آهنگ بازخوانی شد</string>
@@ -489,7 +491,6 @@
     <string name="mount_storage">لطفا برای کار با این ویژگی کارت SD را وارد کنید</string>
     <string name="failed_to_restore">بازگردانی تغییرات شکست خورد: %s</string>
     <string name="playlist_empty">فهرست پخش خالی‌ست</string>
-    <string name="playlist_empty_msg">برای افزودن آهنگ از گزینه «افزودن به فهرست پخش» در سه-نقطه کنار هر آهنگ استفاده کنید</string>
     <string name="search_desc">هنرمندان، آلبوم‌ها و آثار</string>
     <string name="search_hint">جستجو میان آهنگ‌ها و هنرمندان</string>
     <string name="picker_activity">اثر موسیقی را انتخاب کنید</string>

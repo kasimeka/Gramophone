@@ -36,6 +36,7 @@
         <item quantity="many">%d غرضاً</item>
         <item quantity="other">%d غرضاً</item>
     </plurals>
+    <string name="settings_play_on_launch_summary">تشغيل الأغنية مع تشغيل القائمة</string>
     <string name="category_genres">الأنواع</string>
     <string name="settings_about_app">حول</string>
     <string name="natural_order">التَّرتيب الطَّبيعيّ</string>
@@ -57,6 +58,7 @@
         <item quantity="many">%d فنّاناً</item>
         <item quantity="other">%d فنّاناً</item>
     </plurals>
+    <string name="settings_play_on_launch">شغِّل مع تشغيل البرنامج</string>
     <plurals name="albums">
         <item quantity="zero">لا ألبومات</item>
         <item quantity="one">ألبوم واحد (%d)</item>
@@ -281,7 +283,6 @@
     <string name="search_desc">الفنانون والألبومات والمقاطع الموسيقية</string>
     <string name="search_hint">البحث في الأغاني والفنانين</string>
     <string name="picker_activity">اختر مقطع موسيقي</string>
-    <string name="playlist_empty_msg">أضف بعض الأغاني بالنقر على \"إضافة إلى قائمة التشغيل\" في قائمة النقاط الثلاث للأغنية.</string>
     <string name="restore_edits">استعادة التغييرات؟</string>
     <string name="restore">استعادة</string>
     <string name="mount_storage">يرجى إدخال بطاقة SD لاستخدام هذه الميزة</string>

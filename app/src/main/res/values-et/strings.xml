@@ -141,6 +141,7 @@
     <string name="settings_about_app">Rakenduse teave</string>
     <string name="settings_customization">Kohandamine</string>
     <string name="settings_title_bold">Paksus kirjas pealkiri</string>
+    <string name="settings_play_on_launch_summary">Rakenduse käivitamisel alusta muusika esitamist</string>
     <string name="settings_title_bold_summary">Meediamängija täisekraanivaates kuva pealkiri paksus kirjas</string>
     <string name="settings_experimental_settings">Katselised seadistused</string>
     <string name="settings_lyric">Laulusõnad</string>
@@ -148,6 +149,7 @@
     <string name="sort_by_modified_date">Muutmise kuupäev</string>
     <string name="settings_lyrics_center_summary">Kasuta laulusõnade kuvamisel keskele joondamist</string>
     <string name="settings_lyrics_configuration">Laulusõnade seadistused</string>
+    <string name="settings_play_on_launch">Käivitamisel esita muusikat</string>
     <string name="settings_preference_category_home">Avavaade</string>
     <string name="tab_order">Seadista vahekaartide järjekorda</string>
     <string name="tab_order_summary">Rakendus näitab käivitamisel esimest vahekaarti. Eraldaja taga olevad vahekaardid saavad olema peidetud.</string>
@@ -490,7 +492,6 @@
     <string name="mount_storage">Selle funktsionaalsuse kasutamiseks palun sisesta SD-kaart</string>
     <string name="failed_to_restore">Muudatuste taastamine ei õnnestunud: %s</string>
     <string name="playlist_empty">Esitusloend on tühi</string>
-    <string name="playlist_empty_msg">Klõpsates loo juures leiduvast kolme punktiga menüüst valikut „Lisa esitusloendisse“ saadki alustada lugude lisamisega esitusloendisse.</string>
     <string name="delete_really_artist">Kas sa kindlasti soovid „%s“ esitaja kõik lood kustutada? Seda tegevust ei saa tagasi pöörata.</string>
     <string name="search_desc">Esitajad, albumid ja lood</string>
     <string name="search_hint">Otsi lugusid ja esitajaid</string>

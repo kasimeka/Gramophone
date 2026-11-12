@@ -124,8 +124,10 @@
     <string name="sort_by_add_date">Дата добавления</string>
     <string name="settings_lyrics_configuration">Конфигурация текста</string>
     <string name="sort_by_modified_date">Дата изменения</string>
+    <string name="settings_play_on_launch_summary">Включает музыку при запуске приложения</string>
     <string name="settings_lyrics_bold">Жирный текст песни</string>
     <string name="settings_lyrics_center_summary">Отображение текста песни по центру</string>
+    <string name="settings_play_on_launch">Играть при запуске</string>
     <string name="settings_lyric">Текст песни</string>
     <string name="settings_lyrics_center">Выравнивание по центру</string>
     <string name="settings_lyrics_configuration_summary">Настройки внешнего вида текста песен</string>
@@ -502,7 +504,6 @@
     <string name="mount_storage">Для использования этой функции вставьте SD-карту</string>
     <string name="failed_to_restore">Не удалось восстановить изменения: %s</string>
     <string name="playlist_empty">Плейлист пуст</string>
-    <string name="playlist_empty_msg">Чтобы добавить песни, нажмите на значок с тремя точками рядом с нужным треком и выберите \"Добавить в плейлист\".</string>
     <string name="delete_really_artist">Вы действительно хотите удалить все песни \"%s\"? Это действие нельзя отменить.</string>
     <string name="search_desc">Исполнители, альбомы и треки</string>
     <string name="search_hint">Поиск песен и исполнителей</string>
