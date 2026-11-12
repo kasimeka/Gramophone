@@ -33,10 +33,8 @@ import com.google.common.util.concurrent.ListenableFuture
 import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.MultiQueueObject
-import org.akanework.gramophone.logic.QueueBoard
 import org.akanework.gramophone.logic.parseQueueTitle
-import org.akanework.gramophone.logic.utils.CircularShuffleOrder
-import org.akanework.gramophone.logic.utils.Flags
+import org.akanework.gramophone.logic.queue.ActiveQueuePlayer
 import org.akanework.gramophone.logic.utils.SemanticLyrics
 import org.json.JSONObject
 import org.akanework.gramophone.logic.getBooleanStrict
@@ -55,10 +53,23 @@ class EndedWorkaroundPlayer(
     private val prefs: SharedPreferences,
     exoPlayer: ExoPlayer,
     private val getLyric: () -> SemanticLyrics?,
-    val queueBoard: QueueBoard,
     private val getNotificationLyric: () -> CharSequence? = { null }
 ) : ForwardingSimpleBasePlayer(exoPlayer),
-    Player.Listener {
+    Player.Listener,
+    ActiveQueuePlayer {
+
+    // ForwardingSimpleBasePlayer exposes these as Kotlin getter functions, which do not
+    // satisfy plain function declarations, so forward them explicitly. Read the wrapper's
+    // state, not the raw ExoPlayer: the wrapper fakes the ended state after the last row.
+    override fun mediaItemCount(): Int = super.getMediaItemCount()
+
+    override fun currentMediaItemIndex(): Int = super.getCurrentMediaItemIndex()
+
+    override fun currentPosition(): Long = super.getCurrentPosition()
+
+    override fun playbackState(): Int = super.getPlaybackState()
+
+    override fun repeatMode(): Int = super.getRepeatMode()
 
     companion object {
         private const val TAG = "EndedWorkaroundPlayer"
@@ -74,11 +85,8 @@ class EndedWorkaroundPlayer(
     val exoPlayer
         get() = player as ExoPlayer
 
-    var nextShuffleOrder: CircularShuffleOrder.Persistent? = null
     var currentQueueId: Long? = null
     var currentTitle: String? = null
-    var currentIsPinned = false
-    var currentIsOriginal = false
     private var isEnded = false
         set(value) {
             if (BuildConfig.DEBUG) {
@@ -98,6 +106,19 @@ class EndedWorkaroundPlayer(
         super.onPositionDiscontinuity(oldPosition, newPosition, reason)
     }
 
+    override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+        if (playWhenReady) {
+            if (isEnded) {
+                isEnded = false
+                super.handleSeek(0, 0L, Player.COMMAND_SEEK_TO_MEDIA_ITEM)
+            }
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
+        }
+        return super.handleSetPlayWhenReady(playWhenReady)
+    }
+
     fun updateLyricNow() {
         val isNotificationLyricsEnabled = prefs.getBooleanStrict("notification_lyrics", false)
         if (context.packageName == "com.tencent.qqmusic" || isNotificationLyricsEnabled) {
@@ -107,6 +128,15 @@ class EndedWorkaroundPlayer(
 
     override fun getState(): State {
         var superState = super.state
+        if (superState.availableCommands.contains(Player.COMMAND_SET_SHUFFLE_MODE)) {
+            superState = superState.buildUpon()
+                .setAvailableCommands(
+                    superState.availableCommands.buildUpon()
+                        .remove(Player.COMMAND_SET_SHUFFLE_MODE)
+                        .build()
+                )
+                .build()
+        }
         if (superState.currentMetadata.artworkUri != null &&
             superState.currentMetadata.hdArtworkUri != null
         ) {
@@ -209,67 +239,47 @@ class EndedWorkaroundPlayer(
 
 
     /**
-     * Multiqueue aware variant of [Player.setMediaItems]
-     *
-     * This function can be used to in place of [Player.setMediaItems]
+     * Load items into the player as the active queue. The durable repository is the source of queue
+     * state; this updates only the player identity and timeline.
      */
     fun setMediaItems(
         mediaItems: List<MediaItem>,
         startIndex: Int,
         startPositionMs: Long,
         title: String,
-        pinned: Boolean,
-        original: Boolean,
         ended: Boolean,
         repeatMode: Int?,
-        shuffleModeEnabled: Boolean?,
-        newShuffleOrder: CircularShuffleOrder.Persistent?,
         playbackParameters: PlaybackParameters?,
     ) {
-        cloneQueue(generateQueueId(), title, pinned, original)
-        if (nextShuffleOrder != null)
-            throw IllegalStateException("shuffleFactory was found orphaned")
+        cloneQueue(generateQueueId(), title)
         if (repeatMode != null) super.handleSetRepeatMode(repeatMode)
-        if (shuffleModeEnabled != null) super.handleSetShuffleModeEnabled(shuffleModeEnabled)
+        if (shuffleModeEnabled) super.handleSetShuffleModeEnabled(false)
         if (playbackParameters != null) super.handleSetPlaybackParameters(playbackParameters)
-        nextShuffleOrder = newShuffleOrder
         super.handleSetMediaItems(mediaItems, startIndex, startPositionMs)
-        if (nextShuffleOrder != null)
-            throw IllegalStateException("shuffleFactory was not consumed during set")
         isEnded = ended
     }
 
     /**
      * Variant [setMediaItems]. Load media items into the player without interrupting playback, if possible.
-     *
-     * This function can be used to in place of [Player.setMediaItems]
      */
     fun setMediaItemsSeamlessly(
         mediaItems: List<MediaItem>,
         startIndex: Int,
         startPositionMs: Long?,
         title: String,
-        pinned: Boolean,
-        original: Boolean,
         ended: Boolean,
         repeatMode: Int?,
-        shuffleModeEnabled: Boolean?,
-        newShuffleOrder: CircularShuffleOrder.Persistent?,
         playbackParameters: PlaybackParameters?,
     ) {
         if (startIndex == C.INDEX_UNSET)
             throw IllegalArgumentException("Can't seamlessly set playlist with default position")
-        if (nextShuffleOrder != null)
-            throw IllegalStateException("shuffleFactory was found orphaned")
         if (currentMediaItem?.mediaId == mediaItems[startIndex].mediaId) {
             val index = currentMediaItemIndex
             val count = mediaItemCount
             val isLast = count - index == 1
-            cloneQueue(generateQueueId(), title, pinned, original)
-            val savedShuffleOrder = if (count == mediaItems.size) (exoPlayer.shuffleOrder as
-                    CircularShuffleOrder).lastSeed?.let { CircularShuffleOrder.Persistent(it) } else null
+            cloneQueue(generateQueueId(), title)
             if (repeatMode != null) super.handleSetRepeatMode(repeatMode)
-            if (shuffleModeEnabled != null) super.handleSetShuffleModeEnabled(shuffleModeEnabled)
+            if (shuffleModeEnabled) super.handleSetShuffleModeEnabled(false)
             if (playbackParameters != null) super.handleSetPlaybackParameters(playbackParameters)
             if (index == 0)
                 super.handleAddMediaItems(0, mediaItems.subList(0, startIndex))
@@ -284,7 +294,6 @@ class EndedWorkaroundPlayer(
             )
             if (isLast) {
                 if (mediaItems.size > startIndex + 1) {
-                    nextShuffleOrder = newShuffleOrder // savedShuffleOrder is null due to grow
                     super.handleAddMediaItems(
                         Int.MAX_VALUE, mediaItems
                             .subList(startIndex + 1, mediaItems.size)
@@ -297,85 +306,33 @@ class EndedWorkaroundPlayer(
                         startIndex + 1, mediaItems.size
                     ) else emptyList()
                 )
-            if (!isLast || mediaItems.size <= startIndex + 1) {
-                (newShuffleOrder ?: savedShuffleOrder)?.let {
-                    exoPlayer.shuffleOrder = it.create(startIndex,
-                        exoPlayer.mediaItemCount, this)
-                }
-            }
         } else {
             setMediaItems(
-                mediaItems, startIndex, startPositionMs?: C.TIME_UNSET, title, pinned,
-                original, ended, repeatMode, shuffleModeEnabled, newShuffleOrder,
-                playbackParameters
+                mediaItems, startIndex, startPositionMs ?: C.TIME_UNSET, title,
+                ended, repeatMode, playbackParameters
             )
         }
     }
 
     /**
-     * Saves the active queue to QueueBoard, and updates the next queue's metadata in [EndedWorkaroundPlayer].
-     *
-     * Saving queues will be refused when either: Queue is empty, or the next queue is the same active queue.
+     * Switch the player's active queue identity. The outgoing queue is persisted by the durable
+     * repository, not by an in-memory board.
      */
-    fun cloneQueue(nextQueueId: Long, nextTitle: String, nextIsPinned: Boolean, nextIsOriginal: Boolean) {
-        if (nextTitle == currentTitle && (currentIsOriginal && nextIsOriginal)) return // active queue update, not for queueboard
-        if (currentQueueId == null && !exoPlayer.currentTimeline.isEmpty)
-            throw IllegalStateException("have media items but current title is null, logic bug")
-        else if (currentQueueId != null && Flags.MQ_PREVIEW) {
-            queueBoard.addQueue(
-                currentQueueId!!,
-                currentTitle!!,
-                ArrayList<MediaItem>(exoPlayer.mediaItemCount).apply {
-                    for (i in 0..<exoPlayer.mediaItemCount) {
-                        add(exoPlayer.getMediaItemAt(i))
-                    }
-                },
-                exoPlayer.currentMediaItemIndex,
-                exoPlayer.currentPosition,
-                currentIsPinned,
-                currentIsOriginal,
-                repeatMode,
-                if (shuffleModeEnabled) {
-                    CircularShuffleOrder.Persistent(
-                        exoPlayer.shuffleOrder as CircularShuffleOrder
-                    )
-                } else {
-                    null
-                },
-                exoPlayer.playbackState == STATE_ENDED,
-            )
-        }
+    fun cloneQueue(nextQueueId: Long, nextTitle: String) {
         currentQueueId = nextQueueId
         currentTitle = nextTitle
-        currentIsPinned = nextIsPinned
-        currentIsOriginal = nextIsOriginal
     }
 
-    override fun handleAddMediaItems(index: Int, mediaItems: List<MediaItem>): ListenableFuture<*> {
-        currentIsOriginal = false
-        return super.handleAddMediaItems(index, mediaItems)
-    }
-
-    override fun handleMoveMediaItems(
-        fromIndex: Int,
-        toIndex: Int,
-        newIndex: Int
-    ): ListenableFuture<*> {
-        currentIsOriginal = false
-        return super.handleMoveMediaItems(fromIndex, toIndex, newIndex)
-    }
-
-    override fun handleReplaceMediaItems(
-        fromIndex: Int,
-        toIndex: Int,
-        mediaItems: List<MediaItem>
-    ): ListenableFuture<*> {
-        currentIsOriginal = false
-        return super.handleReplaceMediaItems(fromIndex, toIndex, mediaItems)
+    /**
+     * Shuffle mode is not part of the queue model. Ignore requests to enable it; always force it
+     * off so no hidden playback order can reappear.
+     */
+    override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
+        if (shuffleModeEnabled) return Futures.immediateVoidFuture()
+        return super.handleSetShuffleModeEnabled(false)
     }
 
     override fun handleRemoveMediaItems(fromIndex: Int, toIndex: Int): ListenableFuture<*> {
-        currentIsOriginal = false
         if (fromIndex == 0 && toIndex >= mediaItemCount) { // clearMediaItems() -> delete queue
             currentTitle = null
             currentQueueId = null
@@ -395,11 +352,10 @@ class EndedWorkaroundPlayer(
                 .setMediaId(idWithTitle.first)
                 .build()
         } else mediaItems
-        val qt = title ?: context.getString(R.string.unknown_playlist)
+        val qt = title ?: context.getString(R.string.unknown_queue)
         setMediaItems(
-            list, startIndex, startPositionMs, qt, false,
-            true, false, null, null,
-            null, null
+            list, startIndex, startPositionMs, qt,
+            false, null, null
         )
         return Futures.immediateVoidFuture()
     }
@@ -410,6 +366,12 @@ class EndedWorkaroundPlayer(
         seekCommand: Int
     ): ListenableFuture<*> {
         val alwaysSkipPrevious = prefs.getBooleanStrict("always_skip_previous", false)
+        if (isEnded && seekCommand == Player.COMMAND_SEEK_TO_DEFAULT_POSITION) {
+            // Play after an ended queue restarts from the first row, even when the caller asked
+            // for the default position of the current (last) row.
+            isEnded = false
+            return super.handleSeek(0, 0L, Player.COMMAND_SEEK_TO_MEDIA_ITEM)
+        }
         if (seekCommand == Player.COMMAND_SEEK_TO_PREVIOUS && alwaysSkipPrevious) {
             player.seekToPreviousMediaItem()
             return Futures.immediateVoidFuture()
@@ -429,7 +391,7 @@ class EndedWorkaroundPlayer(
      * Get the next available queue ID
      */
     fun generateQueueId(): Long {
-        return (queueBoard.masterQueues.map { it.id } + (currentQueueId ?: 0)).max() + 1
+        return ((currentQueueId ?: 0L).coerceAtLeast(0L)) + System.nanoTime().coerceAtLeast(1L)
     }
 
     /**
@@ -437,10 +399,8 @@ class EndedWorkaroundPlayer(
      */
     fun getActiveQueue(): MultiQueueObject {
         return MultiQueueObject(
-            id = currentQueueId?: -1, // TODO: fix crash but should return nullable MultiQueueObject
-            index = 0,
-            title = currentTitle ?: context.getString(R.string.unknown_playlist),
-            expiry = if (currentIsPinned) null else 0L,
+            id = currentQueueId ?: -1,
+            title = currentTitle ?: context.getString(R.string.unknown_queue),
             queue = ArrayList<MediaItem>(exoPlayer.mediaItemCount).apply {
                 for (i in 0..<exoPlayer.mediaItemCount) {
                     add(exoPlayer.getMediaItemAt(i))
@@ -449,15 +409,7 @@ class EndedWorkaroundPlayer(
             startIndex = exoPlayer.currentMediaItemIndex,
             startPositionMs = exoPlayer.currentPosition,
             repeatMode = exoPlayer.repeatMode,
-            shuffleOrder = if (exoPlayer.shuffleModeEnabled) {
-                CircularShuffleOrder.Persistent(
-                    exoPlayer.shuffleOrder as CircularShuffleOrder
-                )
-            } else {
-                null
-            },
             ended = playbackState == STATE_ENDED,
-            isOriginal = currentIsOriginal,
         )
     }
 }

@@ -24,7 +24,7 @@ import uk.akane.libphonograph.items.Date
 import uk.akane.libphonograph.items.EmptyFileNode
 import uk.akane.libphonograph.items.FileNode
 import uk.akane.libphonograph.items.Genre
-import uk.akane.libphonograph.items.Playlist
+import uk.akane.libphonograph.items.Item
 
 data class ReaderResult(
     val songList: List<MediaItem>,
@@ -57,7 +57,7 @@ data class SimpleReaderResult(
     val artistList: List<Artist>,
     val genreList: List<Genre>,
     val dateList: List<Date>,
-    val playlistList: List<Playlist>,
+    val dynamicItemList: List<Item>,
     val folderStructure: FileNode,
     val shallowFolder: FileNode,
     val folders: Set<String>,

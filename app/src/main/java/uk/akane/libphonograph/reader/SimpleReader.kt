@@ -21,7 +21,9 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import uk.akane.libphonograph.dynamicitem.Favorite
 import uk.akane.libphonograph.dynamicitem.RecentlyAdded
+import uk.akane.libphonograph.items.Item
 
 object SimpleReader {
     fun readFromMediaStore(
@@ -31,19 +33,34 @@ object SimpleReader {
         whiteListSet: Set<String> = setOf(),
         shouldUseEnhancedCoverReading: Boolean? = false, // null means load if permission is granted
         recentlyAddedFilterSecond: Long? = 1_209_600, // null means don't generate recently added
+        favoriteSongIds: Set<String> = emptySet(),
     ): SimpleReaderResult {
-        val (playlists, foundPlaylistContent) = Reader.fetchPlaylists(context)
         val result = runBlocking {
             withContext(Dispatchers.Default) {
                 Reader.readFromMediaStore(
                     context, minSongLengthSeconds, blackListSet, whiteListSet,
                     shouldUseEnhancedCoverReading,
                     shouldLoadIdMap = false,
-                    shouldLoadPathMap = foundPlaylistContent
+                    shouldLoadPathMap = false
                 )
             }
         }
-        // We can null assert because we never pass shouldLoad*=false into Reader
+        val dynamicItems = buildList<Item> {
+            if (recentlyAddedFilterSecond != null) {
+                add(
+                    RecentlyAdded(
+                        (System.currentTimeMillis() / 1000L) - recentlyAddedFilterSecond,
+                        result.songList
+                    )
+                )
+            }
+            add(
+                Favorite(
+                    null,
+                    favoriteSongIds.mapNotNull { id -> result.songList.find { it.mediaId == id } }
+                )
+            )
+        }
         return SimpleReaderResult(
             result.songList,
             result.albumList!!,
@@ -51,14 +68,7 @@ object SimpleReader {
             result.artistList!!,
             result.genreList!!,
             result.dateList!!,
-            playlists.mapNotNull { it.toPlaylist(result.pathMap) }.let {
-                if (recentlyAddedFilterSecond != null)
-                    it + RecentlyAdded(
-                        (System.currentTimeMillis() / 1000L) - recentlyAddedFilterSecond,
-                        result.songList
-                    )
-                else it
-            },
+            dynamicItems,
             result.folderStructure!!,
             result.shallowFolder!!,
             result.folders!!,

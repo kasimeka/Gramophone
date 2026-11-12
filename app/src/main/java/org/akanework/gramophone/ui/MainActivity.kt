@@ -41,7 +41,6 @@ import android.provider.Settings
 import android.view.Choreographer
 import android.view.SearchEvent
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -66,26 +65,19 @@ import androidx.media3.common.util.Log
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.transition.TransitionManager
 import coil3.imageLoader
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
-import org.akanework.gramophone.logic.dpToPx
 import org.akanework.gramophone.logic.enableEdgeToEdgeProperly
+import org.akanework.gramophone.logic.filterSongsBySearchQuery
 import org.akanework.gramophone.logic.getBooleanStrict
 import org.akanework.gramophone.logic.gramophoneApplication
 import org.akanework.gramophone.logic.hasAudioPermission
@@ -93,21 +85,15 @@ import org.akanework.gramophone.logic.hasScopedStorageV2
 import org.akanework.gramophone.logic.hasScopedStorageWithMediaTypes
 import org.akanework.gramophone.logic.needsMissingOnDestroyCallWorkarounds
 import org.akanework.gramophone.logic.postAtFrontOfQueueAsync
+import org.akanework.gramophone.logic.setMediaItemsWithTitle
+import org.nift4.mediastorecompat.MediaStoreCompat
 import org.akanework.gramophone.logic.ui.BaseActivity
-import org.akanework.gramophone.ui.adapters.PlaylistAdapter
 import org.akanework.gramophone.ui.components.PlayerBottomSheet
 import org.akanework.gramophone.ui.fragments.BaseFragment
-import org.akanework.gramophone.ui.fragments.GeneralSubFragment
 import org.akanework.gramophone.ui.fragments.SearchFragment
 import org.akanework.gramophone.ui.fragments.ViewPagerFragment
 import org.akanework.gramophone.ui.fragments.pruneDetachedTransitionAnimators
-import org.nift4.mediastorecompat.MediaStoreCompat
-import uk.akane.libphonograph.dynamicitem.Favorite
 import uk.akane.libphonograph.manipulator.ItemManipulator
-import uk.akane.libphonograph.manipulator.PlaylistSerializer
-import uk.akane.libphonograph.manipulator.PlaylistSerializer.Entry
-import java.io.File
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * MainActivity:
@@ -123,7 +109,7 @@ class MainActivity : BaseActivity() {
         const val PLAYBACK_AUTO_START_FOR_FGS = "AutoStartFgs"
         const val PLAYBACK_AUTO_PLAY_ID = "AutoStartId"
         const val PLAYBACK_AUTO_PLAY_POSITION = "AutoStartPos"
-        const val FAVORITE_ENTRY = "FavoriteEntry"
+        const val FAVORITE_MEDIA_ID = "FavoriteMediaId"
         const val FAVORITE_STATE = "FavoriteState"
     }
 
@@ -138,11 +124,7 @@ class MainActivity : BaseActivity() {
     lateinit var playerBottomSheet: PlayerBottomSheet
         private set
     private lateinit var intentSenderDelete: ActivityResultLauncher<IntentSenderRequest>
-    private lateinit var addToPlaylistIntentSender: ActivityResultLauncher<IntentSenderRequest>
-    private lateinit var markIsFavoriteStatusIntentSender: ActivityResultLauncher<IntentSenderRequest>
-    private var pendingPlaylistRequest: Bundle? = null
     private var pendingDeleteRequest: Bundle? = null
-    private var pendingMarkIsFavoriteRequest: Bundle? = null
 
     fun updateLibrary(smartScanFirst: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R,
                       then: (() -> Unit)? = null) {
@@ -168,14 +150,8 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         lifecycle.addObserver(controllerViewModel)
         enableEdgeToEdgeProperly()
-        if (savedInstanceState?.containsKey("AddToPlaylistPendingRequest") == true) {
-            pendingPlaylistRequest = savedInstanceState.getBundle("AddToPlaylistPendingRequest")
-        }
         if (savedInstanceState?.containsKey("DeletePendingRequest") == true) {
             pendingDeleteRequest = savedInstanceState.getBundle("DeletePendingRequest")
-        }
-        if (savedInstanceState?.containsKey("pendingMarkIsFavoriteRequest") == true) {
-            pendingMarkIsFavoriteRequest = savedInstanceState.getBundle("pendingMarkIsFavoriteRequest")
         }
         intentSenderDelete =
             registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
@@ -184,24 +160,6 @@ class MainActivity : BaseActivity() {
                 pendingDeleteRequest = null
                 CoroutineScope(Dispatchers.Default).launch {
                     ItemManipulator.continueDeleteFromPendingIntent(this@MainActivity, it.resultCode, it.data, req)
-                }
-            }
-        addToPlaylistIntentSender =
-            registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
-                val req = pendingPlaylistRequest
-                    ?: throw IllegalStateException("pending playlist add request is null")
-                pendingPlaylistRequest = null
-                CoroutineScope(Dispatchers.Default).launch {
-                    doAddToPlaylist(it.resultCode, req)
-                }
-            }
-        markIsFavoriteStatusIntentSender =
-            registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
-                val req = pendingMarkIsFavoriteRequest
-                    ?: throw IllegalStateException("pending favorite request is null")
-                pendingMarkIsFavoriteRequest = null
-                CoroutineScope(Dispatchers.Default).launch {
-                    doMarkIsFavoriteStatus(it.resultCode, req)
                 }
             }
         // TODO: should Activity.setMediaController() or Activity.setVolumeControlStream() be
@@ -263,137 +221,12 @@ class MainActivity : BaseActivity() {
             handler.post { maybeReportFullyDrawn() }
     }
 
-    @OptIn(FlowPreview::class, InternalCoroutinesApi::class)
-    fun addToPlaylistDialog(item: MediaItem) {
-        val song = Entry.ofMediaItem(item)
-        if (song == null) {
-            Toast.makeText(
-                this@MainActivity,
-                getString(R.string.edit_playlist_failed, "song == null"),
-                Toast.LENGTH_LONG
-            ).show()
-            return
-        }
-        lifecycleScope.launch(Dispatchers.Default) {
-            val job = async(start = CoroutineStart.UNDISPATCHED) {
-                reader.playlistListFlow.first().filter { it.title != null }
-            }
-            val maybeValue = withTimeoutOrNull(300.milliseconds) {
-                job.await()
-            }
-            val playlists = maybeValue ?: run {
-                launch(Dispatchers.Main) {
-                    withContext(NonCancellable) {
-                        val progressBar = ProgressBar(this@MainActivity)
-                        val padding = 20.dpToPx(this@MainActivity)
-                        progressBar.isIndeterminate = true
-                        progressBar.setPadding(0, padding / 2, 0, padding)
-                        val d = MaterialAlertDialogBuilder(this@MainActivity)
-                            .setTitle(R.string.loading_playlists)
-                            .setView(progressBar)
-                            .setCancelable(false)
-                            .show()
-                        job.invokeOnCompletion {
-                            launch(Dispatchers.Main, start = CoroutineStart.ATOMIC) {
-                                withContext(NonCancellable) {
-                                    d.dismiss()
-                                }
-                            }
-                        }
-                    }
-                }
-                job.await()
-            }
-            launch(Dispatchers.Main) {
-                MaterialAlertDialogBuilder(this@MainActivity)
-                    .setTitle(R.string.add_to_playlist)
-                    .setIcon(R.drawable.ic_playlist_play)
-                    .setItems((playlists.map {
-                        if (it is Favorite) getString(R.string.playlist_favourite) else
-                            it.title ?: it.path?.absolutePath ?: it.id.toString()
-                    } + getString(R.string.create_playlist)).toTypedArray())
-                    { _, item ->
-                        if (playlists.size == item) {
-                            PlaylistAdapter.playlistNameDialog(this@MainActivity,
-                                R.string.create_playlist, "",
-                                { ItemManipulator.getDefaultPlaylistFile(it) }) { name ->
-                                addToPlaylist(null, name, listOf(song))
-                            }
-                            return@setItems
-                        }
-                        val pl = playlists[item]
-                        addToPlaylist(
-                            ContentUris.withAppendedId(
-                                @Suppress("deprecation") MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI,
-                                pl.id!!
-                            ), null, listOf(song)
-                        )
-                    }
-                    .setNegativeButton(android.R.string.cancel) { _, _ -> }
-                    .show()
-            }
-        }
+
+
+    fun markIsFavoriteStatus(mediaIds: Collection<String>, favorite: Boolean) {
+        gramophoneApplication.favoritesStore.setFavorite(mediaIds, favorite)
     }
 
-    fun addToPlaylist(uri: Uri?, name: File?, songs: List<Entry>) {
-        val data = Bundle().apply {
-            putParcelableArrayList("Songs", ArrayList(songs))
-            putParcelable("Uri", uri)
-            putString("Name", name?.path)
-        }
-        CoroutineScope(Dispatchers.Default).launch {
-            val token = if (uri != null) {
-                MediaStoreCompat.needRequestBytesWrite(this@MainActivity, uri)
-            } else {
-                MediaStoreCompat.needRequestCreate(this@MainActivity,
-                    name!!.path)
-            }
-            if (token != null) {
-                pendingPlaylistRequest = data
-                val pendingIntent = MediaStoreCompat.createWriteRequest(this@MainActivity,
-                    listOf(token))
-                addToPlaylistIntentSender.launch(
-                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
-                )
-            } else {
-                doAddToPlaylist(RESULT_OK, data)
-            }
-        }
-    }
-
-    fun markIsFavoriteStatus(songs: List<Entry>, favorite: Boolean) {
-        CoroutineScope(Dispatchers.Default).launch {
-            val uri = gramophoneApplication.reader.playlistListFlow.map { it.find { p -> p is
-                    Favorite } }.first()?.id?.let {
-                    ContentUris.withAppendedId(@Suppress("deprecation")
-                    MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, it)
-                }
-            val data = Bundle().apply {
-                putParcelableArrayList("Songs", ArrayList(songs))
-                putParcelable("Uri", uri)
-                putBoolean("Favorite", favorite)
-            }
-            val token = if (uri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                MediaStoreCompat.needRequestAdoption(this@MainActivity, uri)
-            } else if (uri != null) {
-                MediaStoreCompat.needRequestBytesWrite(this@MainActivity, uri)
-            } else {
-                MediaStoreCompat.needRequestCreate(this@MainActivity,
-                    ItemManipulator.getDefaultPlaylistFile(
-                        ItemManipulator.FAVORITES).path)
-            }
-            if (token != null) {
-                pendingMarkIsFavoriteRequest = data
-                val pendingIntent = MediaStoreCompat.createWriteRequest(this@MainActivity,
-                    listOf(token))
-                markIsFavoriteStatusIntentSender.launch(
-                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
-                )
-            } else {
-                doMarkIsFavoriteStatus(RESULT_OK, data)
-            }
-        }
-    }
 
     fun runIntentForDelete(intent: IntentSender, bundle: Bundle) {
         try {
@@ -410,102 +243,12 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private suspend fun doMarkIsFavoriteStatus(resultCode: Int, data: Bundle) {
-        if (resultCode == RESULT_OK) {
-            var uriIn = BundleCompat.getParcelable(data, "Uri", Uri::class.java)
-            if (uriIn != null) {
-                uriIn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    MediaStoreCompat.adoptFile(this@MainActivity, uriIn)
-                } else uriIn
-            }
-            val songs = BundleCompat.getParcelableArrayList(data, "Songs",
-                Entry::class.java)!!
-            val favorite = data.getBoolean("Favorite")
-            try {
-                val uri = uriIn ?: ItemManipulator.createPlaylist(this,
-                    ItemManipulator.getDefaultPlaylistFile(ItemManipulator.FAVORITES))
-                val readback = if (uriIn != null) ItemManipulator.readbackPlaylist(this,
-                    uri) else PlaylistSerializer.Playlist.create()
-                val newSongs = readback.copy(entries = if (favorite) {
-                    readback.entries + songs
-                } else {
-                    readback.entries.filter { songs.find { candidate -> candidate.fuzzyEquals(it) } == null }
-                })
-                ItemManipulator.setPlaylistContent(this, uri, newSongs,
-                    uriIn == null)
-            } catch (e: Exception) {
-                Log.e("MainActivity", Log.getThrowableString(e)!!)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        getString(
-                            R.string.edit_favorites_failed,
-                            e.javaClass.name + ": " + e.message
-                        ),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        } else {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    this@MainActivity,
-                    getString(R.string.edit_favorites_failed, "$resultCode"),
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    }
 
-    private suspend fun doAddToPlaylist(resultCode: Int, data: Bundle) {
-        val uriIn = BundleCompat.getParcelable(data, "Uri", Uri::class.java)
-        val errorString = if (uriIn != null) R.string.edit_playlist_failed else
-            R.string.create_failed_playlist
-        if (resultCode == RESULT_OK) {
-            val name = if (uriIn == null) data.getString("Name")!! else null
-            val songs = BundleCompat.getParcelableArrayList(data, "Songs",
-                Entry::class.java)!!
-            try {
-                val readback = if (uriIn != null) ItemManipulator.readbackPlaylist(this,
-                    uriIn) else PlaylistSerializer.Playlist.create()
-                val uri = uriIn ?: ItemManipulator.createPlaylist(this,
-                    File(name!!))
-                ItemManipulator.setPlaylistContent(this, uri, readback
-                    .copy(entries = readback.entries + songs), uriIn == null)
-            } catch (e: Exception) {
-                Log.e("MainActivity", Log.getThrowableString(e)!!)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        getString(
-                            errorString,
-                            e.javaClass.name + ": " + e.message
-                        ),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        } else {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    this@MainActivity,
-                    getString(errorString, "$resultCode"),
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        if (pendingPlaylistRequest != null) {
-            outState.putBundle("AddToPlaylistPendingRequest", pendingPlaylistRequest)
-        }
         if (pendingDeleteRequest != null) {
             outState.putBundle("DeletePendingRequest", pendingDeleteRequest)
-        }
-        if (pendingMarkIsFavoriteRequest != null) {
-            outState.putBundle("pendingMarkIsFavoriteRequest", pendingMarkIsFavoriteRequest)
         }
     }
 
@@ -562,19 +305,9 @@ class MainActivity : BaseActivity() {
                 dispose()
             }
         }
-        IntentCompat.getParcelableExtra(intent, FAVORITE_ENTRY, Entry::class.java)
-            ?.let {
-                val state = intent.getBooleanExtra(FAVORITE_STATE, false)
-                markIsFavoriteStatus(listOf(it), state)
-            }
-        if (intent.action == Intent.ACTION_VIEW) {
-            val id = intent.getStringExtra("playlist")?.toLongOrNull()
-            if (id != null) {
-                startFragment(GeneralSubFragment()) {
-                    putString("Id", id.toString())
-                    putInt("Item", R.id.playlist)
-                }
-            }
+        intent.getStringExtra(FAVORITE_MEDIA_ID)?.let { mediaId ->
+            val state = intent.getBooleanExtra(FAVORITE_STATE, false)
+            markIsFavoriteStatus(listOf(mediaId), state)
         }
         if (intent.action == Intent.ACTION_SEARCH ||
             intent.action == "com.google.android.gms.actions.SEARCH_ACTION") {
@@ -638,23 +371,6 @@ class MainActivity : BaseActivity() {
                         subQueries.putString(MediaStore.EXTRA_MEDIA_GENRE, it)
                     }
                 }
-                @Suppress("deprecation") MediaStore.Audio.Playlists.ENTRY_CONTENT_TYPE -> {
-                    mainQuery = @Suppress("deprecation")
-                    intent.getStringExtra(MediaStore.EXTRA_MEDIA_PLAYLIST)
-                        ?: intent.getStringExtra(SearchManager.QUERY)
-                    intent.getStringExtra(MediaStore.EXTRA_MEDIA_TITLE)?.let {
-                        subQueries.putString(MediaStore.EXTRA_MEDIA_TITLE, it)
-                    }
-                    intent.getStringExtra(MediaStore.EXTRA_MEDIA_ALBUM)?.let {
-                        subQueries.putString(MediaStore.EXTRA_MEDIA_ALBUM, it)
-                    }
-                    intent.getStringExtra(MediaStore.EXTRA_MEDIA_ARTIST)?.let {
-                        subQueries.putString(MediaStore.EXTRA_MEDIA_ARTIST, it)
-                    }
-                    intent.getStringExtra(MediaStore.EXTRA_MEDIA_GENRE)?.let {
-                        subQueries.putString(MediaStore.EXTRA_MEDIA_GENRE, it)
-                    }
-                }
                 else -> mainQuery = intent.getStringExtra(SearchManager.QUERY)
             }
             if (intent.action == MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH) {
@@ -689,19 +405,26 @@ class MainActivity : BaseActivity() {
             val query = intent.getStringExtra("item_name") ?: ""
             willAutoPlayLater = true
             controllerViewModel.addControllerCallback(lifecycle) { controller, _ ->
-                controller.shuffleModeEnabled = true
-                controller.setMediaItem(
-                    MediaItem.Builder()
-                        .setRequestMetadata(
-                            MediaItem.RequestMetadata.Builder()
-                                .setSearchQuery(query) // empty = every song
-                                .build()
+                lifecycleScope.launch {
+                    val songs = withContext(Dispatchers.Default) {
+                        reader.songListFlow.first().filterSongsBySearchQuery(query)
+                    }
+                    if (songs.isEmpty()) {
+                        controller.setMediaItems(listOf())
+                    } else {
+                        controller.setMediaItemsWithTitle(
+                            songs.shuffled(),
+                            title = if (query.isBlank())
+                                getString(R.string.shuffle_all)
+                            else
+                                getString(R.string.search_query, query),
+                            original = false,
                         )
-                        .build()
-                )
-                controller.prepare()
-                controller.play()
-                dispose()
+                        controller.prepare()
+                        controller.play()
+                    }
+                    dispose()
+                }
             }
         }
         val autoPlay = intent.extras?.getBoolean(PLAYBACK_AUTO_START_FOR_FGS, false) == true

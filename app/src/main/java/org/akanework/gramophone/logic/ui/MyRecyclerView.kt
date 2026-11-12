@@ -202,7 +202,6 @@ open class MyRecyclerView : FixOnItemTouchListenerRecyclerView,
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         appBarLayout?.removeOnOffsetChangedListener(this)
-        appBarLayout = null
         // Let's clean up some resources by pretending the view is gone (a detached view is as good
         // as gone for our purposes anyway)
         adapter?.onDetachedFromRecyclerView(this)

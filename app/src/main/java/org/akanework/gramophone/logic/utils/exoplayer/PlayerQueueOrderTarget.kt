@@ -42,21 +42,38 @@ class PlayerQueueOrderTarget(
     }
 
     override fun applyDisplayedOrder(order: List<Int>) {
-        require(order.size == size) {
-            "displayed order size ${order.size} does not match media item count $size"
-        }
-        require(order.toSet().size == order.size) { "displayed order contains duplicate rows" }
-
-        // Replace the timeline in one bulk operation instead of O(n²) per-item moves.
-        val items = (0 until size).map { exoPlayer.getMediaItemAt(it) }
+        val items = snapshotMediaItems()
         val reordered = order.map { items[it] }
-        if (reordered.indices.all { reordered[it] === items[it] }) return
+        applyReorderedItems(items, reordered)
+    }
+
+    /**
+     * Snapshot the active timeline on the player/application thread. ExoPlayer item access must run
+     * on the player thread, so keep this call minimal and build reorder plans off-main when possible.
+     */
+    fun snapshotMediaItems(): List<MediaItem> =
+        (0 until exoPlayer.mediaItemCount).map { exoPlayer.getMediaItemAt(it) }
+
+    /**
+     * Apply a precomputed reorder as one bulk timeline replacement, preserving the current item and
+     * playback position/state. [currentItems] must be the timeline snapshot the reorder was derived
+     * from, in the same order.
+     */
+    fun applyReorderedItems(currentItems: List<MediaItem>, reordered: List<MediaItem>) {
+        require(reordered.size == currentItems.size) {
+            "reordered item count ${reordered.size} does not match media item count ${currentItems.size}"
+        }
+        if (reordered.indices.all { reordered[it] === currentItems[it] }) return
 
         val currentIndex = exoPlayer.currentMediaItemIndex
         val currentPosition = exoPlayer.currentPosition.coerceAtLeast(0L)
         val playWhenReady = exoPlayer.playWhenReady
         val playbackState = exoPlayer.playbackState
-        val newIndex = if (currentIndex in order.indices) order.indexOf(currentIndex) else 0
+        val newIndex = if (currentIndex in currentItems.indices) {
+            reordered.indexOf(currentItems[currentIndex]).takeIf { it >= 0 } ?: 0
+        } else {
+            0
+        }
 
         exoPlayer.setMediaItems(reordered, newIndex, currentPosition)
         exoPlayer.playWhenReady = playWhenReady

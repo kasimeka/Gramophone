@@ -44,15 +44,24 @@ import coil3.request.NullRequestDataException
 import coil3.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
+import org.akanework.gramophone.logic.queue.AndroidQueueMirrorWriter
+import org.akanework.gramophone.logic.queue.QueueDao
+import org.akanework.gramophone.logic.queue.QueueDatabase
+import org.akanework.gramophone.logic.queue.QueueExporter
+import org.akanework.gramophone.logic.queue.QueueRepository
+import org.akanework.gramophone.logic.queue.StoreQueueRepository
+import org.akanework.gramophone.logic.queue.queueExportRows
 import org.akanework.gramophone.logic.ui.BugHandlerActivity
 import org.akanework.gramophone.logic.utils.CoilArtPipeline
 import org.akanework.gramophone.ui.LyricWidgetProvider
@@ -109,8 +118,44 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
     )
     lateinit var reader: FlowReader
         private set
+    lateinit var favoritesStore: FavoritesStore
+        private set
     lateinit var uacManager: UacManager
         private set
+
+    /**
+     * The one durable queue repository for the process. The player service and UI both observe
+     * this instance, so the stored active queue and the displayed queue cannot disagree.
+     */
+    private val queueDatabase by lazy { QueueDatabase(this) }
+
+    private val exportScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * The one background exporter. Mutations only leave a dirty marker here, so editing and
+     * playback never wait on MediaStore or file writes.
+     */
+    private val queueExporter: QueueExporter by lazy {
+        QueueExporter(
+            writer = AndroidQueueMirrorWriter(this),
+            rowSource = ::queueExportRows,
+            onExported = { id, fileName -> queueRepository.setExportFileName(id, fileName) },
+        )
+    }
+
+    val queueRepository: QueueRepository by lazy {
+        StoreQueueRepository(
+            QueueDao(queueDatabase.writableDatabase),
+            exports = queueExporter,
+        )
+    }
+
+    /**
+     * Whether media-button playback has a durable active queue with rows to resume. Receivers use
+     * the same repository as the service and UI, so they cannot disagree about the active queue.
+     */
+    fun hasRestorableActiveQueue(): Boolean =
+        queueRepository.lastActiveQueue.value?.rows?.isNotEmpty() == true
 
     override fun onCreate() {
         super.onCreate()
@@ -236,6 +281,7 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
             })
         }
         uacManager = UacManager(this)
+        favoritesStore = FavoritesStore(this)
         reader = FlowReader(
             this,
             if (BuildConfig.DISABLE_MEDIA_STORE_FILTER) MutableStateFlow(0) else
@@ -244,7 +290,8 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
             whiteListSetFlow,
             if (hasScopedStorageWithMediaTypes()) MutableStateFlow(null) else
                 shouldUseEnhancedCoverReadingFlow!!,
-            recentlyAddedFilterSecondFlow
+            recentlyAddedFilterSecondFlow,
+            favoritesStore.ids
         )
         // Set application theme when launching.
         when (themeMode) {
@@ -262,6 +309,11 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
         }
         // This is a separate thread to avoid disk read on main thread and improve startup time
         CoroutineScope(Dispatchers.Default).launch {
+            // Warm the queue database and its first published snapshot off the main thread.
+            queueRepository
+            queueExporter.start(exportScope)
+            // Rebuild only mirrors that are missing or older than the last queue edit.
+            queueExporter.reconcile(queueRepository.queues.first())
             if (prefs.getBoolean("needToAdd_isMusicBlacklist", true)) {
                 prefs.edit(true) {
                     putBoolean("needToAdd_isMusicBlacklist", false)

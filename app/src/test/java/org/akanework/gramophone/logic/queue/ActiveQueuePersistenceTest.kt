@@ -212,4 +212,104 @@ class ActiveQueuePersistenceTest {
         assertEquals(incoming.repeatMode, stored.repeatMode)
         assertEquals(outgoing.bookmark, repository.queue(outgoing.id).first()!!.bookmark)
     }
+
+    @Test
+    fun automatedProgressSavePreservesPurity() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val created = repository.create(source = null, rows = rows("a"))
+        assertFalse(created.isModified)
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("a")), position = 7_000L)
+        val persistence = ActiveQueuePersistence(
+            repository,
+            player,
+            scope = this,
+        )
+        persistence.adopt(created)
+
+        val saved = persistence.saveProgressNowAwait()!!
+        assertFalse(saved.isModified)
+        val stored = repository.queue(created.id).first()!!
+        assertFalse(stored.isModified)
+    }
+
+    @Test
+    fun initialRowPopulationPreservesPurity() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        // Queue created with empty rows (like when created by playback service)
+        val created = repository.create(source = null, rows = emptyList())
+        assertFalse(created.isModified)
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("a"), item("b")), position = 0L)
+        val persistence = ActiveQueuePersistence(
+            repository,
+            player,
+            scope = this,
+        )
+        persistence.adopt(created)
+
+        // Initial save when ExoPlayer populates rows for the first time
+        val saved = persistence.saveNowAwait()!!
+        assertFalse(saved.isModified)
+        val stored = repository.queue(created.id).first()!!
+        assertFalse(stored.isModified)
+    }
+
+    @Test
+    fun structuralDirtySaveMarksQueueModified() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val created = repository.create(source = null, rows = rows("a"))
+        assertFalse(created.isModified)
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("a"), item("b")), position = 1_000L)
+        val persistence = ActiveQueuePersistence(
+            repository,
+            player,
+            scope = this,
+        )
+        persistence.adopt(created)
+
+        val saved = persistence.saveNowAwait(markModified = true)!!
+        assertTrue(saved.isModified)
+        val stored = repository.queue(created.id).first()!!
+        assertTrue(stored.isModified)
+    }
+
+    @Test
+    fun machineShufflePreservesPurityAndUpdatesMirroredRows() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val source = QueueSource(QueueSourceKind.FAVOURITES, "favourites", "Favourites")
+        val created = repository.create(source = source, rows = rows("a", "b", "c"))
+        assertFalse(created.isModified)
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("c"), item("a"), item("b")), position = 0L)
+        val persistence = ActiveQueuePersistence(repository, player, scope = this)
+        persistence.adopt(created)
+
+        val saved = persistence.saveNowAwait(markModified = false)!!
+        assertFalse(saved.isModified)
+        assertEquals(rows("c", "a", "b"), saved.rows)
+
+        player.position = 5_000L
+        val progress = persistence.saveProgressNowAwait()!!
+        assertEquals(5_000L, progress.bookmark.positionMs)
+        assertFalse(progress.isModified)
+    }
+
+    @Test
+    fun syncMirroredRowsFromPlayerUpdatesMirroredRowsWithoutMarkingModified() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val source = QueueSource(QueueSourceKind.ALL_SONGS, "all_songs", "Songs")
+        val created = repository.create(source = source, rows = rows("a", "b"))
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("b"), item("a")), position = 0L)
+        val persistence = ActiveQueuePersistence(repository, player, scope = this)
+        persistence.adopt(created)
+
+        persistence.syncMirroredRowsFromPlayer()
+        player.position = 3_500L
+        val progress = persistence.saveProgressNowAwait()!!
+        assertEquals(3_500L, progress.bookmark.positionMs)
+        assertFalse(progress.isModified)
+    }
 }

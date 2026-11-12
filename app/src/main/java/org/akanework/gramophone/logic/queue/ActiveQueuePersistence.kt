@@ -70,6 +70,7 @@ class ActiveQueuePersistence(
     private var activeId: UUID? = null
     private var lastMirroredRows: List<String> = emptyList()
     private var progressJob: Job? = null
+    private var pendingUserModification = false
 
     fun activeQueueId(): UUID? = activeId
 
@@ -79,6 +80,7 @@ class ActiveQueuePersistence(
 
     /** Make [queue] the active durable queue and record the activity. */
     suspend fun activate(queue: Queue) {
+        pendingUserModification = false
         activeId = queue.id
         lastMirroredRows = queue.rows
         repository.setActiveQueue(queue.id)
@@ -87,12 +89,14 @@ class ActiveQueuePersistence(
 
     /** Remember that the player's current queue is [queue] without rewriting its active marker. */
     fun adopt(queue: Queue) {
+        pendingUserModification = false
         activeId = queue.id
         lastMirroredRows = queue.rows
     }
 
     /** Clear the durable last-active marker, for example when the active queue is cleared. */
     fun detach() {
+        pendingUserModification = false
         activeId = null
         lastMirroredRows = emptyList()
         stopProgressSaving(save = false)
@@ -102,15 +106,26 @@ class ActiveQueuePersistence(
         }
     }
 
+    /**
+     * Align [lastMirroredRows] with the player's current items after a programmatic queue load.
+     * Never marks the queue as user-modified.
+     */
+    fun syncMirroredRowsFromPlayer() {
+        pendingUserModification = false
+        lastMirroredRows = snapshot()?.rows ?: emptyList()
+    }
+
     /** Mirror the player's current rows, bookmark, and repeat now. */
-    fun saveNow() {
+    fun saveNow(markModified: Boolean = false) {
+        if (markModified) pendingUserModification = true
         val snapshot = snapshot() ?: return
         val id = activeId ?: return
         scope.launch { persist(id, snapshot) }
     }
 
     /** Awaitable variant used before switching queues. */
-    suspend fun saveNowAwait(): Queue? {
+    suspend fun saveNowAwait(markModified: Boolean = false): Queue? {
+        if (markModified) pendingUserModification = true
         val snapshot = snapshot() ?: return null
         val id = activeId ?: return null
         return persist(id, snapshot)
@@ -122,8 +137,9 @@ class ActiveQueuePersistence(
      * listener may detach the active marker before this runs.
      */
     suspend fun saveClearedNow(queueUuid: UUID): Queue? = mutex.withLock {
+        pendingUserModification = false
         val saved = repository.mutate(queueUuid) {
-            it.copy(rows = emptyList(), bookmark = QueueBookmark())
+            it.copy(rows = emptyList(), bookmark = QueueBookmark(), isModified = true)
         }
         if (saved != null && activeId == queueUuid) lastMirroredRows = emptyList()
         saved
@@ -196,12 +212,15 @@ class ActiveQueuePersistence(
         // A stale snapshot can arrive after the active queue was cleared; never resurrect rows
         // that the user just removed.
         if (player.mediaItemCount() == 0 && snapshot.rows.isNotEmpty()) return@withLock null
+        val markModified = pendingUserModification
+        pendingUserModification = false
         if (QueueRestoreRules.rowsChanged(lastMirroredRows, snapshot.rows)) {
             repository.mutate(id) {
                 it.copy(
                     rows = snapshot.rows,
                     bookmark = snapshot.bookmark,
                     repeatMode = snapshot.repeatMode,
+                    isModified = if (markModified) true else it.isModified,
                 )
             }?.also { lastMirroredRows = snapshot.rows }
         } else {

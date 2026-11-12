@@ -34,7 +34,9 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import org.akanework.gramophone.logic.GramophoneApplication
 import org.akanework.gramophone.logic.GramophonePlaybackService
 import org.akanework.gramophone.logic.utils.LifecycleCallbackListImpl
@@ -176,14 +178,29 @@ class MediaControllerViewModel(application: Application) : AndroidViewModel(appl
         command: SessionCommand,
         args: Bundle
     ): ListenableFuture<SessionResult> {
-        var future: ListenableFuture<SessionResult>? = null
-        val listenerIterator = customCommandListenersImpl.iterator()
-        while (listenerIterator.hasNext() && (future == null || (future.isDone &&
-                    future.get().resultCode == SessionResult.RESULT_ERROR_NOT_SUPPORTED))
-        ) {
-            future = listenerIterator.next()(controller, command, args)
+        val listeners = customCommandListenersImpl.iterator()
+        fun tryNext(): ListenableFuture<SessionResult> {
+            if (!listeners.hasNext()) {
+                return super@MediaControllerViewModel.onCustomCommand(controller, command, args)
+            }
+            val future = try {
+                listeners.next()(controller, command, args)
+            } catch (t: Throwable) {
+                return Futures.immediateFailedFuture(t)
+            }
+            return Futures.transformAsync(
+                future,
+                { result ->
+                    if (result?.resultCode == SessionResult.RESULT_ERROR_NOT_SUPPORTED) {
+                        tryNext()
+                    } else {
+                        Futures.immediateFuture(result)
+                    }
+                },
+                MoreExecutors.directExecutor()
+            )
         }
-        return future ?: super.onCustomCommand(controller, command, args)
+        return tryNext()
     }
 
     private class LifecycleHost : LifecycleOwner {

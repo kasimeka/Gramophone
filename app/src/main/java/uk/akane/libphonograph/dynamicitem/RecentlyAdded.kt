@@ -18,11 +18,16 @@
 package uk.akane.libphonograph.dynamicitem
 
 import androidx.media3.common.MediaItem
-import uk.akane.libphonograph.items.Playlist
+import uk.akane.libphonograph.items.Item
 import uk.akane.libphonograph.items.addDate
 
-class RecentlyAdded(minAddDate: Long, songList: List<MediaItem>) :
-    Playlist(null, null, null, null, null, null) {
+/**
+ * Recently added library collection. It is a dynamic library item, not a playlist entity.
+ */
+class RecentlyAdded(minAddDate: Long, songList: List<MediaItem>) : Item {
+    override val id: Long? = null
+    override val title: String? = null
+
     private val rawList: List<MediaItem> = songList.sortedByDescending {
         it.mediaMetadata.addDate ?: -1
     }
@@ -61,12 +66,9 @@ class RecentlyAdded(minAddDate: Long, songList: List<MediaItem>) :
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-
         other as RecentlyAdded
-
         if (rawList != other.rawList) return false
         if (minAddDate != other.minAddDate) return false
-
         return true
     }
 }

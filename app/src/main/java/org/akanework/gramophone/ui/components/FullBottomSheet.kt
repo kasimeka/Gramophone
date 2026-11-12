@@ -48,6 +48,7 @@ import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
@@ -56,6 +57,7 @@ import androidx.appcompat.widget.TooltipCompat
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.animation.addListener
 import androidx.core.animation.doOnEnd
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.Insets
 import androidx.core.graphics.TypefaceCompat
@@ -70,10 +72,12 @@ import androidx.core.widget.NestedScrollView
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.C
 import androidx.media3.common.HeartRating
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Timeline
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.Log
@@ -101,6 +105,7 @@ import com.google.android.material.slider.Slider
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -114,14 +119,15 @@ import org.akanework.gramophone.logic.clone
 import org.akanework.gramophone.logic.dpToPx
 import org.akanework.gramophone.logic.fadInAnimation
 import org.akanework.gramophone.logic.fadOutAnimation
-import org.akanework.gramophone.logic.getAudioFormat
+import org.akanework.gramophone.logic.getAudioFormatAsync
 import org.akanework.gramophone.logic.getBooleanStrict
 import org.akanework.gramophone.logic.getIntStrict
-import org.akanework.gramophone.logic.getLyrics
-import org.akanework.gramophone.logic.getTimer
+import org.akanework.gramophone.logic.getLyricsAsync
+import org.akanework.gramophone.logic.getTimerAsync
 import org.akanework.gramophone.logic.playOrPause
 import org.akanework.gramophone.logic.setTextAnimation
 import org.akanework.gramophone.logic.setTimer
+import org.akanework.gramophone.logic.shuffleQueue
 import org.akanework.gramophone.logic.startAnimation
 import org.akanework.gramophone.logic.updateMargin
 import org.akanework.gramophone.logic.utils.AudioFormatDetector
@@ -132,14 +138,17 @@ import org.akanework.gramophone.logic.utils.CalculationUtils
 import org.akanework.gramophone.logic.utils.ColorUtils
 import org.akanework.gramophone.logic.utils.Flags
 import org.akanework.gramophone.ui.MainActivity
+import org.akanework.gramophone.logic.gramophoneApplication
 import org.akanework.gramophone.ui.fragments.ArtistSubFragment
 import org.akanework.gramophone.ui.fragments.DetailDialogFragment
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment
+import org.akanework.gramophone.ui.fragments.QueueDetailFragment
+import org.akanework.gramophone.ui.fragments.ViewPagerFragment
 import uk.akane.libphonograph.items.albumId
 import uk.akane.libphonograph.items.artistId
-import uk.akane.libphonograph.manipulator.PlaylistSerializer.Entry
 import java.text.NumberFormat
 import java.text.ParseException
+import java.util.UUID
 import kotlin.math.max
 import kotlin.math.min
 
@@ -270,8 +279,6 @@ class FullBottomSheet
     private val bottomSheetFullCoverFrame: MaterialCardView
     val bottomSheetFullLyricView: LyricsView by lazy { (parent as ViewGroup).findViewById(R.id.lyric_frame)!! }
     private val progressDrawable: SquigglyProgress
-    private var pqs: PlaylistQueueSheet? = null
-
     init {
         inflate(context, R.layout.full_player, this)
         bottomSheetFullCoverFrame = findViewById(R.id.album_cover_frame)
@@ -296,23 +303,40 @@ class FullBottomSheet
         bottomSheetFullQualityDetails = findViewById(R.id.quality_details)
         refreshSettings(null)
         prefs.registerOnSharedPreferenceChangeListener(this)
+        val uiExecutor = ContextCompat.getMainExecutor(context)
         activity.controllerViewModel.customCommandListeners.addCallback(activity.lifecycle) { _, command, _ ->
             when (command.customAction) {
                 GramophonePlaybackService.SERVICE_TIMER_CHANGED -> updateTimer()
 
                 GramophonePlaybackService.SERVICE_GET_LYRICS -> {
-                    val parsedLyrics = instance?.getLyrics()
-                    bottomSheetFullLyricView.updateLyrics(parsedLyrics)
+                    instance?.getLyricsAsync()?.let { future ->
+                        future.addListener({
+                            try {
+                                if (future.isCancelled) return@addListener
+                                val parsedLyrics = future.get()
+                                bottomSheetFullLyricView.updateLyrics(parsedLyrics)
+                            } catch (_: Exception) {
+                            }
+                        }, uiExecutor)
+                    }
                 }
 
                 GramophonePlaybackService.SERVICE_GET_AUDIO_FORMAT -> {
-                    val format = instance?.getAudioFormat()
-                    this.currentFormat = format
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
-                        !handler.hasCallbacks(formatUpdateRunnable)
-                    ) {
-                        // TODO: is 300ms long enough wait for stuff like bitrate? 100ms isn't.
-                        handler.postDelayed(formatUpdateRunnable, 300)
+                    instance?.getAudioFormatAsync()?.let { future ->
+                        future.addListener({
+                            try {
+                                if (future.isCancelled) return@addListener
+                                val format = future.get()
+                                this.currentFormat = format
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                                    !handler.hasCallbacks(formatUpdateRunnable)
+                                ) {
+                                    // TODO: is 300ms long enough wait for stuff like bitrate? 100ms isn't.
+                                    handler.postDelayed(formatUpdateRunnable, 300)
+                                }
+                            } catch (_: Exception) {
+                            }
+                        }, uiExecutor)
                     }
                 }
 
@@ -387,95 +411,115 @@ class FullBottomSheet
 
         bottomSheetTimerButton.setOnClickListener {
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
-            val t = instance?.getTimer()
-            val currentText = if (t?.first != null) context.getString(R.string.timer_expiry,
-                DateFormat.getTimeFormat(context).format(System.currentTimeMillis() + t.first!!)
-            ) else if (t?.second == true) context.getString(R.string.timer_expiry_end_of_this_song)
-            else null
-            if (currentText != null) {
-                val dialog = MaterialAlertDialogBuilder(wrappedContext ?: context)
-                    .setTitle(R.string.timer)
-                    .setView(R.layout.dialog_sleep_timer_active)
-                    .setNeutralButton(R.string.unset)  { _, _ ->
-                        instance?.setTimer(0, false)
-                    }
-                    .setPositiveButton(android.R.string.ok) { _, _ -> }
-                    .show()
-                dialog.findViewById<TextView>(R.id.textView)!!.text = currentText
-                dialog.findViewById<CheckBox>(R.id.checkBox)!!.let {
-                    if (t!!.first == null) {
-                        it.visibility = GONE
-                    } else {
-                        it.isChecked = t.second
-                        it.setOnCheckedChangeListener { _, value ->
-                            val newTime = instance?.getTimer()
-                            instance?.setTimer(newTime?.first ?: 0, value)
-                        }
-                    }
-                }
-            } else {
-                val dialog = MaterialAlertDialogBuilder(wrappedContext ?: context)
-                    .setTitle(R.string.timer)
-                    .setView(R.layout.dialog_sleep_timer)
-                    .setNegativeButton(android.R.string.cancel) { _, _ -> }
-                    .show()
-                val lv = dialog.findViewById<ListView>(R.id.listView)!!
-                val checkbox = dialog.findViewById<CheckBox>(R.id.checkBox)!!
-                checkbox.isChecked = prefs.getBooleanStrict("lastTimerEos", false)
-                val minutes = listOf(0, 1, 3, 5, 10, 15, 20, 30, 45, 60, 90)
-                val items = minutes.map {
-                    if (it > 0)
-                        context.resources.getQuantityString(
-                            R.plurals.minutes, it,
-                            it
-                        )
-                    else
-                        context.resources.getString(R.string.timer_end_of_this_song)
-                } + context.resources.getString(R.string.other)
-                lv.adapter = ArrayAdapter(
-                    context, android.R.layout.simple_list_item_1,
-                    items
-                )
-                lv.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-                    dialog.dismiss()
-                    if (position == minutes.size) {
-                        lateinit var et: EditText
-                        lateinit var cb: CheckBox
-                        // TODO find out why wrapped context does not work
-                        val dialog2 = MaterialAlertDialogBuilder(context)
+            val controller = instance ?: return@setOnClickListener
+            val uiExecutor = ContextCompat.getMainExecutor(context)
+            val future = controller.getTimerAsync()
+            future.addListener({
+                try {
+                    if (future.isCancelled) return@addListener
+                    val t = future.get()
+                    val currentText = if (t.first != null) context.getString(
+                        R.string.timer_expiry,
+                        DateFormat.getTimeFormat(context).format(System.currentTimeMillis() + t.first!!)
+                    ) else if (t.second) context.getString(R.string.timer_expiry_end_of_this_song)
+                    else null
+                    if (currentText != null) {
+                        val dialog = MaterialAlertDialogBuilder(wrappedContext ?: context)
                             .setTitle(R.string.timer)
-                            .setView(R.layout.dialog_sleep_timer_custom)
-                            .setPositiveButton(android.R.string.ok) { _, _ ->
-                                try {
-                                    instance?.setTimer((NumberFormat.getInstance().parse(
-                                        et.editableText.toString())!!.toFloat() * 60f *
-                                            1000f).toInt(), cb.isChecked)
-                                } catch (_: ParseException) {
-                                    // race condition with button enable
+                            .setView(R.layout.dialog_sleep_timer_active)
+                            .setNeutralButton(R.string.unset) { _, _ ->
+                                instance?.setTimer(0, false)
+                            }
+                            .setPositiveButton(android.R.string.ok) { _, _ -> }
+                            .show()
+                        dialog.findViewById<TextView>(R.id.textView)!!.text = currentText
+                        dialog.findViewById<CheckBox>(R.id.checkBox)!!.let { cb ->
+                            if (t.first == null) {
+                                cb.visibility = GONE
+                            } else {
+                                cb.isChecked = t.second
+                                cb.setOnCheckedChangeListener { _, value ->
+                                    val timeFuture = instance?.getTimerAsync() ?: return@setOnCheckedChangeListener
+                                    timeFuture.addListener({
+                                        try {
+                                            if (timeFuture.isCancelled) return@addListener
+                                            val newTime = timeFuture.get()
+                                            instance?.setTimer(newTime.first ?: 0, value)
+                                        } catch (_: Exception) {
+                                        }
+                                    }, uiExecutor)
                                 }
                             }
+                        }
+                    } else {
+                        val dialog = MaterialAlertDialogBuilder(wrappedContext ?: context)
+                            .setTitle(R.string.timer)
+                            .setView(R.layout.dialog_sleep_timer)
                             .setNegativeButton(android.R.string.cancel) { _, _ -> }
                             .show()
-                        val b = dialog2.getButton(DialogInterface.BUTTON_POSITIVE)
-                        b.isEnabled = false
-                        et = dialog2.findViewById(R.id.editText)!!
-                        et.addTextChangedListener {
-                            b.isEnabled = try {
-                                NumberFormat.getInstance().parse(it.toString())!!.toFloat()
-                                true
-                            } catch (_: ParseException) {
-                                false
+                        val lv = dialog.findViewById<ListView>(R.id.listView)!!
+                        val checkbox = dialog.findViewById<CheckBox>(R.id.checkBox)!!
+                        checkbox.isChecked = prefs.getBooleanStrict("lastTimerEos", false)
+                        val minutes = listOf(0, 1, 3, 5, 10, 15, 20, 30, 45, 60, 90)
+                        val items = minutes.map {
+                            if (it > 0)
+                                context.resources.getQuantityString(
+                                    R.plurals.minutes, it,
+                                    it
+                                )
+                            else
+                                context.resources.getString(R.string.timer_end_of_this_song)
+                        } + context.resources.getString(R.string.other)
+                        lv.adapter = ArrayAdapter(
+                            context, android.R.layout.simple_list_item_1,
+                            items
+                        )
+                        lv.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+                            dialog.dismiss()
+                            if (position == minutes.size) {
+                                lateinit var et: EditText
+                                lateinit var cb: CheckBox
+                                // TODO find out why wrapped context does not work
+                                val dialog2 = MaterialAlertDialogBuilder(context)
+                                    .setTitle(R.string.timer)
+                                    .setView(R.layout.dialog_sleep_timer_custom)
+                                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                                        try {
+                                            instance?.setTimer(
+                                                (NumberFormat.getInstance().parse(
+                                                    et.editableText.toString()
+                                                )!!.toFloat() * 60f * 1000f).toInt(),
+                                                cb.isChecked
+                                            )
+                                        } catch (_: ParseException) {
+                                            // race condition with button enable
+                                        }
+                                    }
+                                    .setNegativeButton(android.R.string.cancel) { _, _ -> }
+                                    .show()
+                                val b = dialog2.getButton(DialogInterface.BUTTON_POSITIVE)
+                                b.isEnabled = false
+                                et = dialog2.findViewById(R.id.editText)!!
+                                et.addTextChangedListener {
+                                    b.isEnabled = try {
+                                        NumberFormat.getInstance().parse(it.toString())!!.toFloat()
+                                        true
+                                    } catch (_: ParseException) {
+                                        false
+                                    }
+                                }
+                                cb = dialog2.findViewById(R.id.checkBox)!!
+                                cb.isChecked = checkbox.isChecked
+                            } else {
+                                val duration = minutes[position] * 60 * 1000
+                                val eos = duration == 0 || checkbox.isChecked
+                                instance?.setTimer(duration, eos)
                             }
                         }
-                        cb = dialog2.findViewById(R.id.checkBox)!!
-                        cb.isChecked = checkbox.isChecked
-                    } else {
-                        val duration = minutes[position] * 60 * 1000
-                        val eos = duration == 0 || checkbox.isChecked
-                        instance?.setTimer(duration, eos)
                     }
+                } catch (_: Exception) {
                 }
-            }
+            }, uiExecutor)
         }
 
         bottomSheetLoopButton.setOnClickListener {
@@ -498,8 +542,18 @@ class FullBottomSheet
 
         bottomSheetPlaylistButton.setOnClickListener {
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
-            if (instance != null)
-                pqs = PlaylistQueueSheet(wrappedContext ?: context, activity).also { it.show() }
+            val activeId = activity.gramophoneApplication.queueRepository.lastActiveQueue.value?.id
+            if (activeId != null) {
+                activity.startFragment(QueueDetailFragment()) {
+                    putString(QueueDetailFragment.ARG_QUEUE_ID, activeId.toString())
+                }
+            } else {
+                val viewPager = activity.supportFragmentManager.fragments
+                    .filterIsInstance<ViewPagerFragment>().firstOrNull()
+                    ?: activity.supportFragmentManager.findFragmentById(R.id.fragment_viewpager) as? ViewPagerFragment
+                viewPager?.openQueuesTab()
+            }
+            minimize?.invoke()
         }
         bottomSheetFullControllerButton.setOnClickListener {
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
@@ -523,10 +577,6 @@ class FullBottomSheet
             instance?.seekForward()
             true
         }
-        bottomSheetShuffleButton.addOnCheckedChangeListener { _, isChecked ->
-            instance?.shuffleModeEnabled = isChecked
-        }
-
         bottomSheetFullSlider.addOnChangeListener { _, value, isUser ->
             if (isUser) {
                 val dest = instance?.mediaMetadata?.durationMs
@@ -552,6 +602,20 @@ class FullBottomSheet
 
         bottomSheetShuffleButton.setOnClickListener {
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
+            val controller = instance ?: return@setOnClickListener
+            val activeQueueId = activity.gramophoneApplication.queueRepository.lastActiveQueue.value?.id
+            activity.lifecycleScope.launch(Dispatchers.IO) {
+                val ok = controller.shuffleQueue(activeQueueId, shufflePlay = false)
+                if (ok) {
+                    withContext(Dispatchers.Main) {
+                        android.widget.Toast.makeText(
+                            context,
+                            R.string.queue_shuffled,
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                }
+            }
         }
 
         val colorSecondaryContainer =
@@ -582,7 +646,7 @@ class FullBottomSheet
             firstTime = true
             updateTimer()
             onRepeatModeChanged(instance?.repeatMode ?: Player.REPEAT_MODE_OFF)
-            onShuffleModeEnabledChanged(instance?.shuffleModeEnabled == true)
+            refreshShuffleEnabled()
             onPlaybackStateChanged(instance?.playbackState ?: Player.STATE_IDLE)
             onMediaItemTransition(
                 instance?.currentMediaItem,
@@ -643,16 +707,29 @@ class FullBottomSheet
     }
 
     private fun updateTimer() {
-        val t = instance?.getTimer()
-        bottomSheetTimerButton.isChecked = t?.first != null || t?.second == true
-        TooltipCompat.setTooltipText(
-            bottomSheetTimerButton,
-            if (t?.first != null) context.getString(
-                if (t.second) R.string.timer_expiry_eos else R.string.timer_expiry,
-                DateFormat.getTimeFormat(context).format(System.currentTimeMillis() + t.first!!)
-            ) else if (t?.second == true) context.getString(R.string.timer_expiry_end_of_this_song)
-            else context.getString(R.string.timer)
-        )
+        val controller = instance ?: run {
+            bottomSheetTimerButton.isChecked = false
+            TooltipCompat.setTooltipText(bottomSheetTimerButton, context.getString(R.string.timer))
+            return
+        }
+        val uiExecutor = ContextCompat.getMainExecutor(context)
+        val future = controller.getTimerAsync()
+        future.addListener({
+            try {
+                if (future.isCancelled) return@addListener
+                val t = future.get()
+                bottomSheetTimerButton.isChecked = t.first != null || t.second
+                TooltipCompat.setTooltipText(
+                    bottomSheetTimerButton,
+                    if (t.first != null) context.getString(
+                        if (t.second) R.string.timer_expiry_eos else R.string.timer_expiry,
+                        DateFormat.getTimeFormat(context).format(System.currentTimeMillis() + t.first!!)
+                    ) else if (t.second) context.getString(R.string.timer_expiry_end_of_this_song)
+                    else context.getString(R.string.timer)
+                )
+            } catch (_: Exception) {
+            }
+        }, uiExecutor)
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
@@ -858,7 +935,6 @@ class FullBottomSheet
     }
 
     fun onStop() {
-        pqs?.dismiss()
         runnableRunning = false
     }
 
@@ -1177,15 +1253,6 @@ class FullBottomSheet
                 )
             )
 
-            val shuffleTransition = ValueAnimator.ofArgb(
-                bottomSheetShuffleButton.iconTint.getColorForState(
-                    bottomSheetShuffleButton.drawableState, Color.RED
-                ),
-                selectorBackground.getColorForState(
-                    bottomSheetShuffleButton.drawableState, Color.RED
-                )
-            )
-
             val favoriteTransition = ValueAnimator.ofArgb(
                 bottomSheetFavoriteButton.iconTint.getColorForState(
                     bottomSheetFavoriteButton.drawableState, Color.RED
@@ -1295,14 +1362,6 @@ class FullBottomSheet
                 duration = BACKGROUND_COLOR_TRANSITION_SEC
             }
 
-            shuffleTransition.apply {
-                addUpdateListener { animation ->
-                    val progressColor = animation.animatedValue as Int
-                    bottomSheetShuffleButton.iconTint = ColorStateList.valueOf(progressColor)
-                }
-                duration = BACKGROUND_COLOR_TRANSITION_SEC
-            }
-
             favoriteTransition.apply {
                 addUpdateListener { animation ->
                     val progressColor = animation.animatedValue as Int
@@ -1321,7 +1380,6 @@ class FullBottomSheet
                 lyricTextColorTransition.start()
                 lyricHighlightTlColorTransition.start()
                 loopTransition.start()
-                shuffleTransition.start()
                 favoriteTransition.start()
 
                 // Note: Animator.addListener isn't thread-safe on all Android versions, ensure we
@@ -1335,7 +1393,6 @@ class FullBottomSheet
                 lyricTextColorTransition.awaitEnd()
                 lyricHighlightTlColorTransition.awaitEnd()
                 loopTransition.awaitEnd()
-                shuffleTransition.awaitEnd()
                 favoriteTransition.awaitEnd()
             }
         }
@@ -1384,8 +1441,10 @@ class FullBottomSheet
                 ColorStateList.valueOf(colorOnSurface)
             bottomSheetPlaylistButton.iconTint =
                 ColorStateList.valueOf(colorOnSurface)
+            // Shuffle is a one-shot action, not a checked state, so it must never look
+            // disabled just because the button is unchecked.
             bottomSheetShuffleButton.iconTint =
-                selectorBackground
+                ColorStateList.valueOf(colorOnSurface)
             bottomSheetLoopButton.iconTint =
                 selectorBackground
             bottomSheetLyricButton.iconTint =
@@ -1426,6 +1485,7 @@ class FullBottomSheet
         mediaItem: MediaItem?,
         reason: Int
     ) {
+        refreshShuffleEnabled()
         if (instance?.mediaItemCount != 0) {
             bottomSheetFullCover.dispose()
             bottomSheetFullCover.loadNoPlaceholder(mediaItem?.mediaMetadata?.artworkUri) {
@@ -1461,6 +1521,18 @@ class FullBottomSheet
         bottomSheetFavoriteButton.addOnCheckedChangeListener(this) // see onCheckedChanged
     }
 
+    private fun refreshShuffleEnabled() {
+        val player = instance ?: return
+        bottomSheetShuffleButton.isEnabled =
+            player.mediaItemCount > 1 &&
+                player.currentMediaItemIndex != C.INDEX_UNSET &&
+                player.currentMediaItem?.mediaMetadata?.isPlayable != false
+    }
+
+    override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+        refreshShuffleEnabled()
+    }
+
     private fun updateDuration() {
         val duration = instance?.contentDuration?.let { if (it == C.TIME_UNSET) null else it }
             ?: instance?.currentMediaItem?.mediaMetadata?.durationMs
@@ -1483,10 +1555,8 @@ class FullBottomSheet
     }
 
     override fun onCheckedChanged(button: MaterialButton?, isChecked: Boolean) {
-        instance?.currentMediaItem?.let { song ->
-            val entry = Entry.ofMediaItem(song)
-            if (entry != null)
-                activity.markIsFavoriteStatus(listOf(entry), isChecked)
+        instance?.currentMediaItem?.mediaId?.let { mediaId ->
+            activity.markIsFavoriteStatus(listOf(mediaId), isChecked)
         }
         bottomSheetFavoriteButton.removeOnCheckedChangeListener(this) // see onMediaMetadataChanged
     }
@@ -1497,10 +1567,6 @@ class FullBottomSheet
         reason: Int
     ) {
         positionRunnable.run()
-    }
-
-    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-        bottomSheetShuffleButton.isChecked = shuffleModeEnabled
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {

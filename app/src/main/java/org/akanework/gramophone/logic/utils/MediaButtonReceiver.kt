@@ -31,6 +31,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.media3.common.util.Log
 import androidx.media3.session.MediaButtonReceiver
 import org.akanework.gramophone.R
+import org.akanework.gramophone.logic.GramophoneApplication
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.NOTIFY_CHANNEL_ID
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.NOTIFY_ID
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.PENDING_INTENT_NOTIFY_ID
@@ -53,8 +54,13 @@ class MediaButtonReceiver : MediaButtonReceiver() {
     }
 
     override fun shouldStartForegroundService(context: Context, intent: Intent): Boolean {
-        val prefs = context.getSharedPreferences("LastPlayedManager", 0)
-        val ret = !prefs.getString("last_played_grp", null).isNullOrEmpty()
+        val ret = try {
+            (context.applicationContext as? GramophoneApplication)
+                ?.hasRestorableActiveQueue() == true
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to read the durable active queue", e)
+            false
+        }
         Log.i(TAG, "shouldStartForegroundService()=$ret: $intent")
         return ret
     }

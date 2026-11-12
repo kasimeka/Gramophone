@@ -18,8 +18,29 @@
 package uk.akane.libphonograph.dynamicitem
 
 import androidx.media3.common.MediaItem
-import uk.akane.libphonograph.items.Playlist
-import java.io.File
+import uk.akane.libphonograph.items.Item
 
-class Favorite(id: Long, path: File?, dateAdded: Long?, dateModified: Long?,
-    songList: List<MediaItem>) : Playlist(id, null, path, null, dateAdded, dateModified, songList)
+/**
+ * The user's Favourites library collection. It is a dynamic library item, not a playlist entity.
+ */
+class Favorite(
+    override val id: Long?,
+    override val songList: List<MediaItem>,
+) : Item {
+    override val title: String? = null
+
+    override fun hashCode(): Int {
+        var result = id?.hashCode() ?: 0
+        result = 31 * result + songList.hashCode()
+        return result
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as Favorite
+        if (id != other.id) return false
+        if (songList != other.songList) return false
+        return true
+    }
+}

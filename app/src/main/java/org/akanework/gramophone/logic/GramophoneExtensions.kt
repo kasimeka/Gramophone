@@ -72,24 +72,27 @@ import androidx.media3.session.SessionCommand
 import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.CollapsingToolbarLayout
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_GET_AUDIO_FORMAT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_GET_LYRICS
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_AGE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_CLEAR_EDIT_UNDO
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_DEL
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_GET_INACTIVE_LIST
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_GET_QUEUE_FOR_UI
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_LOAD_QUEUE
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_PIN_QUEUE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_EDIT
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_PLAY_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_RENAME_QUEUE
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_REORDER
-import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_UNPIN_QUEUE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_SHUFFLE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_UNDO_EDIT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QUERY_TIMER
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_MEDIA_ITEMS_ATOMIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_TIMER
+import org.akanework.gramophone.logic.queue.QueueEditOperation
+import org.akanework.gramophone.logic.queue.QueueSource
 import org.akanework.gramophone.logic.utils.AfFormatInfo
 import org.akanework.gramophone.logic.utils.AudioFormatDetector
 import org.akanework.gramophone.logic.utils.AudioTrackInfo
@@ -106,14 +109,15 @@ import org.xmlpull.v1.XmlPullParserException
 import uk.akane.libphonograph.items.EXTRA_FILE
 import java.io.File
 import java.util.Locale
+import java.util.UUID
 import kotlin.math.max
 
 fun Player.playOrPause() {
-    if (playWhenReady) {
-        if (playbackState == Player.STATE_ENDED)
-            seekToDefaultPosition()
-        else
-            pause()
+    if (playbackState == Player.STATE_ENDED) {
+        seekToDefaultPosition()
+        play()
+    } else if (playWhenReady) {
+        pause()
     } else {
         play()
     }
@@ -282,20 +286,24 @@ inline fun Int.dpToPx(context: Context): Int =
 inline fun Float.dpToPx(context: Context): Float =
     (this * context.resources.displayMetrics.density)
 
+fun MediaController.getTimerAsync(): ListenableFuture<Pair<Int?, Boolean>> =
+    Futures.transform(
+        sendCustomCommandOnAppThread(SessionCommand(SERVICE_QUERY_TIMER, Bundle.EMPTY), Bundle.EMPTY),
+        { result ->
+            result!!.extras.run {
+                (if (containsKey("duration")) getInt("duration") else null) to
+                    (if (containsKey("pauseOnEnd")) getBoolean("pauseOnEnd")
+                    else throw IllegalArgumentException("expected pauseOnEnd to be set"))
+            }
+        },
+        MoreExecutors.directExecutor()
+    )
+
 fun MediaController.getTimer(): Pair<Int?, Boolean> =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QUERY_TIMER, Bundle.EMPTY),
-        Bundle.EMPTY
-    ).get().extras.run {
-        (if (containsKey("duration"))
-            getInt("duration")
-        else null) to (if (containsKey("pauseOnEnd"))
-            getBoolean("pauseOnEnd")
-        else throw IllegalArgumentException("expected pauseOnEnd to be set"))
-    }
+    getTimerAsync().get()
 
 fun MediaController.setTimer(value: Int, waitUntilSongEnd: Boolean) {
-    sendCustomCommand(
+    sendCustomCommandOnAppThread(
         SessionCommand(SERVICE_SET_TIMER, Bundle.EMPTY).apply {
             customExtras.putInt("duration", value)
             customExtras.putBoolean("pauseOnEnd", waitUntilSongEnd)
@@ -303,27 +311,47 @@ fun MediaController.setTimer(value: Int, waitUntilSongEnd: Boolean) {
     )
 }
 
-fun MediaController.setMediaItemsSeamlessly(items: List<MediaItem>, position: Int, title: String) {
-    sendCustomCommand(
+fun MediaController.setMediaItemsSeamlessly(
+    items: List<MediaItem>,
+    position: Int,
+    title: String,
+    source: QueueSource? = null,
+) {
+    sendCustomCommandOnAppThread(
         SessionCommand(SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY, Bundle.EMPTY).apply {
             customExtras.putBinder("items", MediaItemList(items))
             customExtras.putInt("position", position)
             customExtras.putString("title", title)
+            source?.let {
+                customExtras.putString("source_kind", it.kind.name)
+                customExtras.putString("source_identifier", it.identifier)
+                customExtras.putString("source_display_name", it.displayName)
+            }
         }, Bundle.EMPTY
     )
 }
 
-fun MediaController.setMediaItemsWithTitle(items: List<MediaItem>, position: Int = C.INDEX_UNSET, title: String,
-                                        shuffleEnabled: Boolean? = null, repeatMode: @Player.RepeatMode Int? = null) {
-    sendCustomCommand(
+fun MediaController.setMediaItemsWithTitle(
+    items: List<MediaItem>,
+    position: Int = C.INDEX_UNSET,
+    title: String,
+    repeatMode: @Player.RepeatMode Int? = null,
+    original: Boolean = true,
+    source: QueueSource? = null,
+) {
+    sendCustomCommandOnAppThread(
         SessionCommand(SERVICE_SET_MEDIA_ITEMS_ATOMIC, Bundle.EMPTY).apply {
             customExtras.putBinder("items", MediaItemList(items))
             customExtras.putInt("position", position)
             customExtras.putString("title", title)
-            if (shuffleEnabled != null)
-                customExtras.putBoolean("shuffleEnabled", shuffleEnabled)
+            customExtras.putBoolean("original", original)
             if (repeatMode != null)
                 customExtras.putInt("repeatMode", repeatMode)
+            source?.let {
+                customExtras.putString("source_kind", it.kind.name)
+                customExtras.putString("source_identifier", it.identifier)
+                customExtras.putString("source_display_name", it.displayName)
+            }
         }, Bundle.EMPTY
     )
 }
@@ -351,138 +379,172 @@ inline fun <reified T> MutableList<T>.replaceAllSupport(skipFirst: Int = 0, oper
 }
 
 @Suppress("UNCHECKED_CAST")
+fun MediaController.getLyricsAsync(): ListenableFuture<SemanticLyrics?> =
+    Futures.transform(
+        sendCustomCommandOnAppThread(SessionCommand(SERVICE_GET_LYRICS, Bundle.EMPTY), Bundle.EMPTY),
+        { result ->
+            result?.extras?.let {
+                BundleCompat.getParcelable(it, "lyrics", SemanticLyrics::class.java)
+            }
+        },
+        MoreExecutors.directExecutor()
+    )
+
+@Suppress("UNCHECKED_CAST")
 fun MediaController.getLyrics(): SemanticLyrics? =
-    sendCustomCommand(
-        SessionCommand(SERVICE_GET_LYRICS, Bundle.EMPTY),
-        Bundle.EMPTY
-    ).get().extras.let {
-        BundleCompat.getParcelable(it, "lyrics", SemanticLyrics::class.java)
-    }
+    getLyricsAsync().get()
+
+fun MediaController.getAudioFormatAsync(): ListenableFuture<AudioFormatDetector.AudioFormats> =
+    Futures.transform(
+        sendCustomCommandOnAppThread(SessionCommand(SERVICE_GET_AUDIO_FORMAT, Bundle.EMPTY), Bundle.EMPTY),
+        { result ->
+            val it = result!!.extras
+            AudioFormatDetector.AudioFormats(
+                BundleCompat.getParcelableArrayList(
+                    it, "file_format",
+                    Bundle::class.java
+                )?.let { bundles ->
+                    bundles.map { bundle ->
+                        bundle.getInt("type", C.TRACK_TYPE_UNKNOWN) to
+                                (Format.fromBundle(bundle.getBundle("format")!!)
+                                        to ReplayGainUtil.ReplayGainInfo.fromBundle(bundle.getBundle("rg")!!))
+                    }
+                },
+                it.getBundle("sink_format")?.let { bundle -> Format.fromBundle(bundle) },
+                BundleCompat.getParcelable(it, "track_format", AudioTrackInfo::class.java),
+                BundleCompat.getParcelable(it, "hal_format", AfFormatInfo::class.java),
+                BundleCompat.getParcelable(it, "bt", BtCodecInfo::class.java)
+            )
+        },
+        MoreExecutors.directExecutor()
+    )
 
 fun MediaController.getAudioFormat(): AudioFormatDetector.AudioFormats =
-    sendCustomCommand(
-        SessionCommand(SERVICE_GET_AUDIO_FORMAT, Bundle.EMPTY),
-        Bundle.EMPTY
-    ).get().extras.let {
-        AudioFormatDetector.AudioFormats(
-            BundleCompat.getParcelableArrayList(
-                it, "file_format",
-                Bundle::class.java
-            )?.let { bundles ->
-                bundles.map { bundle ->
-                    bundle.getInt("type", C.TRACK_TYPE_UNKNOWN) to
-                            (Format.fromBundle(bundle.getBundle("format")!!)
-                                    to ReplayGainUtil.ReplayGainInfo.fromBundle(bundle.getBundle("rg")!!))
-                }
-            },
-            it.getBundle("sink_format")?.let { bundle -> Format.fromBundle(bundle) },
-            BundleCompat.getParcelable(it, "track_format", AudioTrackInfo::class.java),
-            BundleCompat.getParcelable(it, "hal_format", AfFormatInfo::class.java),
-            BundleCompat.getParcelable(it, "bt", BtCodecInfo::class.java)
-        )
-    }
-
-// TODO we do not really need binder for this anymore
-fun MediaController.getInactiveQueues(): List<MultiQueueObject> =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_GET_INACTIVE_LIST, Bundle.EMPTY),
-        Bundle.EMPTY
-    ).get().extras.run {
-        val binder = getBinder("allQueues")!!
-        MultiQueueList.getList(binder)
-    }
-
-// TODO: call without media list
-fun MediaController.getInactiveQueue(queueId: Long): MultiQueueObject? =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_GET_QUEUE_FOR_UI, Bundle.EMPTY).apply {
-            customExtras.putLong("queueId", queueId)
-        }, Bundle.EMPTY
-    ).get().extras.run {
-        val binder = getBinder("allQueues")!!
-        MultiQueueList.getList(binder).firstOrNull()
-    }
+    getAudioFormatAsync().get()
 
 /**
- * Get full [MultiQueueObject] object with media items and shuffle order.
- *
- * @param queueId Inactive queue id, or specify -1 to retrieve the active queue.
+ * Queue detail play/pause. Without [startIndex] it applies the queue play decision table: pause
+ * the active queue, resume from its bookmark, restart an ended queue, or switch to another queue.
  */
-fun MediaController.getQueueForUi(queueId: Long = -1L): Pair<MutableList<Int>, MultiQueueObject>? {
-    return sendCustomCommand(
-        SessionCommand(SERVICE_QB_GET_QUEUE_FOR_UI, Bundle.EMPTY).apply {
-            customExtras.putLong("queueId", queueId)
-        }, Bundle.EMPTY
-    ).get().extras.run {
-        val binder = getBinder("allQueues")!!
-        MultiQueueList.getList(binder).map { mq ->
-            val indexes: MutableList<Int> = if (mq.shuffleOrder?.data == null) {
-                (0 until mq.getSize()).toMutableList()
-            } else {
-                mq.shuffleOrder!!.data!!.toMutableList()
-            }
-
-            Pair(indexes, mq)
-        }.firstOrNull()
-    }
-}
-
-fun MediaController.loadQueue(queueId: Long, startIndex: Int = C.INDEX_UNSET) {
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_LOAD_QUEUE, Bundle.EMPTY).apply {
-            customExtras.putLong("queueId", queueId)
+fun MediaController.playQueue(queueUuid: UUID, startIndex: Int = C.INDEX_UNSET): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_PLAY_QUEUE, Bundle.EMPTY).apply {
+            customExtras.putString("queueUuid", queueUuid.toString())
             customExtras.putInt("startIndex", startIndex)
-        }, Bundle.EMPTY
-    )
-}
-
-fun MediaController.pinQueue(queueId: Long) =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_PIN_QUEUE, Bundle.EMPTY).apply {
-            customExtras.putLong("queueId", queueId)
-        }, Bundle.EMPTY
+        }
     )
 
-
-fun MediaController.unpinQueue(queueId: Long) =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_UNPIN_QUEUE, Bundle.EMPTY).apply {
-            customExtras.putLong("queueId", queueId)
-        }, Bundle.EMPTY
-    )
-
-
-fun MediaController.deleteQueue(queueId: Long) =
-    sendCustomCommand(
+/**
+ * Delete a durable queue by identity. Deleting the active queue stops playback and clears the
+ * mini player; an inactive queue is removed without touching the active one. Returns false when
+ * the queue no longer exists.
+ */
+fun MediaController.deleteQueue(queueUuid: UUID): Boolean =
+    sendCustomCommandOnAppThread(
         SessionCommand(SERVICE_QB_DEL, Bundle.EMPTY).apply {
-            customExtras.putLong("queueId", queueId)
-        }, Bundle.EMPTY
-    )
-
-fun MediaController.reorderQueue(from: Int, to: Int) =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_REORDER, Bundle.EMPTY).apply {
-            customExtras.putInt("from", from)
-            customExtras.putInt("to", to)
-        }, Bundle.EMPTY
-    )
-
-fun MediaController.renameQueue(queueId: Long, title: String, dryRun: Boolean): Boolean =
-    sendCustomCommand(
-        SessionCommand(SERVICE_QB_RENAME_QUEUE, Bundle.EMPTY).apply {
-            customExtras.putLong("queueId", queueId)
-            customExtras.putString("title", title)
-            customExtras.putBoolean("dryRun", dryRun)
+            customExtras.putString("queueUuid", queueUuid.toString())
         }, Bundle.EMPTY
     ).get().extras.run {
-        if (containsKey("status"))
-            getBoolean("status")
-        else throw IllegalArgumentException("expected status to be set")
+        if (containsKey("status")) getBoolean("status") else false
     }
 
-fun MediaController.age() {
-    sendCustomCommand(SessionCommand(SERVICE_QB_AGE, Bundle.EMPTY), Bundle.EMPTY)
+/** Edit a durable queue by identity, by displayed position. */
+fun MediaController.editQueue(
+    queueUuid: UUID,
+    operation: QueueEditOperation,
+    position: Int,
+): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_EDIT, Bundle.EMPTY).apply {
+            customExtras.putString("queueUuid", queueUuid.toString())
+            customExtras.putString("operation", operation.name)
+            customExtras.putInt("position", position)
+        }
+    )
+
+/** Reorder a durable queue by identity. */
+fun MediaController.moveQueueRow(queueUuid: UUID, from: Int, to: Int): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_EDIT, Bundle.EMPTY).apply {
+            customExtras.putString("queueUuid", queueUuid.toString())
+            customExtras.putString("operation", QueueEditOperation.MOVE.name)
+            customExtras.putInt("position", from)
+            customExtras.putInt("to", to)
+        }
+    )
+
+fun MediaController.shuffleQueue(
+    queueUuid: UUID? = null,
+    shufflePlay: Boolean = false,
+    playDifferentSong: Boolean = false,
+): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_SHUFFLE, Bundle.EMPTY).apply {
+            if (queueUuid != null) customExtras.putString("queueUuid", queueUuid.toString())
+            if (shufflePlay) customExtras.putBoolean("shufflePlay", true)
+            if (playDifferentSong) customExtras.putBoolean("playDifferentSong", true)
+        }
+    )
+
+/** Undo the last edit of a durable queue by identity. */
+fun MediaController.undoQueueEdit(queueUuid: UUID): Boolean =
+    sendStatusCommand(
+        SessionCommand(SERVICE_QB_UNDO_EDIT, Bundle.EMPTY).apply {
+            customExtras.putString("queueUuid", queueUuid.toString())
+        }
+    )
+
+/**
+ * Forget the undo target without changing the queue. The queue sheet calls this when it closes.
+ */
+fun MediaController.discardQueueEditUndo() =
+    sendStatusCommand(SessionCommand(SERVICE_QB_CLEAR_EDIT_UNDO, Bundle.EMPTY))
+
+/**
+ * Media3 requires controller calls on the application (main) thread. Send on main, but allow the
+ * caller to block for the result off-main so we do not ANR the UI thread.
+ */
+private fun MediaController.sendCustomCommandOnAppThread(
+    command: SessionCommand,
+    args: Bundle = Bundle.EMPTY,
+): com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.SessionResult> {
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        return sendCustomCommand(command, args)
+    }
+    val result = com.google.common.util.concurrent.SettableFuture.create<androidx.media3.session.SessionResult>()
+    Handler(Looper.getMainLooper()).post {
+        try {
+            val future = sendCustomCommand(command, args)
+            future.addListener({
+                try {
+                    result.set(future.get())
+                } catch (t: Throwable) {
+                    result.setException(t)
+                }
+            }, MoreExecutors.directExecutor())
+        } catch (t: Throwable) {
+            result.setException(t)
+        }
+    }
+    return result
 }
+
+private fun MediaController.sendStatusCommand(command: SessionCommand): Boolean =
+    sendCustomCommandOnAppThread(command).get().extras.run {
+        containsKey("status") && getBoolean("status")
+    }
+
+/** Rename a durable queue by identity, keeping its rows, bookmark, repeat mode, and UUID. */
+fun MediaController.renameQueue(queueUuid: UUID, title: String): Boolean =
+    sendCustomCommandOnAppThread(
+        SessionCommand(SERVICE_QB_RENAME_QUEUE, Bundle.EMPTY).apply {
+            customExtras.putString("queueUuid", queueUuid.toString())
+            customExtras.putString("title", title)
+        }, Bundle.EMPTY
+    ).get().extras.run {
+        if (containsKey("status")) getBoolean("status") else false
+    }
+
 
 fun Tracks.getFirstSelectedTrackFormatByType(type: @C.TrackType Int): Format? {
     for (i in groups) {
@@ -777,13 +839,10 @@ operator fun PaddingValues.plus(other: PaddingValues): PaddingValues = PaddingVa
  * If no title is given, no changes are made..
  */
 fun queueWithTitle(mediaItems: List<MediaItem>, mqTitle: String?): List<MediaItem> {
-    if (!Flags.MQ_PREVIEW || mediaItems.isEmpty() || mqTitle == null) return mediaItems
+    if (mediaItems.isEmpty() || mqTitle == null) return mediaItems
     val firstMediaItem = mediaItems.first()
-//    if (firstMediaItem.mediaId.startsWith("mq_title")) {
-//        Log.d("queueWithTitle", "we have a title already, id: ${firstMediaItem.mediaId}")
-//    }
     val newFirstMediaItem = firstMediaItem.buildUpon()
-        .setMediaId("mq_title:$mqTitle:"+firstMediaItem.mediaId)
+        .setMediaId("mq_title:$mqTitle:" + firstMediaItem.mediaId)
         .build()
     return listOf(newFirstMediaItem) + mediaItems.drop(1)
 }

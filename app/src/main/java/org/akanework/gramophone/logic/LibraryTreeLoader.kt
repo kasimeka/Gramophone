@@ -19,16 +19,21 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.guava.future
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.comparators.SupportComparator
+import org.akanework.gramophone.logic.queue.Queue
+import org.akanework.gramophone.logic.queue.QueueListRules
+import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.ui.adapters.AlbumAdapter
 import org.akanework.gramophone.ui.adapters.ArtistAdapter
 import org.akanework.gramophone.ui.adapters.DateAdapter
 import org.akanework.gramophone.ui.adapters.GenreAdapter
-import org.akanework.gramophone.ui.adapters.PlaylistAdapter
 import org.akanework.gramophone.ui.adapters.SongAdapter
 import org.akanework.gramophone.ui.LibraryAdapterTypes
 import org.akanework.gramophone.ui.adapters.Sorter
 import org.akanework.gramophone.ui.adapters.ViewPager2Adapter
+import uk.akane.libphonograph.dynamicitem.Favorite
+import uk.akane.libphonograph.dynamicitem.RecentlyAdded
 import uk.akane.libphonograph.items.*
+import java.util.UUID
 
 /**
  * Handles the media library browsing logic for [GramophonePlaybackService].
@@ -40,6 +45,16 @@ class LibraryTreeLoader(
     private val scope: CoroutineScope,
     private val prefs: SharedPreferences
 ) {
+    companion object {
+        const val DURABLE_QUEUE_MEDIA_ID_PREFIX = "durable_queue:"
+
+        fun queueMediaId(id: UUID): String = DURABLE_QUEUE_MEDIA_ID_PREFIX + id.toString()
+
+        fun parseQueueMediaId(mediaId: String): UUID? =
+            if (mediaId.startsWith(DURABLE_QUEUE_MEDIA_ID_PREFIX)) {
+                runCatching { UUID.fromString(mediaId.removePrefix(DURABLE_QUEUE_MEDIA_ID_PREFIX)) }.getOrNull()
+            } else null
+    }
 
     private val tag = "LibraryTreeLoader"
 
@@ -62,18 +77,36 @@ class LibraryTreeLoader(
             putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
             putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
         }
-        return when (id) {
-            else if id.startsWith("root_") -> createFolderItem(id, "", MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-            else if id.startsWith("more_") -> createFolderItem(id, context.getString(R.string.more), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-            "songs" -> createFolderItem("songs", context.getString(R.string.category_songs), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-            "albums" -> createFolderItem("albums", context.getString(R.string.category_albums), MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS, extras = gridExtras)
-            "artists" -> createFolderItem("artists", context.getString(R.string.category_artists), MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS, extras = gridExtras)
-            "genres" -> createFolderItem("genres", context.getString(R.string.category_genres), MediaMetadata.MEDIA_TYPE_FOLDER_GENRES)
-            "dates" -> createFolderItem("dates", context.getString(R.string.category_dates), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-            "folders" -> createFolderItem("folders", context.getString(R.string.folders), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-            "playlists" -> createFolderItem("playlists", context.getString(R.string.category_playlists), MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS)
+        return when {
+            id.startsWith("root_") -> createFolderItem(id, "", MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            id.startsWith("more_") -> createFolderItem(id, context.getString(R.string.more), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            id == "songs" -> createFolderItem("songs", context.getString(R.string.category_songs), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            id == "albums" -> createFolderItem("albums", context.getString(R.string.category_albums), MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS, extras = gridExtras)
+            id == "artists" -> createFolderItem("artists", context.getString(R.string.category_artists), MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS, extras = gridExtras)
+            id == "genres" -> createFolderItem("genres", context.getString(R.string.category_genres), MediaMetadata.MEDIA_TYPE_FOLDER_GENRES)
+            id == "dates" -> createFolderItem("dates", context.getString(R.string.category_dates), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            id == "folders" -> createFolderItem("folders", context.getString(R.string.folders), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            id == "queues" -> createFolderItem("queues", context.getString(R.string.category_queues), MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS)
             else -> null
         }
+    }
+
+    private fun queueToMediaItem(queue: Queue): MediaItem {
+        val subtitle = context.resources.getQuantityString(R.plurals.songs, queue.rows.size, queue.rows.size)
+        return createFolderItem(
+            queueMediaId(queue.id),
+            queue.title,
+            MediaMetadata.MEDIA_TYPE_PLAYLIST,
+            subtitle = subtitle,
+            isPlayable = queue.rows.isNotEmpty(),
+            isBrowsable = false,
+        )
+    }
+
+    private suspend fun getQueuesForBrowse(): List<MediaItem> {
+        val queues = app.queueRepository.queues.first()
+        val activeId = app.queueRepository.lastActiveQueue.first()?.id
+        return QueueListRules.ordered(queues).map(::queueToMediaItem)
     }
 
     private fun mapDomainItemToMediaItem(item: Any): MediaItem? {
@@ -88,23 +121,27 @@ class LibraryTreeLoader(
                 subtitle = context.resources.getQuantityString(R.plurals.songs, item.songList.size, item.songList.size),
                 artworkUri = item.albumList.firstOrNull()?.cover, isPlayable = item.songList.isNotEmpty(), isBrowsable = false
             )
-            is Playlist -> {
-                val title = when (item) {
-                    is uk.akane.libphonograph.dynamicitem.RecentlyAdded -> context.getString(R.string.recently_added)
-                    is uk.akane.libphonograph.dynamicitem.Favorite -> context.getString(R.string.playlist_favourite)
-                    else -> item.title ?: ""
-                }
-                val icon = when (item) {
-                    is uk.akane.libphonograph.dynamicitem.RecentlyAdded -> "android.resource://${context.packageName}/${R.drawable.ic_default_cover_playlist_recently}".toUri()
-                    is uk.akane.libphonograph.dynamicitem.Favorite -> "android.resource://${context.packageName}/${R.drawable.ic_default_cover_playlist_favorite}".toUri()
-                    else -> item.songList.firstOrNull()?.mediaMetadata?.artworkUri
-                }
-                val id = when (item) {
-                    is uk.akane.libphonograph.dynamicitem.RecentlyAdded -> "playlist_recently_added"
-                    is uk.akane.libphonograph.dynamicitem.Favorite -> "playlist_favorite"
-                    else -> "playlist_${item.id}"
-                }
-                createFolderItem("mq_title:${title}:$id", title, MediaMetadata.MEDIA_TYPE_PLAYLIST, artworkUri = icon, isPlayable = item.songList.isNotEmpty(), isBrowsable = false)
+            is RecentlyAdded -> {
+                val title = context.getString(R.string.recently_added)
+                createFolderItem(
+                    "mq_title:$title:recently_added",
+                    title,
+                    MediaMetadata.MEDIA_TYPE_PLAYLIST,
+                    artworkUri = "android.resource://${context.packageName}/${R.drawable.ic_default_cover_playlist_recently}".toUri(),
+                    isPlayable = item.songList.isNotEmpty(),
+                    isBrowsable = false
+                )
+            }
+            is Favorite -> {
+                val title = context.getString(R.string.playlist_favourite)
+                createFolderItem(
+                    "mq_title:$title:favorite",
+                    title,
+                    MediaMetadata.MEDIA_TYPE_PLAYLIST,
+                    artworkUri = "android.resource://${context.packageName}/${R.drawable.ic_default_cover_playlist_favorite}".toUri(),
+                    isPlayable = item.songList.isNotEmpty(),
+                    isBrowsable = false
+                )
             }
             is Genre -> createFolderItem(
                 "mq_title:${item.title}:genre_${item.id}", item.title ?: context.getString(R.string.unknown_genre), MediaMetadata.MEDIA_TYPE_GENRE,
@@ -147,16 +184,13 @@ class LibraryTreeLoader(
                 val name = parentId.removePrefix("folder_")
                 Triple(app.reader.shallowFolderFlow.first().folderList[name]?.songList ?: emptyList(), LibraryAdapterTypes.FOLDER, false)
             }
-            parentId.startsWith("playlist_") -> {
-                val idStr = parentId.removePrefix("playlist_")
-                val playlist = app.reader.playlistListFlow.first().find {
-                    when (idStr) {
-                        "recently_added" -> it is uk.akane.libphonograph.dynamicitem.RecentlyAdded
-                        "favorite" -> it is uk.akane.libphonograph.dynamicitem.Favorite
-                        else -> it.id?.toString() == idStr
-                    }
-                }
-                Triple(playlist?.songList ?: emptyList(), LibraryAdapterTypes.PLAYLIST_DYNAMIC, true)
+            parentId == "recently_added" || parentId.startsWith("recently_added") -> {
+                val item = app.reader.dynamicItemsFlow.first().filterIsInstance<RecentlyAdded>().firstOrNull()
+                Triple(item?.songList ?: emptyList(), LibraryAdapterTypes.PLAYLIST_DYNAMIC, true)
+            }
+            parentId == "favorite" || parentId.startsWith("favorite") -> {
+                val item = app.reader.dynamicItemsFlow.first().filterIsInstance<Favorite>().firstOrNull()
+                Triple(item?.songList ?: emptyList(), LibraryAdapterTypes.PLAYLIST_DYNAMIC, true)
             }
             else -> Triple(emptyList(), -1, false)
         }
@@ -193,29 +227,29 @@ class LibraryTreeLoader(
         params: LibraryParams?
     ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = scope.future(Dispatchers.Default) {
         try {
-            val list: List<MediaItem> = when (parentId) {
-                    else if parentId.startsWith("root_") -> {
-                        val tabCount = parentId.substring("root_".length).toInt()
-                        val tabs = getEnabledTabs()
-                        if (tabs.size <= tabCount) tabs.map { getCategoryItem(mapTabToMediaId(it))!! }
-                        else tabs.take(tabCount - 1).map { getCategoryItem(mapTabToMediaId(it))!! } + getCategoryItem("more_$tabCount")!!
-                    }
-                    else if parentId.startsWith("more_") -> {
-                        val tabCount = parentId.substring("more_".length).toInt()
-                        getEnabledTabs().drop(tabCount - 1).map { getCategoryItem(mapTabToMediaId(it))!! }
-                    }
-                    "albums" -> sortList(app.reader.albumListFlow.first(), LibraryAdapterTypes.ALBUM, Sorter(AlbumAdapter.StoreAlbumHelper, null)).map { mapDomainItemToMediaItem(it)!! }
-                    "artists" -> sortList(app.reader.artistListFlow.first(), LibraryAdapterTypes.ARTIST, Sorter(ArtistAdapter.StoreArtistHelper, null)).map { mapDomainItemToMediaItem(it)!! }
-                    "songs" -> queueWithTitle(sortList(app.reader.songListFlow.first(), LibraryAdapterTypes.SONG, Sorter(SongAdapter.MediaItemHelper, null)), context.getString(R.string.category_songs))
-                    "playlists" -> sortList(app.reader.playlistListFlow.first(), LibraryAdapterTypes.PLAYLIST, Sorter(PlaylistAdapter.StorePlaylistHelper, null)).map { mapDomainItemToMediaItem(it)!! }
-                    "genres" -> sortList(app.reader.genreListFlow.first(), LibraryAdapterTypes.GENRE, Sorter(GenreAdapter.StoreGenreHelper, null)).map { mapDomainItemToMediaItem(it)!! }
-                    "dates" -> sortList(app.reader.dateListFlow.first(), LibraryAdapterTypes.DATE, Sorter(DateAdapter.StoreDateHelper, null)).map { mapDomainItemToMediaItem(it)!! }
-                    "folders" -> {
-                        val folders = app.reader.shallowFolderFlow.first().folderList.values.toList()
-                        folders.sortedWith(SupportComparator.createAlphanumericComparator(cnv = { it.folderName })).map { mapDomainItemToMediaItem(it)!! }
-                    }
-                    else -> getSongsInParent(parentId)
+            val list: List<MediaItem> = when {
+                parentId.startsWith("root_") -> {
+                    val tabCount = parentId.substring("root_".length).toInt()
+                    val tabs = getEnabledTabs()
+                    if (tabs.size <= tabCount) tabs.map { getCategoryItem(mapTabToMediaId(it))!! }
+                    else tabs.take(tabCount - 1).map { getCategoryItem(mapTabToMediaId(it))!! } + getCategoryItem("more_$tabCount")!!
                 }
+                parentId.startsWith("more_") -> {
+                    val tabCount = parentId.substring("more_".length).toInt()
+                    getEnabledTabs().drop(tabCount - 1).map { getCategoryItem(mapTabToMediaId(it))!! }
+                }
+                parentId == "albums" -> sortList(app.reader.albumListFlow.first(), LibraryAdapterTypes.ALBUM, Sorter(AlbumAdapter.StoreAlbumHelper, null)).map { mapDomainItemToMediaItem(it)!! }
+                parentId == "artists" -> sortList(app.reader.artistListFlow.first(), LibraryAdapterTypes.ARTIST, Sorter(ArtistAdapter.StoreArtistHelper, null)).map { mapDomainItemToMediaItem(it)!! }
+                parentId == "songs" -> queueWithTitle(sortList(app.reader.songListFlow.first(), LibraryAdapterTypes.SONG, Sorter(SongAdapter.MediaItemHelper, null)), context.getString(R.string.category_songs))
+                parentId == "genres" -> sortList(app.reader.genreListFlow.first(), LibraryAdapterTypes.GENRE, Sorter(GenreAdapter.StoreGenreHelper, null)).map { mapDomainItemToMediaItem(it)!! }
+                parentId == "dates" -> sortList(app.reader.dateListFlow.first(), LibraryAdapterTypes.DATE, Sorter(DateAdapter.StoreDateHelper, null)).map { mapDomainItemToMediaItem(it)!! }
+                parentId == "folders" -> {
+                    val folders = app.reader.shallowFolderFlow.first().folderList.values.toList()
+                    folders.sortedWith(SupportComparator.createAlphanumericComparator(cnv = { it.folderName })).map { mapDomainItemToMediaItem(it)!! }
+                }
+                parentId == "queues" -> getQueuesForBrowse()
+                else -> getSongsInParent(parentId)
+            }
 
                 val finalPageSize = pageSize.coerceAtMost(200)
                 val pagedList = list.asSequence().drop(page * finalPageSize).take(finalPageSize).toList()
@@ -233,13 +267,15 @@ class LibraryTreeLoader(
         ViewPager2Adapter.Companion.Tab.Genres -> "genres"
         ViewPager2Adapter.Companion.Tab.Dates -> "dates"
         ViewPager2Adapter.Companion.Tab.Folders -> "folders"
-        ViewPager2Adapter.Companion.Tab.Playlist -> "playlists"
+        ViewPager2Adapter.Companion.Tab.Playlist -> "queues"
         ViewPager2Adapter.Companion.Tab.FileSystem -> "detailed_folders"
     }
 
     fun getItem(mediaId: String): ListenableFuture<LibraryResult<MediaItem>> = scope.future(Dispatchers.Default) {
         try {
+            val queueId = parseQueueMediaId(mediaId)
             val item = getCategoryItem(mediaId) ?: when {
+                    queueId != null -> app.queueRepository.queue(queueId).first()?.let(::queueToMediaItem)
                     mediaId.startsWith("album_") -> {
                         val id = mediaId.removePrefix("album_").toLongOrNull()
                         app.reader.albumListFlow.first().find { it.id == id }?.let { mapDomainItemToMediaItem(it) }
@@ -260,16 +296,10 @@ class LibraryTreeLoader(
                         val name = mediaId.removePrefix("folder_")
                         app.reader.shallowFolderFlow.first().folderList[name]?.let { mapDomainItemToMediaItem(it) }
                     }
-                    mediaId.startsWith("playlist_") -> {
-                        val idStr = mediaId.removePrefix("playlist_")
-                        app.reader.playlistListFlow.first().find {
-                            when (idStr) {
-                                "recently_added" -> it is uk.akane.libphonograph.dynamicitem.RecentlyAdded
-                                "favorite" -> it is uk.akane.libphonograph.dynamicitem.Favorite
-                                else -> it.id?.toString() == idStr
-                            }
-                        }?.let { mapDomainItemToMediaItem(it) }
-                    }
+                    mediaId == "recently_added" -> app.reader.dynamicItemsFlow.first()
+                        .filterIsInstance<RecentlyAdded>().firstOrNull()?.let { mapDomainItemToMediaItem(it) }
+                    mediaId == "favorite" -> app.reader.dynamicItemsFlow.first()
+                        .filterIsInstance<Favorite>().firstOrNull()?.let { mapDomainItemToMediaItem(it) }
                     else -> app.reader.songListFlow.first().find { it.mediaId == mediaId }
                 }
 
@@ -313,20 +343,10 @@ class LibraryTreeLoader(
     }
 
     private suspend fun searchForMediaItem(query: String): List<MediaItem> {
-        val text = query.trim()
         val list = app.reader.songListFlow.first()
         val sortedList = sortList(list, LibraryAdapterTypes.SEARCH, Sorter(SongAdapter.MediaItemHelper, null))
         // TODO support focus and sub queries (see MainActivity)
-        if (text == "") return sortedList
-        return sortedList.filter {
-            // TODO sort results by match quality? (using raw=natural order)
-            // TODO this is copied directly from SearchFragment, which should probably call into
-            //  here for its search needs instead in the future
-            val isMatchingTitle = it.mediaMetadata.title?.contains(text, true) == true
-            val isMatchingAlbum = it.mediaMetadata.albumTitle?.contains(text, true) == true
-            val isMatchingArtist = it.mediaMetadata.artist?.contains(text, true) == true
-            isMatchingTitle || isMatchingAlbum || isMatchingArtist
-        }
+        return sortedList.filterSongsBySearchQuery(query)
     }
 
     fun addMediaItems(
@@ -348,6 +368,15 @@ class LibraryTreeLoader(
         for (item in mediaItems) {
             if (item.localConfiguration != null) {
                 resultList.add(item)
+                continue
+            }
+
+            val queueUuid = parseQueueMediaId(item.mediaId)
+            if (queueUuid != null) {
+                val queue = app.queueRepository.queue(queueUuid).first()
+                if (queue != null) {
+                    resultList.addAll(queue.rows.mapNotNull(MediaRowCodec::decode))
+                }
                 continue
             }
 
@@ -377,4 +406,16 @@ class LibraryTreeLoader(
     }
 
 
+}
+
+
+/** Shared song search predicate used by library search and the launcher shuffle shortcut. */
+fun List<MediaItem>.filterSongsBySearchQuery(query: String): List<MediaItem> {
+    val text = query.trim()
+    if (text.isEmpty()) return this
+    return filter {
+        it.mediaMetadata.title?.contains(text, true) == true ||
+            it.mediaMetadata.albumTitle?.contains(text, true) == true ||
+            it.mediaMetadata.artist?.contains(text, true) == true
+    }
 }

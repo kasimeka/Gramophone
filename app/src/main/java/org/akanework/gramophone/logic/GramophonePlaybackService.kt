@@ -111,23 +111,41 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.guava.await
 import org.akanework.gramophone.R
+import org.akanework.gramophone.logic.queue.ActiveQueuePersistence
+import org.akanework.gramophone.logic.queue.Queue
+import org.akanework.gramophone.logic.queue.QueueBookmark
+import org.akanework.gramophone.logic.queue.QueueDeduplicationRules
+import org.akanework.gramophone.logic.queue.QueueEditOperation
+import org.akanework.gramophone.logic.queue.QueueEditResult
+import org.akanework.gramophone.logic.queue.QueueOrderEditor
+import org.akanework.gramophone.logic.queue.QueuePlaybackAction
+import org.akanework.gramophone.logic.queue.QueuePlaybackRules
+import org.akanework.gramophone.logic.queue.QueuePlaybackState
+import org.akanework.gramophone.logic.queue.QueueRepeatMode
+import org.akanework.gramophone.logic.queue.QueueRepository
+import org.akanework.gramophone.logic.queue.QueueRestoreRules
+import org.akanework.gramophone.logic.queue.QueueSource
+import org.akanework.gramophone.logic.queue.QueueSourceKind
+import org.akanework.gramophone.logic.queue.QueueTitles
+import org.akanework.gramophone.logic.queue.StoredQueueOrderTarget
 import org.akanework.gramophone.logic.ui.MeiZuLyricsMediaNotificationProvider
 import org.akanework.gramophone.logic.ui.isManualNotificationUpdate
 import org.akanework.gramophone.logic.utils.AfFormatInfo
 import org.akanework.gramophone.logic.utils.AfFormatTracker
 import org.akanework.gramophone.logic.utils.AudioTrackInfo
 import org.akanework.gramophone.logic.utils.BtCodecInfo
-import org.akanework.gramophone.logic.utils.CircularShuffleOrder
 import org.akanework.gramophone.logic.utils.Flags
-import org.akanework.gramophone.logic.utils.LastPlayedManager
 import org.akanework.gramophone.logic.utils.LrcUtils.LrcParserOptions
 import org.akanework.gramophone.logic.utils.LrcUtils.extractAndParseLyrics
 import org.akanework.gramophone.logic.utils.LrcUtils.loadAndParseLyricsFile
 import org.akanework.gramophone.logic.utils.MediaItemList
+import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.logic.utils.ReplayGainAudioProcessor
 import org.akanework.gramophone.logic.utils.ReplayGainUtil
 import org.akanework.gramophone.logic.utils.SemanticLyrics
@@ -136,6 +154,7 @@ import org.akanework.gramophone.logic.utils.exoplayer.EndedWorkaroundPlayer
 import org.akanework.gramophone.logic.utils.exoplayer.GramophoneExtractorsFactory
 import org.akanework.gramophone.logic.utils.exoplayer.GramophoneMediaSourceFactory
 import org.akanework.gramophone.logic.utils.exoplayer.GramophoneRenderFactory
+import org.akanework.gramophone.logic.utils.exoplayer.PlayerQueueOrderTarget
 import org.akanework.gramophone.ui.AudioPreviewActivity
 import org.akanework.gramophone.ui.LyricWidgetProvider
 import org.akanework.gramophone.ui.MainActivity
@@ -144,17 +163,12 @@ import org.akanework.gramophone.ui.fragments.compose.MqState.Companion.CLIENT_QB
 import org.akanework.gramophone.ui.fragments.compose.MqState.Companion.CLIENT_QB_REFRESH_ITEM
 import org.akanework.gramophone.ui.fragments.compose.MqState.Companion.CLIENT_QB_REFRESH_LIST
 import org.akanework.gramophone.ui.fragments.compose.MqState.Companion.CLIENT_QB_REFRESH_QUEUES
-import org.nift4.mediastorecompat.MediaStoreCompat
-import uk.akane.libphonograph.dynamicitem.Favorite
 import uk.akane.libphonograph.items.albumId
-import uk.akane.libphonograph.manipulator.ItemManipulator
-import uk.akane.libphonograph.manipulator.PlaylistSerializer
-import uk.akane.libphonograph.manipulator.PlaylistSerializer.Entry
+import java.util.UUID
 import java.util.concurrent.Executor
 import kotlin.collections.emptyList
 import kotlin.collections.map
 import kotlin.collections.plus
-import kotlin.random.Random
 
 
 /**
@@ -185,14 +199,14 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
         const val SERVICE_QB_GET_INACTIVE_LIST = "qb_get_inactive_list"
         const val SERVICE_QB_LOAD_QUEUE = "qb_load"
+        const val SERVICE_QB_PLAY_QUEUE = "qb_play_queue"
         const val SERVICE_QB_GET_QUEUE_FOR_UI = "qb_get_queue_for_ui"
         const val SERVICE_QB_DEL = "qb_delete"
-        const val SERVICE_QB_REORDER = "qb_reorder"
-        const val SERVICE_QB_PIN_QUEUE = "qb_pin_queue"
-        const val SERVICE_QB_UNPIN_QUEUE = "qb_unpin_queue"
+        const val SERVICE_QB_EDIT = "qb_edit"
+        const val SERVICE_QB_SHUFFLE = "qb_shuffle"
+        const val SERVICE_QB_UNDO_EDIT = "qb_undo_edit"
+        const val SERVICE_QB_CLEAR_EDIT_UNDO = "qb_clear_edit_undo"
         const val SERVICE_QB_RENAME_QUEUE = "qb_rename"
-
-        const val SERVICE_QB_AGE = "qb_age"
 
         var instanceForWidgetAndLyricsOnly: GramophonePlaybackService? = null
     }
@@ -207,7 +221,22 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     private lateinit var libraryTreeLoader: LibraryTreeLoader
 
     private var controller: MediaBrowser? = null
-    lateinit var qb: QueueBoard
+    private var controllerFuture: ListenableFuture<MediaBrowser>? = null
+
+    private var lastQueueEditUndo: QueueEditUndoState? = null
+    private data class QueueEditUndoState(
+        val queueUuid: UUID,
+        val operation: QueueEditOperation,
+        val displayedOrder: List<Int>,
+        val mediaItems: List<MediaItem>,
+        val removedUnderlyingIndex: Int? = null,
+    )
+    private var lastInactiveQueueEditUndo: InactiveQueueEditUndoState? = null
+    private data class InactiveQueueEditUndoState(
+        val queueUuid: UUID,
+        val rows: List<String>,
+        val bookmark: QueueBookmark,
+    )
     private val sendLyrics = Runnable { scheduleSendingLyrics(false) }
     var lyrics: SemanticLyrics? = null
         private set
@@ -218,7 +247,13 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     private lateinit var mainExecutor: Executor
     private lateinit var playbackHandler: Handler
     private lateinit var nm: NotificationManagerCompat
-    private lateinit var lastPlayedManager: LastPlayedManager
+    private lateinit var activeQueuePersistence: ActiveQueuePersistence
+    /** Maps the legacy queue-board ids used by the sheet to durable queue identities. */
+    private val queueIds = mutableMapOf<Long, UUID>()
+    /** Reverse map, so a durable queue keeps one sheet id for the lifetime of the process. */
+    private val queueBoardIds = mutableMapOf<UUID, Long>()
+    private val queueRepository: QueueRepository
+        get() = gramophoneApplication.queueRepository
     private lateinit var prefs: SharedPreferences
     private var lastSentHighlightedLyric: String? = null
     private var lastSentNotificationLyric: String? = null
@@ -240,30 +275,26 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     private var btInfo: BtCodecInfo? = null
     private var proxy: BtCodecInfo.Companion.Proxy? = null
     private val scope = CoroutineScope(Dispatchers.Main)
+    private val queueResolutionMutex = Mutex()
+    private var suppressUserModifiedTimelineDepth = 0
     private val lastPlaylistLoaded = CompletableDeferred<Unit>()
     private val lyricsFetcher = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
     private val bitrateFetcher = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
 
     private fun getRepeatCommand() =
         when (controller!!.repeatMode) {
-            Player.REPEAT_MODE_OFF -> customCommands[2]
-            Player.REPEAT_MODE_ALL -> customCommands[3]
-            Player.REPEAT_MODE_ONE -> customCommands[4]
+            Player.REPEAT_MODE_OFF -> customCommands[0]
+            Player.REPEAT_MODE_ALL -> customCommands[1]
+            Player.REPEAT_MODE_ONE -> customCommands[2]
             else -> throw IllegalArgumentException()
         }
-
-    private fun getShufflingCommand() =
-        if (controller!!.shuffleModeEnabled)
-            customCommands[1]
-        else
-            customCommands[0]
 
     private fun getFavoriteCommand(): CommandButton {
         val isFavorite = (controller?.currentMediaItem?.mediaMetadata?.userRating as? HeartRating)?.isHeart == true
         return if (isFavorite) {
-            customCommands[6]
+            customCommands[4]
         } else {
-            customCommands[5]
+            customCommands[3]
         }
     }
 
@@ -326,7 +357,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         mainExecutor = ContextCompat.getMainExecutor(this)
         nm = NotificationManagerCompat.from(this)
         prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        qb = QueueBoard(this)
+
         setListener(this)
         setMediaNotificationProvider(
             MeiZuLyricsMediaNotificationProvider(this) { lastSentHighlightedLyric }
@@ -348,14 +379,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
         customCommands =
             listOf(
-                CommandButton.Builder(CommandButton.ICON_SHUFFLE_OFF) // shuffle currently disabled, click will enable
-                    .setDisplayName(getString(R.string.shuffle))
-                    .setPlayerCommand(Player.COMMAND_SET_SHUFFLE_MODE, true)
-                    .build(),
-                CommandButton.Builder(CommandButton.ICON_SHUFFLE_ON) // shuffle currently enabled, click will disable
-                    .setDisplayName(getString(R.string.shuffle))
-                    .setPlayerCommand(Player.COMMAND_SET_SHUFFLE_MODE, false)
-                    .build(),
                 CommandButton.Builder(CommandButton.ICON_REPEAT_OFF) // repeat currently disabled, click will repeat all
                     .setDisplayName(getString(R.string.repeat_mode))
                     .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ALL)
@@ -456,15 +479,12 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 .setPlaybackLooper(internalPlaybackThread.looper)
                 .build(),
             { lyrics },
-            queueBoard = qb,
             getNotificationLyric = { lastSentNotificationLyric }
         )
         player.exoPlayer.addAnalyticsListener(EventLogger())
         player.exoPlayer.addAnalyticsListener(afFormatTracker)
         player.exoPlayer.addAnalyticsListener(this)
-        player.exoPlayer.setShuffleOrder(CircularShuffleOrder(player, 0, 0, Random.nextLong()))
-        lastPlayedManager = LastPlayedManager(this, player)
-        lastPlayedManager.allowSavingState = false
+        activeQueuePersistence = ActiveQueuePersistence(queueRepository, player)
         libraryTreeLoader = LibraryTreeLoader(
             this,
             gramophoneApplication,
@@ -576,11 +596,26 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 .setPeriodicPositionUpdateEnabled(false)
                 .build()
         addSession(mediaSession!!)
-        controller = MediaBrowser.Builder(this, mediaSession!!.token).buildAsync().get()
-        controller!!.addListener(this)
-        if (controller!!.audioSessionId != C.AUDIO_SESSION_ID_UNSET) {
-            onAudioSessionIdChanged(controller!!.audioSessionId)
-        }
+        val future = MediaBrowser.Builder(this, mediaSession!!.token).buildAsync()
+        controllerFuture = future
+        future.addListener({
+            if (future.isCancelled) return@addListener
+            val browser = try {
+                future.get()
+            } catch (e: Exception) {
+                Log.e(TAG, "failed to connect internal controller", e)
+                return@addListener
+            }
+            if (controllerFuture != future || mediaSession == null) {
+                browser.release()
+                return@addListener
+            }
+            controller = browser
+            browser.addListener(this)
+            if (browser.audioSessionId != C.AUDIO_SESSION_ID_UNSET) {
+                onAudioSessionIdChanged(browser.audioSessionId)
+            }
+        }, mainExecutor)
         ContextCompat.registerReceiver(
             this,
             seekReceiver,
@@ -606,72 +641,60 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             }
         }
         scope.launch {
-            lastPlayedManager.restore { items ->
-                if (mediaSession == null) return@restore
-                if (items != null) {
-                    val list = mapMediaItemsForFavorites(items.items.mediaItems)
-                    withContext(Dispatchers.Main) {
-                        if (lastPlayedManager.allowSavingState)
-                            return@withContext // media items were already applied to player
-                        try {
-                            if (list.size >= items.items.startIndex) {
-                                endedWorkaroundPlayer?.setMediaItems(
-                                    list,
-                                    items.items.startIndex,
-                                    items.items.startPositionMs,
-                                    items.title,
-                                    false, /* TODO(MQ) */
-                                    true, /* TODO(MQ) */
-                                    items.isEnded,
-                                    items.repeatMode,
-                                    items.shuffle,
-                                    items.seed,
-                                    items.playbackParameters,
-                                )
-                            } else {
-                                endedWorkaroundPlayer?.setMediaItems(
-                                    list,
-                                    C.INDEX_UNSET,
-                                    C.TIME_UNSET,
-                                    items.title,
-                                    false, /* TODO(MQ) */
-                                    true, /* TODO(MQ) */
-                                    items.isEnded,
-                                    items.repeatMode,
-                                    items.shuffle,
-                                    items.seed,
-                                    items.playbackParameters,
-                                )
-                                Log.w(TAG, "failed to restore index")
-                            }
-                        } catch (e: IllegalSeekPositionException) {
-                            Log.e(TAG, "failed to restore", e)
-                        }
-                        if (mediaSession?.connectedControllers?.find {
-                                it.connectionHints
-                                    .getBoolean("PrepareWhenReady", false)
-                            } != null) {
-                            handler.post { endedWorkaroundPlayer?.prepare() }
-                        }
-                    }
-                } else
+            val restored = activeQueuePersistence.readRestored()
+            if (mediaSession == null) return@launch
+            withContext(Dispatchers.Main) {
+                if (restored == null) {
                     lastPlaylistLoaded.complete(Unit)
+                    return@withContext
+                }
+                if ((endedWorkaroundPlayer?.mediaItemCount ?: 0) > 0) {
+                    // Something already loaded a queue while the database was read.
+                    lastPlaylistLoaded.complete(Unit)
+                    return@withContext
+                }
+                val list = mapMediaItemsForFavorites(restored.items)
+                try {
+                    withoutMarkingUserModified {
+                        endedWorkaroundPlayer?.setMediaItems(
+                            list,
+                            restored.startRow,
+                            restored.positionMs,
+                            restored.queue.title,
+                            restored.ended,
+                            restored.queue.repeatMode.value,
+                            null,
+                        )
+                        activeQueuePersistence.adopt(restored.queue)
+                        endedWorkaroundPlayer?.currentQueueId?.let {
+                            registerQueueId(it, restored.queue.id)
+                        }
+                        activeQueuePersistence.syncMirroredRowsFromPlayer()
+                    }
+                } catch (e: IllegalSeekPositionException) {
+                    Log.e(TAG, "failed to restore", e)
+                    lastPlaylistLoaded.complete(Unit)
+                }
+                if (mediaSession?.connectedControllers?.find {
+                        it.connectionHints.getBoolean("PrepareWhenReady", false)
+                    } != null) {
+                    handler.post { endedWorkaroundPlayer?.prepare() }
+                }
             }
         }
         scope.launch(Dispatchers.Default) {
-            gramophoneApplication.reader.playlistListFlow.map { it.find { p -> p is Favorite } }
-                .collect { list ->
-                    val ids = list?.songList?.map { it.mediaId } ?: emptyList()
-                    withContext(Dispatchers.Main + NonCancellable) {
-                        controller?.let { controller ->
-                            for (i in 0..<controller.mediaItemCount) {
-                                val item = controller.getMediaItemAt(i)
-                                val isHeart = (item.mediaMetadata.userRating as? HeartRating)
-                                    ?.isHeart == true
-                                val shouldBeHeart = ids.contains(item.mediaId)
-                                if (isHeart != shouldBeHeart ||
-                                    item.mediaMetadata.userRating !is HeartRating
-                                ) {
+            gramophoneApplication.favoritesStore.ids.collect { ids ->
+                withContext(Dispatchers.Main + NonCancellable) {
+                    controller?.let { controller ->
+                        for (i in 0..<controller.mediaItemCount) {
+                            val item = controller.getMediaItemAt(i)
+                            val isHeart = (item.mediaMetadata.userRating as? HeartRating)
+                                ?.isHeart == true
+                            val shouldBeHeart = ids.contains(item.mediaId)
+                            if (isHeart != shouldBeHeart ||
+                                item.mediaMetadata.userRating !is HeartRating
+                            ) {
+                                withoutMarkingUserModified {
                                     controller.replaceMediaItem(
                                         i, item
                                             .buildUpon().setMediaMetadata(
@@ -685,6 +708,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                         }
                     }
                 }
+            }
         }
         Log.i(TAG, "-onCreate()")
     }
@@ -712,90 +736,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         rating: Rating
     ): ListenableFuture<SessionResult> {
         if (rating !is HeartRating) {
-            return Futures.immediateFuture(SessionResult(
-                SessionResult.RESULT_ERROR_BAD_VALUE))
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
         }
-        val completion = SettableFuture.create<SessionResult>()
-        lifecycleScope.launch(Dispatchers.Default) {
-            val item = gramophoneApplication.reader.songListFlow.map {
-                it.find { s -> s.mediaId == mediaId } }.first()
-            if (item == null) {
-                completion.set(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
-                return@launch
-            }
-            val song = Entry.ofMediaItem(item)
-            if (song == null) {
-                completion.set(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
-                return@launch
-            }
-            val uriIn = gramophoneApplication.reader.playlistListFlow.map { it.find { p ->
-                p is Favorite } }.first()?.id?.let {
-                ContentUris.withAppendedId(@Suppress("deprecation")
-                MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, it)
-            }
-            val token = if (uriIn != null) {
-                MediaStoreCompat.needRequestBytesWrite(this@GramophonePlaybackService,
-                    uriIn)
-            } else {
-                MediaStoreCompat.needRequestCreate(this@GramophonePlaybackService,
-                    ItemManipulator.getDefaultPlaylistFile(
-                        ItemManipulator.FAVORITES).path)
-            }
-            var error: Exception? = null
-            if (token == null) {
-                try {
-                    val uri = uriIn ?: ItemManipulator.createPlaylist(
-                        this@GramophonePlaybackService, ItemManipulator
-                            .getDefaultPlaylistFile(ItemManipulator.FAVORITES))
-                    val readback = if (uriIn != null) ItemManipulator.readbackPlaylist(
-                        this@GramophonePlaybackService, uri) else
-                            PlaylistSerializer.Playlist.create()
-                    val newSongs = if (rating.isHeart) {
-                        readback.entries + song
-                    } else {
-                        readback.entries.filter { !song.fuzzyEquals(it) }
-                    }
-                    ItemManipulator.setPlaylistContent(this@GramophonePlaybackService, uri,
-                        readback.copy(entries = newSongs), uriIn == null)
-                } catch (e: Exception) {
-                    Log.e(TAG, "failed to set $rating on $mediaId", e)
-                    error = e
-                }
-            }
-            if (token == null && error == null) {
-                completion.set(SessionResult(SessionResult.RESULT_SUCCESS))
-            } else {
-                if (!supportsNotificationPermission() || hasNotificationPermission()) {
-                    @SuppressLint("MissingPermission") // false positive
-                    nm.notify(FAVE_ID, NotificationCompat.Builder(
-                        this@GramophonePlaybackService, NOTIFY_CHANNEL_ID).apply {
-                        setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                        setAutoCancel(true)
-                        setCategory(NotificationCompat.CATEGORY_ERROR)
-                        setSmallIcon(R.drawable.ic_error)
-                        setContentTitle(this@GramophonePlaybackService.getString(R.string.favorite_failed_title))
-                        setContentText(this@GramophonePlaybackService.getString(R.string.favorite_failed_text))
-                        setContentIntent(
-                            PendingIntent.getActivity(
-                                this@GramophonePlaybackService,
-                                PENDING_INTENT_FAVE_ID,
-                                Intent(this@GramophonePlaybackService, MainActivity::class.java)
-                                    .putExtra(MainActivity.FAVORITE_ENTRY, song)
-                                    .putExtra(MainActivity.FAVORITE_STATE, rating.isHeart),
-                                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-                            )
-                        )
-                        setVibrate(longArrayOf(0L, 200L))
-                        setLights(0, 0, 0)
-                        setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
-                        setSound(null)
-                    }.build())
-                }
-                completion.set(SessionResult(SessionError.ERROR_IO))
-                return@launch
-            }
-        }
-        return completion
+        gramophoneApplication.favoritesStore.setFavorite(listOf(mediaId), rating.isHeart)
+        return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }
 
     override fun onSetRating(
@@ -819,17 +763,34 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         unregisterReceiver(btReceiver)
         prefs.unregisterOnSharedPreferenceChangeListener(this)
         // Important: this must happen before sending stop() as that changes state ENDED -> IDLE
-        lastPlayedManager.save()
+        activeQueuePersistence.stopProgressSaving(save = false)
+        activeQueuePersistence.saveNow()
         scope.cancel()
         endedWorkaroundPlayer!!.stop()
         handler.removeCallbacks(timer)
         handler.removeCallbacks(sendLyrics)
-        mediaSession!!.setOptOutOfMediaButtonPlaybackResumption(controller!!.currentTimeline.isEmpty)
+        mediaSession!!.setOptOutOfMediaButtonPlaybackResumption(
+            controller?.currentTimeline?.isEmpty ?: true
+        )
         proxy?.let {
             it.adapter.closeProfileProxy(BluetoothProfile.A2DP, it.a2dp)
         }
-        controller!!.release()
+        val future = controllerFuture
+        controllerFuture = null
+        if (future != null && !future.isDone) {
+            future.cancel(true)
+        }
+        controller?.release()
         controller = null
+        if (future != null && future.isDone && !future.isCancelled) {
+            try {
+                val browser = future.get()
+                if (browser !== controller) {
+                    browser.release()
+                }
+            } catch (_: Exception) {
+            }
+        }
         mediaSession!!.release()
         endedWorkaroundPlayer!!.release()
         mediaSession = null
@@ -860,7 +821,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 builder.setMediaButtonPreferences(
                     ImmutableList.of(
                         getRepeatCommand(),
-                        getShufflingCommand(),
                         getFavoriteCommand()
                     )
                 )
@@ -881,12 +841,13 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         availableSessionCommands.add(SessionCommand(SERVICE_QB_GET_INACTIVE_LIST, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_GET_QUEUE_FOR_UI, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_LOAD_QUEUE, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_PLAY_QUEUE, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_DEL, Bundle.EMPTY))
-        availableSessionCommands.add(SessionCommand(SERVICE_QB_REORDER, Bundle.EMPTY))
-        availableSessionCommands.add(SessionCommand(SERVICE_QB_PIN_QUEUE, Bundle.EMPTY))
-        availableSessionCommands.add(SessionCommand(SERVICE_QB_UNPIN_QUEUE, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_EDIT, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_SHUFFLE, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_UNDO_EDIT, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_CLEAR_EDIT_UNDO, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_RENAME_QUEUE, Bundle.EMPTY))
-        availableSessionCommands.add(SessionCommand(SERVICE_QB_AGE, Bundle.EMPTY))
         return builder.setAvailableSessionCommands(availableSessionCommands.build()).build()
     }
 
@@ -998,49 +959,673 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         }
     }
 
+    private fun activeQueueMediaItems(player: EndedWorkaroundPlayer): List<MediaItem> =
+        (0 until player.exoPlayer.mediaItemCount).map { player.exoPlayer.getMediaItemAt(it) }
+
+    private inline fun <T> withoutMarkingUserModified(block: () -> T): T {
+        suppressUserModifiedTimelineDepth++
+        try {
+            return block()
+        } finally {
+            suppressUserModifiedTimelineDepth--
+        }
+    }
+
+    /** Create a fresh durable queue for a library play and make it active. */
+    private suspend fun createDurableQueue(title: String, source: QueueSource? = null): Queue {
+        val created = queueRepository.create(source = source)
+        val trimmed = title.trim()
+        val queue = if (trimmed.isEmpty() || trimmed == created.title) {
+            created
+        } else {
+            val unique = QueueTitles.uniqueTitle(
+                trimmed,
+                queueRepository.queues.first().filter { it.id != created.id }.map { it.title },
+            )
+            queueRepository.mutate(created.id) { it.copy(title = unique) } ?: created
+        }
+        activeQueuePersistence.activate(queue)
+        return queue
+    }
+
+    /** Align the legacy player queue id with the durable queue that now owns it. */
+    private fun adoptPlayerQueue(queue: Queue) {
+        endedWorkaroundPlayer?.currentQueueId?.let { registerQueueId(it, queue.id) }
+    }
+
+    private fun registerQueueId(queueId: Long, durableId: UUID) {
+        queueIds[queueId] = durableId
+        queueBoardIds[durableId] = queueId
+    }
+
+    /**
+     * The sheet id for a stored queue. The active queue keeps the player's id so existing sheet
+     * comparisons remain valid; inactive queues get one stable process-local id.
+     */
+    private fun queueLongId(queue: Queue): Long {
+        val current = endedWorkaroundPlayer?.currentQueueId
+        if (queue.id == activeQueuePersistence.activeQueueId() && current != null) {
+            registerQueueId(current, queue.id)
+            return current
+        }
+        queueBoardIds[queue.id]?.let { return it }
+
+        val used = queueIds.keys + listOfNotNull(current)
+        var candidate = (used.maxOrNull() ?: 0L) + 1
+        while (candidate in used) candidate++
+        registerQueueId(candidate, queue.id)
+        return candidate
+    }
+
+    /** The sheet's compatibility view of one durable queue, with its stored single order. */
+    private fun toBoardQueue(queue: Queue): MultiQueueObject {
+        val items = queue.rows.mapNotNull(MediaRowCodec::decode)
+        val bookmark = queue.normalizedBookmark()
+        val row = if (items.isEmpty()) 0 else bookmark.row.coerceIn(0, items.lastIndex)
+        return MultiQueueObject(
+            id = queueLongId(queue),
+            title = queue.title,
+            queue = ArrayList(items),
+            startIndex = row,
+            startPositionMs = bookmark.positionMs,
+            repeatMode = queue.repeatMode.value,
+            ended = bookmark.ended,
+        )
+    }
+
+    /** Every durable queue except the one loaded in the player, in repository activity order. */
+    private suspend fun inactiveQueueSnapshots(): List<MultiQueueObject> {
+        val activeId = activeQueuePersistence.activeQueueId()
+            ?: endedWorkaroundPlayer?.currentQueueId?.let { queueIds[it] }
+        return queueRepository.queues.first()
+            .filter { it.id != activeId }
+            .map(::toBoardQueue)
+    }
+
+    /** Resolve a sheet queue id to its durable queue, or null when it is stale. */
+    private suspend fun durableQueueForLong(queueId: Long): Queue? {
+        val current = endedWorkaroundPlayer?.currentQueueId
+        val durableId = if (queueId == -1L || queueId == current) {
+            activeQueuePersistence.activeQueueId()
+                ?: current?.let { queueIds[it] }
+        } else {
+            queueIds[queueId]
+        }
+        return durableId?.let { queueRepository.queue(it).first() }
+    }
+
+    /** Resolve the queue targeted by a command, by durable UUID or by the legacy sheet id. */
+    private suspend fun durableQueueForCommand(command: SessionCommand): Queue? {
+        val uuid = command.customExtras.getString("queueUuid")?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()
+        }
+        return if (uuid != null) {
+            queueRepository.queue(uuid).first()
+        } else {
+            durableQueueForLong(command.customExtras.getLong("queueId"))
+        }
+    }
+
+    /**
+     * Apply one row edit to the active queue. Positions are in the order the queue sheet shows.
+     * Returns false without changing anything when the queue identity or a position is stale.
+     */
+    private suspend fun applyQueueEdit(command: SessionCommand): Boolean {
+        val player = endedWorkaroundPlayer ?: return false
+        val durable = durableQueueForCommand(command) ?: return false
+        val operation = try {
+            QueueEditOperation.valueOf(command.customExtras.getString("operation")!!)
+        } catch (_: Exception) {
+            return false
+        }
+        val position = command.customExtras.getInt("position")
+        val to = command.customExtras.getInt("to")
+
+        return if (isDurableQueueActive(durable.id)) {
+            applyActiveQueueEdit(player, durable.id, operation, position, to)
+        } else {
+            applyInactiveQueueEdit(durable.id, operation, position, to)
+        }
+    }
+
+    /** Whether [queueUuid] is the queue the player currently holds. */
+    private fun isDurableQueueActive(queueUuid: UUID): Boolean =
+        queueUuid == activeQueuePersistence.activeQueueId() ||
+            endedWorkaroundPlayer?.currentQueueId?.let { queueIds[it] } == queueUuid
+
+    private suspend fun applyActiveQueueEdit(
+        player: EndedWorkaroundPlayer,
+        queueUuid: UUID,
+        operation: QueueEditOperation,
+        position: Int,
+        to: Int,
+    ): Boolean {
+        val target = PlayerQueueOrderTarget(player)
+        val order = target.displayedOrder()
+        if (position !in order.indices) return false
+
+        val mediaItems = activeQueueMediaItems(player)
+        when (operation) {
+            QueueEditOperation.PLAY_NEXT -> {
+                val result = QueueOrderEditor.playNext(order, target.currentPosition(), position)
+                if (result !is QueueEditResult.Applied) return false
+                lastQueueEditUndo = QueueEditUndoState(
+                    queueUuid, operation, order, mediaItems
+                )
+                target.applyDisplayedOrder(result.order)
+            }
+
+            QueueEditOperation.REMOVE -> {
+                val result = QueueOrderEditor.remove(order, position)
+                if (result !is QueueEditResult.Applied) return false
+                lastQueueEditUndo = QueueEditUndoState(
+                    queueUuid, operation, order, mediaItems, order[position]
+                )
+                target.removeDisplayedRow(position)
+            }
+
+            QueueEditOperation.MOVE -> {
+                val result = QueueOrderEditor.move(order, position, to)
+                if (result !is QueueEditResult.Applied) return false
+                lastQueueEditUndo = QueueEditUndoState(
+                    queueUuid, operation, order, mediaItems
+                )
+                target.applyDisplayedOrder(result.order)
+            }
+        }
+
+        lastInactiveQueueEditUndo = null
+        if (player.exoPlayer.mediaItemCount == 0) {
+            // An empty active queue has no player snapshot to mirror; persist the cleared rows.
+            activeQueuePersistence.saveClearedNow(queueUuid)
+        } else {
+            activeQueuePersistence.saveNow(markModified = true)
+        }
+        return true
+    }
+
+    /**
+     * Apply the same single-order edit to an inactive queue through the repository-backed target.
+     * The player and the active queue are untouched.
+     */
+    private suspend fun applyInactiveQueueEdit(
+        durableId: UUID,
+        operation: QueueEditOperation,
+        position: Int,
+        to: Int,
+    ): Boolean {
+        var previous: Queue? = null
+        var applied = false
+
+        queueRepository.mutate(durableId) { current ->
+            val target = StoredQueueOrderTarget(current)
+            val order = target.displayedOrder()
+            if (position !in order.indices) return@mutate current
+            val result = when (operation) {
+                QueueEditOperation.PLAY_NEXT ->
+                    QueueOrderEditor.playNext(order, target.currentPosition(), position)
+
+                QueueEditOperation.REMOVE -> QueueOrderEditor.remove(order, position)
+                QueueEditOperation.MOVE -> QueueOrderEditor.move(order, position, to)
+            }
+            if (result !is QueueEditResult.Applied) return@mutate current
+
+            previous = current
+            when (operation) {
+                QueueEditOperation.REMOVE -> target.removeDisplayedRow(position)
+                else -> target.applyDisplayedOrder(result.order)
+            }
+            applied = true
+            target.queue.copy(isModified = true)
+        }
+
+        val before = previous ?: return false
+        if (!applied) return false
+        lastQueueEditUndo = null
+        lastInactiveQueueEditUndo = InactiveQueueEditUndoState(
+            queueUuid = durableId,
+            rows = before.rows,
+            bookmark = before.bookmark
+        )
+        return true
+    }
+
+    /**
+     * Restore the order captured by the last queue edit. Playback is deliberately left alone:
+     * undo is an ordering action, even if the next song already started.
+     */
+    private suspend fun applyQueueUndo(command: SessionCommand): Boolean {
+        val durable = durableQueueForCommand(command) ?: return false
+        return if (lastQueueEditUndo?.queueUuid == durable.id) {
+            applyActiveQueueUndo(durable.id)
+        } else {
+            applyInactiveQueueUndo(durable.id)
+        }
+    }
+
+    private suspend fun applyActiveQueueUndo(queueUuid: UUID): Boolean {
+        val player = endedWorkaroundPlayer ?: return false
+        val undo = lastQueueEditUndo ?: return false
+        if (undo.queueUuid != queueUuid) return false
+
+        val cleared = player.exoPlayer.mediaItemCount == 0
+        if (!cleared && !isDurableQueueActive(queueUuid)) return false
+        if (cleared) {
+            // The edit emptied the active queue, which detached the marker. Re-activate the
+            // durable queue before restoring its rows so the timeline listener does not adopt
+            // the restored rows as a brand-new queue.
+            val queue = queueRepository.queue(queueUuid).first() ?: return false
+            activeQueuePersistence.activate(queue)
+        }
+
+        val target = PlayerQueueOrderTarget(player)
+        val restored = when (undo.operation) {
+            QueueEditOperation.PLAY_NEXT, QueueEditOperation.MOVE -> {
+                target.restoreDisplayedOrder(undo.displayedOrder, undo.mediaItems)
+            }
+
+            QueueEditOperation.REMOVE -> {
+                val removedIndex = undo.removedUnderlyingIndex ?: return false
+                if (player.exoPlayer.mediaItemCount != undo.mediaItems.size - 1) {
+                    return false
+                }
+                player.exoPlayer.addMediaItem(
+                    removedIndex,
+                    undo.mediaItems[removedIndex]
+                )
+                if (!target.restoreDisplayedOrder(undo.displayedOrder, undo.mediaItems)) {
+                    player.exoPlayer.removeMediaItem(removedIndex)
+                    return false
+                }
+                true
+            }
+        }
+        if (!restored) return false
+
+        lastQueueEditUndo = null
+        if (cleared) {
+            activeQueuePersistence.saveNowAwait()
+        } else {
+            activeQueuePersistence.saveNow()
+        }
+        return true
+    }
+
+    private suspend fun applyInactiveQueueUndo(queueUuid: UUID): Boolean {
+        val undo = lastInactiveQueueEditUndo ?: return false
+        if (queueUuid != undo.queueUuid) return false
+
+        if (isDurableQueueActive(queueUuid)) {
+            // The queue became active after the edit. Reorder the live player so the restored
+            // rows are not immediately overwritten by the next active-queue mirror.
+            if (!restoreActiveOrderFromRows(undo.rows)) return false
+            lastInactiveQueueEditUndo = null
+            activeQueuePersistence.saveNowAwait()
+            return true
+        }
+
+        val restored = queueRepository.mutate(queueUuid) {
+            it.copy(rows = undo.rows, bookmark = undo.bookmark)
+        }
+        if (restored == null) return false
+        lastInactiveQueueEditUndo = null
+        return true
+    }
+
+    /** Reorder the active player to [rows], keeping the current item and position untouched. */
+    private fun restoreActiveOrderFromRows(rows: List<String>): Boolean {
+        val player = endedWorkaroundPlayer ?: return false
+        val currentItems = activeQueueMediaItems(player)
+        if (currentItems.size != rows.size) return false
+        val currentRows = currentItems.map(MediaRowCodec::encode)
+        val remaining = currentRows.indices.toMutableList()
+        val order = rows.map { row ->
+            val index = remaining.indexOfFirst { currentRows[it] == row }
+            if (index == -1) return false
+            remaining.removeAt(index)
+            index
+        }
+        PlayerQueueOrderTarget(player).applyDisplayedOrder(order)
+        return true
+    }
+
+    /**
+     * The sheet queue id when [command] targets an inactive queue, or null when the refresh is for
+     * the active queue (including the legacy -1 sentinel).
+     */
+    private fun inactiveQueueIdForRefresh(command: SessionCommand): Long? {
+        if (command.customExtras.containsKey("queueUuid")) return null
+        val queueId = command.customExtras.getLong("queueId")
+        return queueId.takeIf { it != -1L && it != endedWorkaroundPlayer?.currentQueueId }
+    }
+
+    private suspend fun broadcastQueueSongsRefresh(
+        preserveScroll: Boolean = true,
+        queueId: Long? = null,
+    ) {
+        val plr = endedWorkaroundPlayer ?: return
+        val session = mediaSession ?: return
+        val inactive = inactiveQueueSnapshots()
+        for (controller in session.connectedControllers) {
+            val command = SessionCommand(CLIENT_QB_REFRESH_LIST, Bundle.EMPTY).apply {
+                if (queueId != null) customExtras.putLong("queueId", queueId)
+                customExtras.putBinder(
+                    "activeQueue",
+                    MultiQueueList(listOf(plr.getActiveQueue()))
+                )
+                customExtras.putBinder(
+                    "inactiveQueues",
+                    MultiQueueList(inactive.map { it.copy(queue = ArrayList()) })
+                )
+                if (preserveScroll) customExtras.putBoolean("preserveScroll", true)
+            }
+            session.sendCustomCommand(controller, command, Bundle.EMPTY)
+        }
+    }
+
+    /**
+     * Performs the shuffle-all action as a single timeline replacement. Active queues shuffle the
+     * player's order in place; inactive queues reorder their stored rows. A normal shuffle keeps the
+     * anchor row current, while shuffle-play follows the queue shuffle button rules.
+     *
+     * Heavy work (permutations, row decode/reorder planning, DB mutate) runs off the main thread so
+     * large queues do not ANR; ExoPlayer mutations that must be marshalled to the player happen only
+     * for the small apply step. Persistence/refresh are posted after the command returns.
+     */
+    private suspend fun applyQueueShuffle(command: SessionCommand): Boolean {
+        val shufflePlay = command.customExtras.getBoolean("shufflePlay", false)
+        val player = endedWorkaroundPlayer ?: return false
+        val durable = durableQueueForCommand(command)
+        if (durable == null && command.customExtras.containsKey("queueUuid")) return false
+        val isActive = durable != null && isDurableQueueActive(durable.id)
+
+        if (isActive || durable == null) {
+            if (player.exoPlayer.mediaItemCount <= 0) return false
+            if (player.currentMediaItem?.mediaMetadata?.isPlayable == false) return false
+            val size = player.exoPlayer.mediaItemCount
+            val order = (0 until size).toList()
+            val currentRaw = player.exoPlayer.currentMediaItemIndex
+            val currentPosition = currentRaw.takeIf { it != C.INDEX_UNSET }
+
+            if (shufflePlay) {
+                if (player.isPlaying) {
+                    // A song is currently playing: keep it as the current item/position, but
+                    // reshuffle the rest so the queue order changes without disruption.
+                    val currentIdx = currentPosition?.takeIf { it in order.indices } ?: 0
+                    val newOrder = withContext(Dispatchers.Default) {
+                        val shuffledOthers = order.indices.filter { it != currentIdx }.shuffled()
+                        MutableList(order.size) { 0 }.also { out ->
+                            var j = 0
+                            for (i in order.indices) {
+                                out[i] = if (i == currentIdx) order[i] else order[shuffledOthers[j++]]
+                            }
+                        }
+                    }
+                    lastQueueEditUndo = null
+                    lastInactiveQueueEditUndo = null
+                    val target = PlayerQueueOrderTarget(player)
+                    val items = target.snapshotMediaItems()
+                    val reordered = withContext(Dispatchers.Default) {
+                        newOrder.map { items[it] }
+                    }
+                    withoutMarkingUserModified {
+                        target.applyReorderedItems(items, reordered)
+                    }
+                    player.play()
+                } else {
+                    // Active but paused: always play, and start a different song than the last-paused one.
+                    val lastPaused = currentPosition
+                        ?: durable?.normalizedBookmark()?.row?.takeIf { it in order.indices }
+                        ?: 0
+                    val anchor = if (order.size <= 1) {
+                        lastPaused
+                    } else {
+                        withContext(Dispatchers.Default) {
+                            order.indices.filter { it != lastPaused }.random()
+                        }
+                    }
+                    val result = withContext(Dispatchers.Default) {
+                        QueueOrderEditor.shuffleEverything(order, anchor)
+                    } as? QueueEditResult.Applied ?: return false
+                    // Snapshot items on the player thread once, build reordered list off-main.
+                    val target = PlayerQueueOrderTarget(player)
+                    val items = target.snapshotMediaItems()
+                    val reordered = withContext(Dispatchers.Default) {
+                        result.order.map { items[it] }
+                    }
+                    lastQueueEditUndo = null
+                    lastInactiveQueueEditUndo = null
+                    withoutMarkingUserModified {
+                        player.exoPlayer.setMediaItems(reordered, 0, 0L)
+                    }
+                    player.play()
+                }
+                handler.post {
+                    activeQueuePersistence.saveNow(markModified = false)
+                    scope.launch { broadcastQueueSongsRefresh() }
+                }
+                return true
+            }
+
+            val result = withContext(Dispatchers.Default) {
+                QueueOrderEditor.shuffleEverything(order, currentPosition)
+            } as? QueueEditResult.Applied ?: return false
+            // Shuffle is toast-only feedback: do not retain undo snapshots.
+            lastQueueEditUndo = null
+            lastInactiveQueueEditUndo = null
+            val target = PlayerQueueOrderTarget(player)
+            val items = target.snapshotMediaItems()
+            val reordered = withContext(Dispatchers.Default) {
+                result.order.map { items[it] }
+            }
+            withoutMarkingUserModified {
+                target.applyReorderedItems(items, reordered)
+            }
+            handler.post {
+                activeQueuePersistence.saveNow(markModified = false)
+                scope.launch { broadcastQueueSongsRefresh() }
+            }
+            return true
+        }
+
+        return applyInactiveQueueShuffleResult(durable, durable.id, shufflePlay, command)
+    }
+
+    /**
+     * Shuffle an inactive stored queue. Row decoding and permutation run inside repository IO; if this
+     * is a shuffle-play, load the reordered queue afterwards (decoding rows off main).
+     */
+    private suspend fun applyInactiveQueueShuffleResult(
+        durable: Queue,
+        durableId: UUID,
+        shufflePlay: Boolean,
+        command: SessionCommand,
+    ): Boolean {
+        var applied = false
+        var before: Queue? = null
+        queueRepository.mutate(durableId) { current ->
+            val playable = current.rows.any {
+                MediaRowCodec.decode(it)?.mediaMetadata?.isPlayable == true
+            }
+            if (!playable) return@mutate current
+            val target = StoredQueueOrderTarget(current)
+            val order = target.displayedOrder()
+            val result = if (shufflePlay) {
+                val lastPaused = current.normalizedBookmark().row
+                    .coerceIn(0, (order.size - 1).coerceAtLeast(0))
+                val anchor = if (order.size <= 1) {
+                    lastPaused
+                } else {
+                    order.indices.filter { it != lastPaused }.random()
+                }
+                QueueOrderEditor.shuffleEverything(order, anchor)
+            } else {
+                QueueOrderEditor.shuffleEverything(order, target.currentPosition())
+            } as? QueueEditResult.Applied ?: return@mutate current
+            before = current
+            target.applyDisplayedOrder(result.order)
+            applied = true
+            target.queue
+        }
+        if (!applied) return false
+        lastQueueEditUndo = null
+        // A plain shuffle is undoable, like a reorder. Shuffle-play starts a new order and is not.
+        lastInactiveQueueEditUndo = if (shufflePlay) null else before?.let {
+            InactiveQueueEditUndoState(durableId, it.rows, it.bookmark)
+        }
+        if (shufflePlay) {
+            val started = playDurableQueue(durableId, 0)
+            if (!started) return false
+            handler.post {
+                scope.launch { broadcastQueueSongsRefresh() }
+            }
+        } else {
+            handler.post {
+                scope.launch {
+                    broadcastQueueSongsRefresh(queueId = inactiveQueueIdForRefresh(command))
+                }
+            }
+        }
+        return true
+    }
+
+    private suspend fun playDurableQueue(command: SessionCommand): Boolean {
+        val queue = durableQueueForCommand(command) ?: return false
+        val requestedStart = command.customExtras.getInt("startIndex", C.INDEX_UNSET)
+        return playDurableQueue(queue.id, requestedStart)
+    }
+
+    /**
+     * Apply the queue play/pause decision table for a durable queue. A song-row tap passes
+     * [startIndex] to start that row without reordering; no start index means resume, restart,
+     * start, pause, or switch as appropriate.
+     *
+     * Decoding stored rows for inactive queues runs off the main thread to avoid ANRs on large queues.
+     */
+    private suspend fun playDurableQueue(queueUuid: UUID, startIndex: Int = C.INDEX_UNSET): Boolean {
+        val queue = queueRepository.queue(queueUuid).first() ?: return false
+        val player = endedWorkaroundPlayer ?: return false
+        val isActive = isDurableQueueActive(queue.id)
+
+        data class InactiveDecoded(val items: List<MediaItem>, val displayedToPlayer: IntArray)
+
+        val inactive = if (isActive) {
+            null
+        } else {
+            withContext(Dispatchers.Default) {
+                val pairs = queue.rows.mapIndexedNotNull { index, row ->
+                    MediaRowCodec.decode(row)?.let { index to it }
+                }
+                if (pairs.isEmpty()) return@withContext null
+                val map = IntArray(queue.rows.size) { -1 }
+                pairs.forEachIndexed { playerIdx, pair -> map[pair.first] = playerIdx }
+                InactiveDecoded(pairs.map { it.second }, map)
+            }
+        }
+        val items = if (isActive) activeQueueMediaItems(player) else inactive?.items ?: return false
+        if (items.isEmpty()) return false
+
+        /** Map a displayed row index to the player index, or null if that row is unresolvable. */
+        fun playerIndex(displayedRow: Int): Int? = if (isActive) {
+            displayedRow.takeIf { it in items.indices }
+        } else {
+            inactive!!.displayedToPlayer.getOrNull(displayedRow)?.takeIf { it >= 0 }
+        }
+
+        val bookmark = if (isActive) {
+            QueueRestoreRules.bookmarkFromPlayer(
+                row = player.currentMediaItemIndex,
+                positionMs = player.currentPosition,
+                ended = player.playbackState == Player.STATE_ENDED,
+                rowCount = items.size,
+            )
+        } else {
+            queue.normalizedBookmark()
+        }
+        val action = if (startIndex >= 0) {
+            val row = playerIndex(startIndex) ?: return false
+            QueuePlaybackAction.Play(row, 0L)
+        } else {
+            when (
+                val decision = QueuePlaybackRules.queuePlayButton(
+                    QueuePlaybackState(
+                        rowCount = items.size,
+                        bookmark = bookmark,
+                        hasBeenPlayed = queue.hasBeenPlayed || isActive,
+                        isActive = isActive,
+                        isPlaying = isActive && player.isPlaying,
+                    )
+                )
+            ) {
+                is QueuePlaybackAction.Play -> {
+                    val row = playerIndex(decision.row) ?: return false
+                    decision.copy(row = row)
+                }
+
+                else -> decision
+            }
+        }
+
+        when (action) {
+            QueuePlaybackAction.Disabled -> return false
+            QueuePlaybackAction.Pause -> player.pause()
+            is QueuePlaybackAction.Play -> {
+                if (isActive) {
+                    player.seekTo(action.row, action.positionMs)
+                    player.play()
+                } else {
+                    // Pause and save the outgoing queue before the incoming one becomes active.
+                    val outgoing = activeQueuePersistence.activeQueueId()?.let {
+                        queueRepository.queue(it).first()
+                    }
+                    player.pause()
+                    activeQueuePersistence.saveNowAwait(markModified = false)
+                    activeQueuePersistence.activate(queue)
+                    val switched = try {
+                        withoutMarkingUserModified {
+                            player.setMediaItems(
+                                items,
+                                action.row,
+                                action.positionMs,
+                                queue.title,
+                                false,
+                                queue.repeatMode.value,
+                                null,
+                            )
+                            player.currentQueueId?.let { registerQueueId(it, queue.id) }
+                            activeQueuePersistence.syncMirroredRowsFromPlayer()
+                        }
+                        true
+                    } catch (e: IllegalSeekPositionException) {
+                        Log.e(TAG, "failed to start queue ${queue.id}", e)
+                        false
+                    } catch (e: IllegalArgumentException) {
+                        Log.e(TAG, "failed to start queue ${queue.id}", e)
+                        false
+                    }
+                    if (!switched) {
+                        // Do not leave the durable marker on a queue the player never loaded.
+                        if (outgoing != null) {
+                            activeQueuePersistence.activate(outgoing)
+                        } else {
+                            activeQueuePersistence.detach()
+                        }
+                        return false
+                    }
+                    player.play()
+                }
+            }
+        }
+        return true
+    }
+
     override fun onCustomCommand(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
         customCommand: SessionCommand,
         args: Bundle
     ): ListenableFuture<SessionResult> {
-        if (customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
-            || customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_ATOMIC) {
-            val songList = MediaItemList.getList(
-                customCommand.customExtras.getBinder("items")!!)
-            val position = customCommand.customExtras.getInt("position")
-            val title = customCommand.customExtras.getString("title")!!
-            val seamless = customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
-            val itemsFuture = Futures.transform(
-                onAddMediaItems(session, controller, songList),
-                { songList ->
-                    if (seamless) {
-                        endedWorkaroundPlayer!!.setMediaItemsSeamlessly(songList,
-                            position, null, title, pinned = false, original = true,
-                            repeatMode = null, shuffleModeEnabled = null, newShuffleOrder = null,
-                            playbackParameters = null, ended = false,
-                             )
-                    } else {
-                        val shuffleModeEnabled = if (customCommand.customExtras.containsKey("shuffleEnabled"))
-                            customCommand.customExtras.getBoolean("shuffleEnabled") else null
-                        val repeatMode = if (customCommand.customExtras.containsKey("repeatMode"))
-                            customCommand.customExtras.getInt("repeatMode") else null
-                        endedWorkaroundPlayer!!.setMediaItems(songList, startIndex = position,
-                            startPositionMs = C.TIME_UNSET, title, pinned = false, original = true,
-                            newShuffleOrder = null, ended = false, repeatMode = repeatMode,
-                            shuffleModeEnabled = shuffleModeEnabled, playbackParameters = null)
-                    }
-                    SessionResult(SessionResult.RESULT_SUCCESS)
-                },
-                mainExecutor
-            )
-            // Ensure no further player commands (such as play) are executed until we're done.
-            session.addToCommandQueueThenFlush(controller) { Futures.transform(itemsFuture,
-                { null }, MoreExecutors.directExecutor()) }
-            return itemsFuture
-        }
-
-        fun buildMqCustomCommand(action: String, queueId: Long?): SessionCommand {
+        suspend fun buildMqCustomCommand(action: String, queueId: Long?): SessionCommand {
             return SessionCommand(action, Bundle.EMPTY).apply {
                 val plr = endedWorkaroundPlayer!!
                 queueId?.let {
@@ -1051,15 +1636,314 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                         "activeQueue",
                         MultiQueueList(listOf(plr.getActiveQueue()))
                     )
+                    val inactive = inactiveQueueSnapshots()
+                        .map { it.copy(queue = ArrayList()) }
                     customExtras.putBinder(
                         "inactiveQueues",
-                        MultiQueueList(qb.getInactiveQueues().map { it.copy(queue = ArrayList()) })
+                        MultiQueueList(inactive)
                     )
                 }
             }
         }
 
-        return Futures.immediateFuture(
+        suspend fun notifyQueues(action: String, queueId: Long?) {
+            for (connected in mediaSession!!.connectedControllers) {
+                mediaSession!!.sendCustomCommand(
+                    connected,
+                    buildMqCustomCommand(action, queueId),
+                    Bundle.EMPTY,
+                )
+            }
+        }
+
+        if (customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
+            || customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_ATOMIC) {
+            val songList = MediaItemList.getList(
+                customCommand.customExtras.getBinder("items")!!)
+            val position = customCommand.customExtras.getInt("position")
+            val title = customCommand.customExtras.getString("title")!!
+            val seamless = customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
+            val isOriginal = customCommand.customExtras.getBoolean("original", true)
+            val isShuffledPlay = !isOriginal
+            val source = customCommand.customExtras.getString("source_kind")?.let { kind ->
+                QueueSource(
+                    kind = QueueSourceKind.valueOf(kind),
+                    identifier = customCommand.customExtras.getString("source_identifier"),
+                    displayName = customCommand.customExtras.getString("source_display_name"),
+                )
+            }
+            val repeatMode = if (customCommand.customExtras.containsKey("repeatMode"))
+                customCommand.customExtras.getInt("repeatMode") else null
+            val itemsFuture = Futures.transformAsync(
+                onAddMediaItems(session, controller, songList),
+                { resolvedSongs: List<MediaItem>? ->
+                    scope.future {
+                        queueResolutionMutex.withLock {
+                            val player = endedWorkaroundPlayer!!
+                            val items = resolvedSongs ?: emptyList()
+                            val existingQueues = queueRepository.queues.first()
+                            val replica = QueueDeduplicationRules.findUnmodifiedReplica(existingQueues, source)
+                            val queue = if (replica != null) {
+                                if (replica.id != activeQueuePersistence.activeQueueId()) {
+                                    activeQueuePersistence.saveNowAwait(markModified = false)
+                                    activeQueuePersistence.activate(replica)
+                                }
+                                replica
+                            } else {
+                                activeQueuePersistence.saveNowAwait(markModified = false)
+                                createDurableQueue(title, source)
+                            }
+
+                            withContext(Dispatchers.Main) {
+                                withoutMarkingUserModified {
+                                    if (replica != null && isShuffledPlay) {
+                                        val startIdx = if (position >= 0) position else 0
+                                        player.setMediaItems(
+                                            items,
+                                            startIndex = startIdx,
+                                            startPositionMs = C.TIME_UNSET,
+                                            title = queue.title,
+                                            ended = false,
+                                            repeatMode = repeatMode,
+                                            playbackParameters = null,
+                                        )
+                                        adoptPlayerQueue(queue)
+                                        // In-place automated shuffle preserves unmodified state
+                                        applyQueueShuffle(
+                                            SessionCommand(SERVICE_QB_SHUFFLE, Bundle().apply {
+                                                putBoolean("shufflePlay", true)
+                                                putString("queueUuid", queue.id.toString())
+                                            })
+                                        )
+                                    } else if (seamless) {
+                                        player.setMediaItemsSeamlessly(
+                                            items,
+                                            position,
+                                            null,
+                                            queue.title,
+                                            false,
+                                            null,
+                                            null,
+                                        )
+                                        adoptPlayerQueue(queue)
+                                    } else {
+                                        player.setMediaItems(
+                                            items,
+                                            startIndex = position,
+                                            startPositionMs = C.TIME_UNSET,
+                                            title = queue.title,
+                                            ended = false,
+                                            repeatMode = repeatMode,
+                                            playbackParameters = null,
+                                        )
+                                        adoptPlayerQueue(queue)
+                                    }
+                                }
+                                activeQueuePersistence.saveNowAwait(markModified = false)
+                            }
+                            SessionResult(SessionResult.RESULT_SUCCESS)
+                        }
+                    }
+                },
+                mainExecutor
+            )
+            // Ensure no further player commands (such as play) are executed until we're done.
+            session.addToCommandQueueThenFlush(controller) { Futures.transform(itemsFuture,
+                { null }, MoreExecutors.directExecutor()) }
+            return itemsFuture
+        }
+
+        if (customCommand.customAction == SERVICE_QB_LOAD_QUEUE) {
+            val startIndex = customCommand.customExtras.getInt("startIndex")
+            val loadFuture = scope.future {
+                val queue = durableQueueForCommand(customCommand)
+                    ?: return@future SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
+                val player = endedWorkaroundPlayer
+                    ?: return@future SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
+
+                if (queue.id != activeQueuePersistence.activeQueueId()) {
+                    // The outgoing queue is durable before the next one loads.
+                    activeQueuePersistence.saveNowAwait(markModified = false)
+                    activeQueuePersistence.activate(queue)
+
+                    val items = queue.rows.mapNotNull(MediaRowCodec::decode)
+                    val point = QueueRestoreRules.restorePoint(queue)
+                    val startRow = if (startIndex >= 0 && items.isNotEmpty()) {
+                        startIndex.coerceIn(0, items.lastIndex)
+                    } else {
+                        (point?.row ?: 0).coerceIn(0, (items.size - 1).coerceAtLeast(0))
+                    }
+                    val startPosition = if (startIndex >= 0) {
+                        C.TIME_UNSET
+                    } else {
+                        point?.positionMs ?: 0L
+                    }
+                    withoutMarkingUserModified {
+                        player.setMediaItems(
+                            items,
+                            startRow,
+                            startPosition,
+                            queue.title,
+                            point?.ended ?: false,
+                            queue.repeatMode.value,
+                            null
+                        )
+                        player.currentQueueId?.let { registerQueueId(it, queue.id) }
+                        activeQueuePersistence.syncMirroredRowsFromPlayer()
+                    }
+                }
+                notifyQueues(CLIENT_QB_REFRESH_ALL, null)
+                SessionResult(SessionResult.RESULT_SUCCESS)
+            }
+            session.addToCommandQueueThenFlush(controller) {
+                Futures.transform(loadFuture, { null }, MoreExecutors.directExecutor())
+            }
+            return loadFuture
+        }
+
+        if (customCommand.customAction == SERVICE_QB_PLAY_QUEUE) {
+            val playFuture = scope.future {
+                val status = playDurableQueue(customCommand)
+                if (status) notifyQueues(CLIENT_QB_REFRESH_ALL, null)
+                SessionResult(SessionResult.RESULT_SUCCESS).also { result ->
+                    result.extras.putBoolean("status", status)
+                }
+            }
+            session.addToCommandQueueThenFlush(controller) {
+                Futures.transform(playFuture, { null }, MoreExecutors.directExecutor())
+            }
+            return playFuture
+        }
+
+        if (customCommand.customAction == SERVICE_QB_DEL) {
+            val queueId = customCommand.customExtras.getLong("queueId")
+            val queueUuid = customCommand.customExtras.getString("queueUuid")?.let(UUID::fromString)
+            val deleteFuture = scope.future {
+                if (queueUuid != null) {
+                    val player = endedWorkaroundPlayer!!
+                    val isActive = activeQueuePersistence.activeQueueId() == queueUuid
+                    val status = queueRepository.delete(queueUuid)
+                    if (status) {
+                        if (isActive) {
+                            activeQueuePersistence.detach()
+                            player.clearMediaItems()
+                        }
+                        queueBoardIds.remove(queueUuid)?.let { boardId ->
+                            queueIds.remove(boardId)
+                        }
+                        notifyQueues(
+                            if (isActive) CLIENT_QB_REFRESH_CLEAR else CLIENT_QB_REFRESH_QUEUES,
+                            null,
+                        )
+                    }
+                    return@future SessionResult(SessionResult.RESULT_SUCCESS).also { result ->
+                        result.extras.putBoolean("status", status)
+                    }
+                }
+                val player = endedWorkaroundPlayer!!
+                val status: Boolean
+                val refreshLevel: String
+                if (queueId == player.currentQueueId) {
+                    val oldBoardId = player.currentQueueId
+                    val oldDurableId = activeQueuePersistence.activeQueueId()
+                    val deleted = oldDurableId?.let { queueRepository.delete(it) } ?: false
+                    if (deleted) {
+                        activeQueuePersistence.detach()
+                        player.clearMediaItems()
+                        oldBoardId?.let {
+                            queueIds.remove(it)
+                            oldDurableId.let { id -> queueBoardIds.remove(id) }
+                        }
+                    }
+                    refreshLevel = if (deleted) CLIENT_QB_REFRESH_CLEAR else CLIENT_QB_REFRESH_ALL
+                    status = deleted
+                } else {
+                    refreshLevel = CLIENT_QB_REFRESH_QUEUES
+                    val durable = durableQueueForLong(queueId)
+                    status = if (durable != null) {
+                        queueRepository.delete(durable.id).also { deleted ->
+                            if (deleted) queueBoardIds.remove(durable.id)
+                        }
+                    } else {
+                        false
+                    }
+                    if (status) {
+                        queueIds.remove(queueId)
+                    }
+                }
+                if (status) {
+                    notifyQueues(refreshLevel, null)
+                }
+                SessionResult(SessionResult.RESULT_SUCCESS)
+            }
+            session.addToCommandQueueThenFlush(controller) {
+                Futures.transform(deleteFuture, { null }, MoreExecutors.directExecutor())
+            }
+            return deleteFuture
+        }
+
+        if (customCommand.customAction == SERVICE_QB_RENAME_QUEUE) {
+            val queueId = customCommand.customExtras.getLong("queueId")
+            val queueUuid = customCommand.customExtras.getString("queueUuid")?.let(UUID::fromString)
+            val title = customCommand.customExtras.getString("title")
+            val dryRun = customCommand.customExtras.getBoolean("dryRun")
+            val renameFuture = scope.future {
+                if (queueUuid != null) {
+                    val player = endedWorkaroundPlayer!!
+                    val renamed = if (title.isNullOrBlank()) {
+                        null
+                    } else {
+                        queueRepository.rename(queueUuid, title)
+                    }
+                    if (renamed != null) {
+                        if (activeQueuePersistence.activeQueueId() == queueUuid) {
+                            player.currentTitle = renamed.title
+                        }
+                        notifyQueues(CLIENT_QB_REFRESH_ALL, null)
+                    }
+                    return@future SessionResult(SessionResult.RESULT_SUCCESS).also { result ->
+                        result.extras.putBoolean("status", renamed != null)
+                    }
+                }
+                val player = endedWorkaroundPlayer!!
+                val durable = durableQueueForLong(queueId)
+                val status: Boolean = when {
+                    title.isNullOrBlank() || durable == null -> false
+                    queueRepository.queues.first().any {
+                        it.id != durable.id && it.title == title
+                    } -> false
+                    queueId == player.currentQueueId -> {
+                        if (player.currentTitle == title) {
+                            false
+                        } else {
+                            if (!dryRun) {
+                                player.currentTitle = title
+                                queueRepository.rename(durable.id, title)
+                            }
+                            true
+                        }
+                    }
+                    else -> {
+                        if (!dryRun) {
+                            queueRepository.rename(durable.id, title)
+                        }
+                        true
+                    }
+                }
+                if (status) {
+                    notifyQueues(CLIENT_QB_REFRESH_ITEM, queueId)
+                }
+                SessionResult(SessionResult.RESULT_SUCCESS).also { result ->
+                    result.extras.putBoolean("status", status)
+                }
+            }
+            session.addToCommandQueueThenFlush(controller) {
+                Futures.transform(renameFuture, { null }, MoreExecutors.directExecutor())
+            }
+            return renameFuture
+        }
+
+        return scope.future {
             when (customCommand.customAction) {
                 SERVICE_SET_TIMER -> {
                     // 0 = clear timer; 0 with pauseOnEnd true will pause on end of current song
@@ -1069,8 +1953,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                         timerPauseOnEnd = pauseOnEnd
                         timerDuration = SystemClock.elapsedRealtime() + duration
                     } else {
-                        val currentPauseOnEnd = this.endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems
-                        this.endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems = pauseOnEnd
+                        val currentPauseOnEnd =
+                            endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems
+                        endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems = pauseOnEnd
                         if (timerDuration != null) {
                             timerDuration = null
                         } else if (pauseOnEnd != currentPauseOnEnd) {
@@ -1098,7 +1983,8 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                             it.extras.putBoolean("pauseOnEnd", timerPauseOnEnd)
                         } ?: it.extras.putBoolean(
                             "pauseOnEnd",
-                            this.endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems
+                            this@GramophonePlaybackService
+                                .endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems
                         )
                     }
                 }
@@ -1143,184 +2029,80 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
                 SERVICE_QB_GET_INACTIVE_LIST -> {
                     SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
-                        val queueList: List<MultiQueueObject> = qb.getInactiveQueues().map { it.copy(queue = ArrayList()) }
-                        val binder = MultiQueueList(queueList)
-                        res.extras.putBinder("allQueues", binder)
+                        val queueList = inactiveQueueSnapshots()
+                            .map { it.copy(queue = ArrayList()) }
+                        res.extras.putBinder("allQueues", MultiQueueList(queueList))
                     }
                 }
 
                 SERVICE_QB_GET_QUEUE_FOR_UI -> {
                     try {
                         val queueId = customCommand.customExtras.getLong("queueId")
-                        val queue: MultiQueueObject = if (queueId != -1L) {
-                            qb.getInactiveQueue(queueId)
-                        } else {
+                        val current = endedWorkaroundPlayer!!.currentQueueId
+                        val queue: MultiQueueObject? = if (queueId == -1L || queueId == current) {
                             endedWorkaroundPlayer!!.getActiveQueue()
-                        }!!
-                        SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
-                            val binder = MultiQueueList(listOf(queue))
-                            res.extras.putBinder("allQueues", binder)
+                        } else {
+                            durableQueueForLong(queueId)?.let(::toBoardQueue)
+                        }
+                        if (queue == null) {
+                            SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
+                        } else {
+                            SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                                res.extras.putBinder(
+                                    "allQueues",
+                                    MultiQueueList(listOf(queue))
+                                )
+                            }
                         }
                     } catch (e: IllegalStateException) {
                         SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
                     }
                 }
 
-                SERVICE_QB_LOAD_QUEUE -> {
-                    val queueId = customCommand.customExtras.getLong("queueId")
-                    val startIndex = customCommand.customExtras.getInt("startIndex")
-
-                    val index = qb.masterQueues.indexOfFirst { it.id == queueId }
-
-                    if (index != -1) {
-                        qb.commitQueue(index, startIndex)
-
-                        for (controller in mediaSession!!.connectedControllers) {
-                            val customCommand = buildMqCustomCommand(CLIENT_QB_REFRESH_ALL, null)
-                            mediaSession!!.sendCustomCommand(
-                                controller,
-                                customCommand,
-                                Bundle.EMPTY
-                            )
-                        }
-                        SessionResult(SessionResult.RESULT_SUCCESS)
-                    } else {
-                        SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
-                    }
-                }
-
-                SERVICE_QB_PIN_QUEUE -> {
-                    val plr = endedWorkaroundPlayer!!
-                    val queueId = customCommand.customExtras.getLong("queueId")
-                    val status = if (queueId == plr.currentQueueId) {
-                        plr.currentIsPinned = true
-                        true
-                    } else {
-                        val index = qb.masterQueues.indexOfFirst { it.id == queueId }
-                        if (index == -1) {
-                            false
-                        } else {
-                            qb.pinQueue(index)
-                        }
-                    }
+                SERVICE_QB_EDIT -> {
+                    val status = applyQueueEdit(customCommand)
                     if (status) {
-                        for (controller in mediaSession!!.connectedControllers) {
-                            val customCommand = buildMqCustomCommand(CLIENT_QB_REFRESH_ITEM, queueId)
-                            mediaSession!!.sendCustomCommand(controller, customCommand, Bundle.EMPTY)
-                        }
-                    }
-                    SessionResult(SessionResult.RESULT_SUCCESS)
-                }
-
-                SERVICE_QB_UNPIN_QUEUE -> {
-                    val plr = endedWorkaroundPlayer!!
-                    val queueId = customCommand.customExtras.getLong("queueId")
-                    val status = if (queueId == plr.currentQueueId) {
-                        endedWorkaroundPlayer!!.currentIsPinned = false
-                        true
-                    } else {
-                        val index = qb.masterQueues.indexOfFirst { it.id == queueId }
-                        if (index == -1) {
-                            false
-                        } else {
-                            qb.unpinQueue(index)
-                        }
-                    }
-                    if (status) {
-                        for (controller in mediaSession!!.connectedControllers) {
-                            val customCommand = buildMqCustomCommand(CLIENT_QB_REFRESH_ITEM, queueId)
-                            mediaSession!!.sendCustomCommand(controller, customCommand, Bundle.EMPTY)
-                        }
-                    }
-                    SessionResult(SessionResult.RESULT_SUCCESS)
-                }
-
-                SERVICE_QB_DEL -> {
-                    val plr = endedWorkaroundPlayer!!
-                    val queueId = customCommand.customExtras.getLong("queueId")
-                    var refreshLevel = CLIENT_QB_REFRESH_ALL
-
-                    val status: Boolean = if (queueId == plr.currentQueueId) {
-                        // active queue
-                        try {
-                            val nextQueueIndex = qb.getInactiveQueues().size - 1
-                            if (nextQueueIndex < 0) {
-                                plr.clearMediaItems()
-                                refreshLevel = CLIENT_QB_REFRESH_CLEAR
-                                true
-                            } else {
-                                val currentQueueId = plr.currentQueueId
-                                val nextQueue = qb.getInactiveQueue(nextQueueIndex)!!
-                                qb.commitQueue(nextQueueIndex, nextQueue.startIndex)
-                                currentQueueId?.let {
-                                    // TODO: nick plz do delete active queue if this is too cursed
-                                    qb.deleteQueue(currentQueueId)
-                                }
-                                refreshLevel = CLIENT_QB_REFRESH_ALL
-                                true
-                            }
-                        } catch (e: Exception) {
-                            Log.w(TAG, e.message.toString(), e)
-                            false
-                        }
-
-                    } else {
-                        // inactive queues
-                        refreshLevel = CLIENT_QB_REFRESH_QUEUES
-                        val ret = qb.deleteQueue(queueId)
-                        ret
-                    }
-
-                    if (status) {
-                        for (controller in mediaSession!!.connectedControllers) {
-                            val customCommand = buildMqCustomCommand(refreshLevel, null)
-                            mediaSession!!.sendCustomCommand(controller, customCommand, Bundle.EMPTY)
-                        }
-                    }
-                    SessionResult(SessionResult.RESULT_SUCCESS)
-                }
-
-                SERVICE_QB_RENAME_QUEUE -> {
-                    val plr = endedWorkaroundPlayer!!
-                    val queueId = customCommand.customExtras.getLong("queueId")
-                    val title = customCommand.customExtras.getString("title")
-                    val dryRun = customCommand.customExtras.getBoolean("dryRun")
-
-                    val status = if (title.isNullOrBlank()) {
-                        false
-                    } else if (queueId == plr.currentQueueId) {
-                        if (qb.masterQueues.any { it.title == title }) {
-                            false
-                        } else {
-                            if (!dryRun) {
-                                plr.currentTitle = title
-                            }
-                            true
-                        }
-                    } else {
-                        val index = qb.masterQueues.indexOfFirst { it.id == queueId }
-                        qb.renameQueue(index, title, dryRun)
-                    }
-                    if (status) {
-                        for (controller in mediaSession!!.connectedControllers) {
-                            val customCommand = buildMqCustomCommand(CLIENT_QB_REFRESH_ITEM, queueId)
-                            mediaSession!!.sendCustomCommand(controller, customCommand, Bundle.EMPTY)
-                        }
+                        broadcastQueueSongsRefresh(
+                            queueId = inactiveQueueIdForRefresh(customCommand)
+                        )
                     }
                     SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
                         res.extras.putBoolean("status", status)
                     }
                 }
 
-                SERVICE_QB_AGE -> {
-                    qb.age()
-                    SessionResult(SessionResult.RESULT_SUCCESS)
+                SERVICE_QB_SHUFFLE -> {
+                    val status = applyQueueShuffle(customCommand)
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", status)
+                    }
+                }
+
+                SERVICE_QB_UNDO_EDIT -> {
+                    val status = applyQueueUndo(customCommand)
+                    if (status) {
+                        broadcastQueueSongsRefresh(
+                            queueId = inactiveQueueIdForRefresh(customCommand)
+                        )
+                    }
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", status)
+                    }
+                }
+
+                SERVICE_QB_CLEAR_EDIT_UNDO -> {
+                    lastQueueEditUndo = null
+                    lastInactiveQueueEditUndo = null
+                    SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
+                        res.extras.putBoolean("status", true)
+                    }
                 }
 
                 else -> {
                     SessionResult(SessionError.ERROR_BAD_VALUE)
                 }
-            })
+            }
+        }
     }
 
     override fun onPlayWhenReadyChanged(
@@ -1351,60 +2133,63 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             return settable
         }
         val job = scope.launch {
-            lastPlayedManager.restore { items ->
-                if (items == null) {
-                    settable.setException(
-                        NullPointerException(
-                            "null MediaItemsWithStartPosition, see former logs for root cause"
-                        ).also { Log.e(TAG, Log.getThrowableString(it)!!) }
-                    )
-                } else {
-                    if (items.items.mediaItems.isNotEmpty()) {
-                        var theItem = items.items.mediaItems[items.items.startIndex]
-                        if (theItem.mediaMetadata.durationMs != null &&
-                            theItem.mediaMetadata.durationMs!! > 0 &&
-                            items.items.startPositionMs != C.TIME_UNSET
-                        ) {
-                            theItem = theItem.buildUpon()
-                                .setMediaMetadata(
-                                    theItem.mediaMetadata.buildUpon()
-                                    .setExtras(Bundle(theItem.mediaMetadata.extras).apply {
-                                        if (items.items.startPositionMs == 0L) {
-                                            putInt(
-                                                MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
-                                                MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_NOT_PLAYED
-                                            )
-                                        } else if (items.items.startPositionMs != theItem.mediaMetadata.durationMs!!) {
-                                            putInt(
-                                                MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
-                                                MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_PARTIALLY_PLAYED
-                                            )
-                                            putDouble(
-                                                MediaConstants.EXTRAS_KEY_COMPLETION_PERCENTAGE,
-                                                (items.items.startPositionMs.toDouble() /
-                                                        theItem.mediaMetadata.durationMs!!)
-                                                    .coerceIn(0.0, 1.0)
-                                            )
-                                        } else {
-                                            putInt(
-                                                MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
-                                                MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_FULLY_PLAYED
-                                            )
-                                        }
-                                    }).build()
-                                ).build()
-                        }
-                        settable.set(
-                            MediaItemsWithStartPosition(
-                                listOf(theItem),
-                                0, items.items.startPositionMs
-                            )
-                        )
-                    } else {
-                        settable.set(items.items)
-                    }
-                }
+            val restored = activeQueuePersistence.readRestored()
+            if (restored == null) {
+                settable.setException(
+                    NullPointerException(
+                        "no durable last active queue, see former logs for root cause"
+                    ).also { Log.e(TAG, Log.getThrowableString(it)!!) }
+                )
+                return@launch
             }
+            if ((endedWorkaroundPlayer?.mediaItemCount ?: 0) == 0) {
+                // Nothing loaded the queue yet, so this resumption owns it.
+                activeQueuePersistence.adopt(restored.queue)
+            }
+            var theItem = restored.items[restored.startRow]
+            if (theItem.mediaMetadata.durationMs != null &&
+                theItem.mediaMetadata.durationMs!! > 0 &&
+                restored.positionMs != C.TIME_UNSET
+            ) {
+                theItem = theItem.buildUpon()
+                    .setMediaMetadata(
+                        theItem.mediaMetadata.buildUpon()
+                        .setExtras(Bundle(theItem.mediaMetadata.extras).apply {
+                            if (restored.positionMs == 0L) {
+                                putInt(
+                                    MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
+                                    MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_NOT_PLAYED
+                                )
+                            } else if (restored.positionMs != theItem.mediaMetadata.durationMs!!) {
+                                putInt(
+                                    MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
+                                    MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_PARTIALLY_PLAYED
+                                )
+                                putDouble(
+                                    MediaConstants.EXTRAS_KEY_COMPLETION_PERCENTAGE,
+                                    (restored.positionMs.toDouble() /
+                                            theItem.mediaMetadata.durationMs!!)
+                                        .coerceIn(0.0, 1.0)
+                                )
+                            } else {
+                                putInt(
+                                    MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
+                                    MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_FULLY_PLAYED
+                                )
+                            }
+                        }).build()
+                    ).build()
+            }
+            val items = restored.items.toMutableList().apply {
+                this[restored.startRow] = theItem
+            }
+            settable.set(
+                MediaItemsWithStartPosition(
+                    items,
+                    restored.startRow,
+                    restored.positionMs,
+                )
+            )
         }
         job.invokeOnCompletion { t ->
             if (t is CancellationException && !settable.isDone) {
@@ -1550,6 +2335,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 )
             }
         }
+        if (state == Player.STATE_ENDED) {
+            activeQueuePersistence.stopProgressSaving(save = false)
+            activeQueuePersistence.saveNow()
+        }
     }
 
     override fun onPlaybackParametersChanged(
@@ -1590,41 +2379,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         lastSentNotificationLyric = null
         lastSentHighlightedLyric = null
 
-        // reshuffle queue when shuffle AND repeat all are enabled
-        val player = endedWorkaroundPlayer
-        if (player != null && player.currentMediaItemIndex == player.exoPlayer.shuffleOrder.lastIndex &&
-            reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO &&
-            player.shuffleModeEnabled && player.repeatMode == Player.REPEAT_MODE_ALL
-        ) {
-            player.exoPlayer.setShuffleOrder(
-                CircularShuffleOrder(
-                    player,
-                    player.exoPlayer.shuffleOrder.lastIndex,
-                    player.exoPlayer.mediaItemCount,
-                    Random.nextLong()
-                )
-            )
-            for (controller in mediaSession!!.connectedControllers) {
-                val customCommand = SessionCommand(CLIENT_QB_REFRESH_LIST, Bundle.EMPTY).apply {
-                    val plr = endedWorkaroundPlayer!!
-                    customExtras.putBinder(
-                        "activeQueue",
-                        MultiQueueList(listOf(plr.getActiveQueue()))
-                    )
-                    customExtras.putBinder(
-                        "inactiveQueues",
-                        MultiQueueList(qb.getInactiveQueues().map { it.copy(queue = ArrayList()) })
-                    )
-                }
-                mediaSession!!.sendCustomCommand(
-                    controller,
-                    customCommand,
-                    Bundle.EMPTY
-                )
-            }
-        }
-
-        lastPlayedManager.save()
+        activeQueuePersistence.saveProgressNow()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -1643,64 +2398,60 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         scheduleSendingLyrics(false)
-        lastPlayedManager.save()
-    }
-
-    override fun onEvents(player: Player, events: Player.Events) {
-        super<Player.Listener>.onEvents(player, events)
-        // if timeline changed, shuffle order is handled elsewhere instead (cloneAndInsert called by
-        // ExoPlayer for common case and nextShuffleOrder for resumption case)
-        if (events.contains(Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED)
-            && !events.contains(Player.EVENT_TIMELINE_CHANGED)
-        ) {
-            // when enabling shuffle, re-shuffle lists so that the first index is up to date
-            Log.i(TAG, "re-shuffling playlist")
-            endedWorkaroundPlayer?.let {
-                it.exoPlayer.setShuffleOrder(
-                    CircularShuffleOrder(
-                        it,
-                        it.exoPlayer.currentMediaItemIndex,
-                        it.exoPlayer.mediaItemCount,
-                        Random.nextLong()
-                    )
-                )
-            }
+        if (isPlaying) {
+            activeQueuePersistence.startProgressSaving()
+        } else {
+            activeQueuePersistence.stopProgressSaving(save = true)
         }
     }
 
-    private suspend fun mapMediaItemsForFavorites(mediaItems: List<MediaItem>): List<MediaItem> {
-        val favorites = gramophoneApplication.reader.playlistListFlow.map { it.find { p ->
-            p is Favorite } }.first()?.songList?.map { it.mediaId } ?: emptyList()
+    private fun mapMediaItemsForFavorites(mediaItems: List<MediaItem>): List<MediaItem> {
+        val favorites = gramophoneApplication.favoritesStore.ids.value
         return mediaItems.map { item ->
-            val isHeart = (item.mediaMetadata.userRating as? HeartRating)
-                ?.isHeart == true
+            val isHeart = (item.mediaMetadata.userRating as? HeartRating)?.isHeart == true
             val shouldBeHeart = favorites.contains(item.mediaId)
-            if (isHeart != shouldBeHeart ||
-                item.mediaMetadata.userRating !is HeartRating) {
-                item.buildUpon().setMediaMetadata(item.mediaMetadata.buildUpon().setUserRating(
-                    HeartRating(shouldBeHeart)).build()).build()
+            if (isHeart != shouldBeHeart || item.mediaMetadata.userRating !is HeartRating) {
+                item.buildUpon().setMediaMetadata(
+                    item.mediaMetadata.buildUpon().setUserRating(HeartRating(shouldBeHeart)).build()
+                ).build()
             } else item
         }
     }
-    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-        refreshMediaButtonCustomLayout()
-        if (needsMissingOnDestroyCallWorkarounds()) {
-            handler.post { lastPlayedManager.save() }
-        }
-    }
-
     override fun onRepeatModeChanged(repeatMode: Int) {
         refreshMediaButtonCustomLayout()
-        if (needsMissingOnDestroyCallWorkarounds()) {
-            handler.post { lastPlayedManager.save() }
-        }
+        activeQueuePersistence.saveProgressNow()
     }
 
     override fun onTimelineChanged(timeline: Timeline, reason: @Player.TimelineChangeReason Int) {
         if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) {
-            lastPlayedManager.allowSavingState = true
             lastPlaylistLoaded.complete(Unit)
             refreshMediaButtonCustomLayout()
+            if ((endedWorkaroundPlayer?.mediaItemCount ?: 0) == 0 &&
+                activeQueuePersistence.activeQueueId() != null
+            ) {
+                // The active queue was cleared; no ghost queue may survive in the mini player.
+                activeQueuePersistence.detach()
+            } else if (activeQueuePersistence.activeQueueId() == null &&
+                (endedWorkaroundPlayer?.mediaItemCount ?: 0) > 0
+            ) {
+                // Items can reach the player directly (for example add-to-queue). Adopt them.
+                scope.launch {
+                    val player = endedWorkaroundPlayer ?: return@launch
+                    if (activeQueuePersistence.activeQueueId() == null &&
+                        player.mediaItemCount > 0
+                    ) {
+                        val queue = createDurableQueue(
+                            player.currentTitle ?: getString(R.string.unknown_queue)
+                        )
+                        adoptPlayerQueue(queue)
+                        activeQueuePersistence.saveNowAwait(markModified = false)
+                    }
+                }
+            } else {
+                activeQueuePersistence.saveNow(
+                    markModified = suppressUserModifiedTimelineDepth == 0
+                )
+            }
             if (!computeRgMode(false))
                 throw IllegalStateException("unreachable, mode failed with force=false")
         }
@@ -1730,7 +2481,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             ) {
                 mediaSession!!.setMediaButtonPreferences(
                     it, if (isEmpty) emptyList() else
-                        ImmutableList.of(getRepeatCommand(), getShufflingCommand(), getFavoriteCommand())
+                        ImmutableList.of(getRepeatCommand(), getFavoriteCommand())
                 )
             }
         }
@@ -1783,6 +2534,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             lastKnownPeriodUid = newPosition.periodUid
         }
         scheduleSendingLyrics(false)
+        if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+            // A seek while paused does not otherwise reach the debounced progress saver.
+            activeQueuePersistence.saveProgressNow()
+        }
     }
 
     private fun getActiveNotificationLyric(): String? {
@@ -1987,6 +2742,25 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         startIndex: Int,
         startPositionMs: Long
     ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> = lifecycleScope.future(Dispatchers.Default) {
+        if (mediaItems.size == 1) {
+            val queueId = LibraryTreeLoader.parseQueueMediaId(mediaItems.first().mediaId)
+            if (queueId != null) {
+                playDurableQueue(queueId, C.INDEX_UNSET)
+                val player = endedWorkaroundPlayer
+                val current = if (player != null) {
+                    activeQueueMediaItems(player)
+                } else {
+                    emptyList()
+                }
+                val currentIndex = player?.currentMediaItemIndex?.takeIf { it >= 0 } ?: 0
+                val currentPosition = player?.currentPosition ?: 0L
+                return@future MediaSession.MediaItemsWithStartPosition(
+                    mapMediaItemsForFavorites(current),
+                    currentIndex,
+                    currentPosition,
+                )
+            }
+        }
         val expanded = libraryTreeLoader.addMediaItems(mediaItems).await()
         val mapped = mapMediaItemsForFavorites(expanded.mediaItems)
         MediaSession.MediaItemsWithStartPosition(mapped, expanded.startIndex ?: startIndex, startPositionMs)
