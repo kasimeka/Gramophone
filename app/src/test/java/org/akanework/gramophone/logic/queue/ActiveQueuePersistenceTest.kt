@@ -256,6 +256,82 @@ class ActiveQueuePersistenceTest {
     }
 
     @Test
+    fun aSystemLoadEchoIsConsumedOnceAndIsNotAUserChange() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val created = repository.create(source = null, rows = rows("a", "b", "c"))
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("a"), item("b"), item("c")))
+        val persistence = ActiveQueuePersistence(repository, player, scope = this)
+        persistence.adopt(created)
+
+        persistence.expectSystemEcho()
+        player.items = listOf(item("c"), item("a"), item("b"))
+        assertTrue(persistence.consumeSystemEcho())
+        assertFalse(persistence.consumeSystemEcho())
+    }
+
+    @Test
+    fun anUnexpectedTimelineChangeIsAUserChange() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val created = repository.create(source = null, rows = rows("a", "b"))
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("a"), item("b")))
+        val persistence = ActiveQueuePersistence(repository, player, scope = this)
+        persistence.adopt(created)
+
+        player.items = listOf(item("a"), item("b"), item("c"))
+
+        assertFalse(persistence.consumeSystemEcho())
+    }
+
+    @Test
+    fun aShuffleAppliedAfterTheLoadIsSavedByTheDebouncedFlush() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val created = repository.create(source = null, rows = rows("a", "b", "c"))
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("a"), item("b"), item("c")))
+        val persistence = ActiveQueuePersistence(
+            repository,
+            player,
+            scope = this,
+            structuralDebounceMs = 10L,
+        )
+        persistence.adopt(created)
+
+        persistence.expectSystemEcho()
+        player.items = listOf(item("c"), item("a"), item("b"))
+        persistence.markStructuralDirty(markModified = !persistence.consumeSystemEcho())
+
+        val stored = withTimeout(5_000L) {
+            repository.queue(created.id).first { it?.rows == rows("c", "a", "b") }
+        }
+        assertFalse(stored!!.isModified)
+    }
+
+    @Test
+    fun aManualChangeAfterAnUnexpectedTimelineChangeMarksTheQueueModified() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val created = repository.create(source = null, rows = rows("a", "b"))
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("a"), item("b")))
+        val persistence = ActiveQueuePersistence(
+            repository,
+            player,
+            scope = this,
+            structuralDebounceMs = 10L,
+        )
+        persistence.adopt(created)
+
+        player.items = listOf(item("a"), item("b"), item("c"))
+        persistence.markStructuralDirty(markModified = !persistence.consumeSystemEcho())
+
+        val stored = withTimeout(5_000L) {
+            repository.queue(created.id).first { it?.rows == rows("a", "b", "c") }
+        }
+        assertTrue(stored!!.isModified)
+    }
+
+    @Test
     fun structuralDirtySaveMarksQueueModified() = runBlocking {
         val repository = QueueRepository.inMemory()
         val created = repository.create(source = null, rows = rows("a"))
@@ -269,17 +345,36 @@ class ActiveQueuePersistenceTest {
         )
         persistence.adopt(created)
 
-        val saved = persistence.saveNowAwait(markModified = true)!!
+        persistence.markStructuralDirty(markModified = true)
+        val saved = persistence.saveNowAwait()!!
         assertTrue(saved.isModified)
         val stored = repository.queue(created.id).first()!!
         assertTrue(stored.isModified)
     }
 
     @Test
+    fun saveNowAwaitWithMarkModifiedTrueMarksQueueModified() = runBlocking {
+        val repository = QueueRepository.inMemory()
+        val created = repository.create(
+            source = QueueSource(QueueSourceKind.ALBUM, "1", "Album"),
+            rows = rows("a", "b"),
+        )
+        assertFalse(created.isModified)
+        repository.setActiveQueue(created.id)
+        val player = FakePlayer(items = listOf(item("b"), item("a")), position = 1_000L)
+        val persistence = ActiveQueuePersistence(repository, player, scope = this)
+        persistence.adopt(created)
+
+        val saved = persistence.saveNowAwait(markModified = true)!!
+        assertTrue(saved.isModified)
+        assertEquals(rows("b", "a"), saved.rows)
+    }
+
+    @Test
     fun machineShufflePreservesPurityAndUpdatesMirroredRows() = runBlocking {
         val repository = QueueRepository.inMemory()
         val source = QueueSource(QueueSourceKind.FAVOURITES, "favourites", "Favourites")
-        val created = repository.create(source = source, rows = rows("a", "b", "c"))
+        val created = repository.create(source = source, rows = rows("a", "b", "c"), title = "Favorites")
         assertFalse(created.isModified)
         repository.setActiveQueue(created.id)
         val player = FakePlayer(items = listOf(item("c"), item("a"), item("b")), position = 0L)
@@ -300,7 +395,7 @@ class ActiveQueuePersistenceTest {
     fun syncMirroredRowsFromPlayerUpdatesMirroredRowsWithoutMarkingModified() = runBlocking {
         val repository = QueueRepository.inMemory()
         val source = QueueSource(QueueSourceKind.ALL_SONGS, "all_songs", "Songs")
-        val created = repository.create(source = source, rows = rows("a", "b"))
+        val created = repository.create(source = source, rows = rows("a", "b"), title = "Songs")
         repository.setActiveQueue(created.id)
         val player = FakePlayer(items = listOf(item("b"), item("a")), position = 0L)
         val persistence = ActiveQueuePersistence(repository, player, scope = this)

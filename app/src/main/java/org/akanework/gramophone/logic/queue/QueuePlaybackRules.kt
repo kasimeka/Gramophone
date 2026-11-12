@@ -106,6 +106,19 @@ object QueuePlaybackRules {
     }
 
     /**
+     * Resolves the target row to scroll to when navigating to or requesting the now-playing track
+     * in a queue detail view. Only valid indices for the active queue are returned.
+     */
+    fun nowPlayingScrollTarget(
+        rowCount: Int,
+        isActive: Boolean,
+        currentRow: Int?,
+    ): Int? {
+        if (!isActive || rowCount <= 0) return null
+        return currentRow?.takeIf { it in 0..<rowCount }
+    }
+
+    /**
      * A library play creates a queue from the complete source and starts at the first row, or at
      * the tapped row for a song tap. Null means there is nothing to play.
      */

@@ -276,7 +276,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     private var proxy: BtCodecInfo.Companion.Proxy? = null
     private val scope = CoroutineScope(Dispatchers.Main)
     private val queueResolutionMutex = Mutex()
-    private var suppressUserModifiedTimelineDepth = 0
     private val lastPlaylistLoaded = CompletableDeferred<Unit>()
     private val lyricsFetcher = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
     private val bitrateFetcher = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
@@ -963,12 +962,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         (0 until player.exoPlayer.mediaItemCount).map { player.exoPlayer.getMediaItemAt(it) }
 
     private inline fun <T> withoutMarkingUserModified(block: () -> T): T {
-        suppressUserModifiedTimelineDepth++
-        try {
-            return block()
-        } finally {
-            suppressUserModifiedTimelineDepth--
-        }
+        return block().also { activeQueuePersistence.expectSystemEcho() }
     }
 
     /** Create a fresh durable queue for a library play and make it active. */
@@ -2435,7 +2429,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 // Playlist changes include in-place moves/reorders; debounce persistence off the
                 // interaction path. Checkpoints (queue switch, stop/destroy) still flush explicitly.
                 activeQueuePersistence.markStructuralDirty(
-                    markModified = suppressUserModifiedTimelineDepth == 0
+                    markModified = !activeQueuePersistence.consumeSystemEcho()
                 )
             }
             if (!computeRgMode(false))

@@ -120,6 +120,17 @@ class PlayerQueueOrderTarget(
     }
 
     /**
+     * Move a row in place without rebuilding the timeline. This preserves playback continuity and
+     * avoids the heavier state churn of a full [setMediaItems] replacement for simple drags.
+     */
+    fun moveDisplayedRow(from: Int, to: Int) {
+        require(from in 0..<size) { "position $from is outside displayed order" }
+        require(to in 0..<size) { "position $to is outside displayed order" }
+        if (from == to) return
+        exoPlayer.moveMediaItem(from, to)
+    }
+
+    /**
      * Restore the order captured before an edit. [order] holds the media-item order before the
      * edit and [capturedItems] the media items at that time; items may have shifted since then, so
      * rows are matched back by identity. Returns false, changing nothing, when the captured edit

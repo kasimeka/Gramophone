@@ -236,6 +236,53 @@ class QueuePlaybackRulesTest {
     }
 
     @Test
+    fun nowPlayingScrollTargetReturnsIndexOnlyForActiveQueueWithValidRow() {
+        assertEquals(
+            2,
+            QueuePlaybackRules.nowPlayingScrollTarget(
+                rowCount = 5,
+                isActive = true,
+                currentRow = 2,
+            )
+        )
+        assertNull(
+            QueuePlaybackRules.nowPlayingScrollTarget(
+                rowCount = 5,
+                isActive = false,
+                currentRow = 2,
+            )
+        )
+        assertNull(
+            QueuePlaybackRules.nowPlayingScrollTarget(
+                rowCount = 5,
+                isActive = true,
+                currentRow = 5,
+            )
+        )
+        assertNull(
+            QueuePlaybackRules.nowPlayingScrollTarget(
+                rowCount = 5,
+                isActive = true,
+                currentRow = -1,
+            )
+        )
+        assertNull(
+            QueuePlaybackRules.nowPlayingScrollTarget(
+                rowCount = 0,
+                isActive = true,
+                currentRow = 0,
+            )
+        )
+        assertNull(
+            QueuePlaybackRules.nowPlayingScrollTarget(
+                rowCount = 5,
+                isActive = true,
+                currentRow = null,
+            )
+        )
+    }
+
+    @Test
     fun libraryPlayStartsAtTheFirstOrTappedRowWithoutTruncating() {
         assertEquals(0, QueuePlaybackRules.libraryPlayStartRow(5))
         assertEquals(3, QueuePlaybackRules.libraryPlayStartRow(5, tappedRow = 3))

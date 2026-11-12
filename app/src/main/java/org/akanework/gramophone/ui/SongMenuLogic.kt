@@ -18,7 +18,10 @@
 package org.akanework.gramophone.ui
 
 import android.app.Activity
+import android.content.ContentUris
 import android.content.Context
+import android.net.Uri
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.ShareCompat
@@ -31,6 +34,7 @@ import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.getFile
 import org.akanework.gramophone.logic.gramophoneApplication
+import org.akanework.gramophone.logic.mediaStoreId
 import org.akanework.gramophone.logic.queue.QueuePlaybackRules
 import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.ui.components.AddToQueueSheet
@@ -41,6 +45,7 @@ import org.akanework.gramophone.ui.fragments.GeneralSubFragment
 import uk.akane.libphonograph.items.albumId
 import uk.akane.libphonograph.items.artistId
 import uk.akane.libphonograph.manipulator.ItemManipulator
+import java.io.File
 
 /** Context for the regular song overflow menu (Songs tab, queue detail rows, etc.). */
 data class SongMenuContext(
@@ -66,7 +71,7 @@ object SongMenuLogic {
     fun canGoToAlbum(item: MediaItem?): Boolean = item?.mediaMetadata?.albumId != null
     fun canGoToArtist(item: MediaItem?): Boolean = item?.mediaMetadata?.artistId != null
     fun canDelete(item: MediaItem?): Boolean =
-        item?.getFile() != null && item.mediaId.toLongOrNull() != null
+        item != null && (item.mediaStoreId() != null || item.getFile() != null)
     fun canShare(item: MediaItem?): Boolean =
         item?.requestMetadata?.mediaUri != null || item?.localConfiguration?.uri != null
 
@@ -171,26 +176,137 @@ object SongMenuLogic {
         else -> false
     }
 
-    fun confirmDelete(activity: MainActivity, item: MediaItem) {
-        val file = item.getFile() ?: return
-        val mediaStoreId = item.mediaId.toLongOrNull() ?: return
-        CoroutineScope(Dispatchers.Default).launch {
-            val res = ItemManipulator.deleteSongs(activity, listOf(file to mediaStoreId))
-            if (res != null) {
-                withContext(Dispatchers.Main) {
-                    MaterialAlertDialogBuilder(activity)
-                        .setTitle(R.string.delete)
-                        .setMessage(
-                            activity.getString(
-                                R.string.delete_really,
-                                item.mediaMetadata.title ?: activity.getString(R.string.unknown_title),
-                            ),
-                        )
-                        .setPositiveButton(R.string.delete) { _, _ -> res.invoke() }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
+    fun resolveMediaStoreId(context: Context?, item: MediaItem): Long? {
+        item.mediaStoreId()?.let { return it }
+        if (context != null) {
+            val file = resolveFile(context, item)
+            if (file != null && file.path.isNotEmpty()) {
+                try {
+                    context.contentResolver.query(
+                        MediaStore.Audio.Media.getContentUri("external"),
+                        arrayOf(MediaStore.Audio.Media._ID),
+                        "${MediaStore.Audio.Media.DATA} = ?",
+                        arrayOf(file.absolutePath),
+                        null,
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val idx = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
+                            if (idx >= 0) return cursor.getLong(idx)
+                        }
+                    }
+                } catch (_: Exception) {
                 }
             }
+        }
+        return null
+    }
+
+    fun resolveFile(context: Context?, item: MediaItem): File? {
+        item.getFile()?.let { return it }
+        val uri = item.localConfiguration?.uri ?: item.requestMetadata.mediaUri
+        if (uri != null) {
+            if (uri.scheme == "file") {
+                uri.path?.let { if (it.isNotEmpty()) return File(it) }
+            } else if (uri.scheme == null && uri.path?.startsWith("/") == true) {
+                return File(uri.path!!)
+            }
+            if (context != null && uri.scheme == "content") {
+                try {
+                    context.contentResolver.query(
+                        uri,
+                        arrayOf(MediaStore.MediaColumns.DATA),
+                        null,
+                        null,
+                        null,
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val idx = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
+                            if (idx >= 0) {
+                                val path = cursor.getString(idx)
+                                if (!path.isNullOrEmpty()) return File(path)
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+        val storeId = item.mediaStoreId()
+        if (context != null && storeId != null) {
+            try {
+                val contentUri = ContentUris.withAppendedId(
+                    MediaStore.Audio.Media.getContentUri("external"),
+                    storeId,
+                )
+                context.contentResolver.query(
+                    contentUri,
+                    arrayOf(MediaStore.Audio.Media.DATA),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
+                        if (idx >= 0) {
+                            val path = cursor.getString(idx)
+                            if (!path.isNullOrEmpty()) return File(path)
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+        return null
+    }
+
+    fun confirmDelete(activity: MainActivity, item: MediaItem) {
+        val mediaStoreId = resolveMediaStoreId(activity, item)
+        val file = resolveFile(activity, item)
+        if (mediaStoreId == null && (file == null || !file.exists())) {
+            Toast.makeText(activity, R.string.delete_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (mediaStoreId != null) {
+            val targetFile = file ?: File("")
+            CoroutineScope(Dispatchers.Default).launch {
+                val res = ItemManipulator.deleteSongs(activity, listOf(targetFile to mediaStoreId))
+                if (res != null) {
+                    withContext(Dispatchers.Main) {
+                        MaterialAlertDialogBuilder(activity)
+                            .setTitle(R.string.delete)
+                            .setMessage(
+                                activity.getString(
+                                    R.string.delete_really,
+                                    item.mediaMetadata.title ?: activity.getString(R.string.unknown_title),
+                                ),
+                            )
+                            .setPositiveButton(R.string.delete) { _, _ -> res.invoke() }
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show()
+                    }
+                }
+            }
+        } else if (file != null && file.exists()) {
+            MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.delete)
+                .setMessage(
+                    activity.getString(
+                        R.string.delete_really,
+                        item.mediaMetadata.title ?: activity.getString(R.string.unknown_title),
+                    ),
+                )
+                .setPositiveButton(R.string.delete) { _, _ ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val deleted = file.delete()
+                        withContext(Dispatchers.Main) {
+                            if (!deleted) {
+                                Toast.makeText(activity, R.string.delete_failed, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
     }
 

@@ -544,8 +544,16 @@ class FullBottomSheet
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
             val activeId = activity.gramophoneApplication.queueRepository.lastActiveQueue.value?.id
             if (activeId != null) {
-                activity.startFragment(QueueDetailFragment()) {
-                    putString(QueueDetailFragment.ARG_QUEUE_ID, activeId.toString())
+                val currentFragment = activity.supportFragmentManager.findFragmentById(R.id.container)
+                    ?.takeIf { it.isAdded && !it.isHidden }
+                    ?: activity.supportFragmentManager.fragments.lastOrNull { it.isAdded && !it.isHidden }
+                if (currentFragment is QueueDetailFragment && currentFragment.queueId == activeId) {
+                    currentFragment.requestScrollToNowPlaying()
+                } else {
+                    activity.startFragment(QueueDetailFragment()) {
+                        putString(QueueDetailFragment.ARG_QUEUE_ID, activeId.toString())
+                        putBoolean(QueueDetailFragment.ARG_SCROLL_TO_CURRENT, true)
+                    }
                 }
             } else {
                 val viewPager = activity.supportFragmentManager.fragments

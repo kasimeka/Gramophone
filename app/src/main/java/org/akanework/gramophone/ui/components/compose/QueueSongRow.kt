@@ -118,7 +118,7 @@ fun QueueSongRow(
     SwipeToDismissBox(
         state = dismissState,
         enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = true,
+        enableDismissFromEndToStart = !isDragging,
         modifier = Modifier
             .zIndex(if (isDragging) 1f else 0f)
             .graphicsLayer { translationY = dragTranslation },

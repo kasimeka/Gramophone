@@ -29,8 +29,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.akanework.gramophone.logic.utils.MediaRowCodec
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * The player fields the active-queue mirror needs, so the mirror can be tested without ExoPlayer.
@@ -65,11 +67,17 @@ class ActiveQueuePersistence(
     private val scope: CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
     private val progressIntervalMs: Long = 1_000L,
+    private val structuralDebounceMs: Long = 500L,
 ) {
     private val mutex = Mutex()
     private var activeId: UUID? = null
     private var lastMirroredRows: List<String> = emptyList()
+    private var pendingSystemEchoes = 0
     private var progressJob: Job? = null
+    private var structuralSaveJob: Job? = null
+    private val structuralRevision = AtomicLong(0L)
+    private var persistedStructuralRevision = 0L
+    private var dirtyStructuralRevision = 0L
     private var pendingUserModification = false
 
     fun activeQueueId(): UUID? = activeId
@@ -96,7 +104,11 @@ class ActiveQueuePersistence(
 
     /** Clear the durable last-active marker, for example when the active queue is cleared. */
     fun detach() {
+        structuralSaveJob?.cancel()
+        structuralSaveJob = null
         pendingUserModification = false
+        dirtyStructuralRevision = 0L
+        persistedStructuralRevision = structuralRevision.get()
         activeId = null
         lastMirroredRows = emptyList()
         stopProgressSaving(save = false)
@@ -107,28 +119,56 @@ class ActiveQueuePersistence(
     }
 
     /**
-     * Align [lastMirroredRows] with the player's current items after a programmatic queue load.
-     * Never marks the queue as user-modified.
+     * Cancel any pending debounced structural save and align [lastMirroredRows] with the player's
+     * current items after a programmatic queue load. Never marks the queue as user-modified.
      */
-    fun syncMirroredRowsFromPlayer() {
+    suspend fun syncMirroredRowsFromPlayer() {
+        structuralSaveJob?.cancel()
+        structuralSaveJob = null
         pendingUserModification = false
-        lastMirroredRows = snapshot()?.rows ?: emptyList()
+        mutex.withLock { lastMirroredRows = snapshot()?.rows ?: emptyList() }
+    }
+
+    /** Record that the app is about to load items into the player, so its timeline echo is system. */
+    fun expectSystemEcho() {
+        pendingSystemEchoes++
+    }
+
+    /** Whether a timeline change is the echo of an app load (true) or a manual change (false). */
+    fun consumeSystemEcho(): Boolean {
+        if (pendingSystemEchoes == 0) return false
+        pendingSystemEchoes--
+        return true
+    }
+
+    /** Mark the active queue's rows/order as changed and persist them off the interaction path. */
+    fun markStructuralDirty(markModified: Boolean = false) {
+        if (markModified) pendingUserModification = true
+        val revision = structuralRevision.incrementAndGet()
+        dirtyStructuralRevision = revision
+        if (structuralSaveJob?.isActive == true) return
+        structuralSaveJob = scope.launch {
+            delay(structuralDebounceMs)
+            flushStructural()
+        }
+    }
+
+    private suspend fun flushStructural() {
+        captureAndPersist(progress = false)
     }
 
     /** Mirror the player's current rows, bookmark, and repeat now. */
     fun saveNow(markModified: Boolean = false) {
         if (markModified) pendingUserModification = true
-        val snapshot = snapshot() ?: return
-        val id = activeId ?: return
-        scope.launch { persist(id, snapshot) }
+        scope.launch { saveNowAwait(markModified) }
     }
 
-    /** Awaitable variant used before switching queues. */
+    /** Awaitable variant used before switching queues and other durability checkpoints. */
     suspend fun saveNowAwait(markModified: Boolean = false): Queue? {
         if (markModified) pendingUserModification = true
-        val snapshot = snapshot() ?: return null
-        val id = activeId ?: return null
-        return persist(id, snapshot)
+        structuralSaveJob?.cancel()
+        structuralSaveJob = null
+        return captureAndPersist(progress = false)
     }
 
     /**
@@ -136,28 +176,26 @@ class ActiveQueuePersistence(
      * queue, so write the cleared rows explicitly. Takes the queue identity because the timeline
      * listener may detach the active marker before this runs.
      */
-    suspend fun saveClearedNow(queueUuid: UUID): Queue? = mutex.withLock {
+    suspend fun saveClearedNow(queueUuid: UUID): Queue? {
+        structuralSaveJob?.cancel()
+        structuralSaveJob = null
         pendingUserModification = false
-        val saved = repository.mutate(queueUuid) {
-            it.copy(rows = emptyList(), bookmark = QueueBookmark(), isModified = true)
+        return mutex.withLock {
+            val saved = repository.mutate(queueUuid) {
+                it.copy(rows = emptyList(), bookmark = QueueBookmark(), isModified = true)
+            }
+            if (saved != null && activeId == queueUuid) lastMirroredRows = emptyList()
+            saved
         }
-        if (saved != null && activeId == queueUuid) lastMirroredRows = emptyList()
-        saved
     }
 
     /** Save the debounced playback position and repeat mode now. */
     fun saveProgressNow() {
-        val snapshot = snapshot() ?: return
-        val id = activeId ?: return
-        scope.launch { persistProgress(id, snapshot) }
+        scope.launch { captureAndPersist(progress = true) }
     }
 
     /** Awaitable progress save, used by tests before switching queues. */
-    internal suspend fun saveProgressNowAwait(): Queue? {
-        val snapshot = snapshot() ?: return null
-        val id = activeId ?: return null
-        return persistProgress(id, snapshot)
-    }
+    internal suspend fun saveProgressNowAwait(): Queue? = captureAndPersist(progress = true)
 
     /** Start the periodic position save while playback runs. */
     fun startProgressSaving() {
@@ -165,9 +203,7 @@ class ActiveQueuePersistence(
         progressJob = scope.launch {
             while (isActive) {
                 delay(progressIntervalMs)
-                val snapshot = snapshot() ?: continue
-                val id = activeId ?: continue
-                persistProgress(id, snapshot)
+                captureAndPersist(progress = true)
             }
         }
     }
@@ -192,29 +228,44 @@ class ActiveQueuePersistence(
         )
     }
 
-    private fun snapshot(): Snapshot? {
+    /**
+     * Read the player on the calling (application) thread, then encode the rows off it: encoding a
+     * large queue on the main thread would stall the UI every progress tick.
+     */
+    private suspend fun snapshot(): Snapshot? {
         val count = player.mediaItemCount()
         if (count <= 0) return null
-        val rows = (0 until count).map { MediaRowCodec.encode(player.getMediaItemAt(it)) }
-        return Snapshot(
-            rows = rows,
-            bookmark = QueueRestoreRules.bookmarkFromPlayer(
-                row = player.currentMediaItemIndex(),
-                positionMs = player.currentPosition(),
-                ended = player.playbackState() == Player.STATE_ENDED,
-                rowCount = count,
-            ),
-            repeatMode = QueueRepeatMode.fromValue(player.repeatMode()),
+        val items = (0 until count).map { player.getMediaItemAt(it) }
+        val bookmark = QueueRestoreRules.bookmarkFromPlayer(
+            row = player.currentMediaItemIndex(),
+            positionMs = player.currentPosition(),
+            ended = player.playbackState() == Player.STATE_ENDED,
+            rowCount = count,
         )
+        val repeatMode = QueueRepeatMode.fromValue(player.repeatMode())
+        val rows = withContext(Dispatchers.Default) { items.map(MediaRowCodec::encode) }
+        return Snapshot(rows = rows, bookmark = bookmark, repeatMode = repeatMode)
     }
 
-    private suspend fun persist(id: UUID, snapshot: Snapshot): Queue? = mutex.withLock {
+    /**
+     * Capture the player and persist it as one step under the mutex. Capturing outside the lock
+     * let an earlier snapshot, still encoding, overwrite a newer save that finished first.
+     */
+    private suspend fun captureAndPersist(progress: Boolean): Queue? = mutex.withLock {
+        val id = activeId ?: return@withLock null
+        val snapshot = snapshot() ?: return@withLock null
+        if (progress) persistProgressLocked(id, snapshot) else persistLocked(id, snapshot)
+    }
+
+    private suspend fun persistLocked(id: UUID, snapshot: Snapshot): Queue? {
         // A stale snapshot can arrive after the active queue was cleared; never resurrect rows
         // that the user just removed.
-        if (player.mediaItemCount() == 0 && snapshot.rows.isNotEmpty()) return@withLock null
+        if (activeId != id) return null
+        if (player.mediaItemCount() == 0 && snapshot.rows.isNotEmpty()) return null
+        val revisionAtSnapshot = structuralRevision.get()
         val markModified = pendingUserModification
         pendingUserModification = false
-        if (QueueRestoreRules.rowsChanged(lastMirroredRows, snapshot.rows)) {
+        return if (QueueRestoreRules.rowsChanged(lastMirroredRows, snapshot.rows)) {
             repository.mutate(id) {
                 it.copy(
                     rows = snapshot.rows,
@@ -222,17 +273,27 @@ class ActiveQueuePersistence(
                     repeatMode = snapshot.repeatMode,
                     isModified = if (markModified) true else it.isModified,
                 )
-            }?.also { lastMirroredRows = snapshot.rows }
+            }?.also {
+                lastMirroredRows = snapshot.rows
+                persistedStructuralRevision = revisionAtSnapshot
+                if (dirtyStructuralRevision <= revisionAtSnapshot) {
+                    dirtyStructuralRevision = revisionAtSnapshot
+                }
+            }
         } else {
-            saveProgressLocked(id, snapshot)
+            saveProgressLocked(id, snapshot)?.also {
+                if (dirtyStructuralRevision <= revisionAtSnapshot) {
+                    dirtyStructuralRevision = revisionAtSnapshot
+                }
+            }
         }
     }
 
-    private suspend fun persistProgress(id: UUID, snapshot: Snapshot) = mutex.withLock {
+    private suspend fun persistProgressLocked(id: UUID, snapshot: Snapshot): Queue? {
         // A progress tick can race a queue switch: the player may still hold the outgoing rows
         // after the incoming queue became active. Never write those rows' position elsewhere.
-        if (QueueRestoreRules.rowsChanged(lastMirroredRows, snapshot.rows)) return@withLock null
-        saveProgressLocked(id, snapshot)
+        if (QueueRestoreRules.rowsChanged(lastMirroredRows, snapshot.rows)) return null
+        return saveProgressLocked(id, snapshot)
     }
 
     private suspend fun saveProgressLocked(id: UUID, snapshot: Snapshot): Queue? =

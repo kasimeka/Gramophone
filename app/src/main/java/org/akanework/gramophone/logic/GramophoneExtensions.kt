@@ -21,6 +21,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ContentResolver
+import android.content.ContentUris
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -124,7 +125,17 @@ fun Player.playOrPause() {
 }
 
 fun MediaItem.getFile(): File? {
-    return mediaMetadata.extras?.getString(EXTRA_FILE)?.let { File(it) }
+    val extraPath = mediaMetadata.extras?.getString(EXTRA_FILE)
+    if (!extraPath.isNullOrEmpty()) return File(extraPath)
+    val uri = localConfiguration?.uri ?: requestMetadata.mediaUri
+    if (uri != null) {
+        if (uri.scheme == "file") {
+            uri.path?.let { if (it.isNotEmpty()) return File(it) }
+        } else if (uri.scheme == null && uri.path?.startsWith("/") == true) {
+            return File(uri.path!!)
+        }
+    }
+    return null
 }
 
 fun String.toMediaStoreId(): Long? {
@@ -133,8 +144,32 @@ fun String.toMediaStoreId(): Long? {
     else null
 }
 
+fun MediaItem.mediaStoreId(): Long? {
+    mediaId.toMediaStoreId()?.let { return it }
+    mediaId.toLongOrNull()?.let { return it }
+    val uri = localConfiguration?.uri ?: requestMetadata.mediaUri
+    if (uri != null) {
+        try {
+            if (uri.scheme == "content") {
+                val parsed = ContentUris.parseId(uri)
+                if (parsed >= 0) return parsed
+            }
+        } catch (_: Exception) {
+        }
+    }
+    try {
+        val parsed = Uri.parse(mediaId)
+        if (parsed.scheme == "content") {
+            val id = ContentUris.parseId(parsed)
+            if (id >= 0) return id
+        }
+    } catch (_: Exception) {
+    }
+    return null
+}
+
 fun MediaItem.requireMediaStoreId(): Long {
-    return mediaId.toMediaStoreId()
+    return mediaStoreId()
         ?: throw IllegalArgumentException("Media item with ID $mediaId doesn't appear to be media store item")
 }
 

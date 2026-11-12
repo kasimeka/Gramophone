@@ -213,6 +213,7 @@
     <string name="settings_contributors_click">%s (click for more!)</string>
     <!-- Accessibility name for bars animation on a song in a list, showing this is the playling song -->
     <string name="now_playing">Now playing</string>
+    <string name="scroll_to_now_playing">Scroll to now playing</string>
     <!-- In appearance settings, change between album based color and system wide color. Subtext -->
     <string name="settings_content_based_color_summary">Enable album based color generation</string>
     <!-- In appearance settings, change between album based color and system wide color. Title -->
