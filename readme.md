@@ -13,6 +13,35 @@ A sane music player built with media3 and the Material Design library that is fo
 [<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">](https://apt.izzysoft.de/fdroid/index/apk/org.akanework.gramophone)
 [<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="80">](https://play.google.com/store/apps/details?id=org.akanework.gramophone&utm_source=github.com&utm_campaign=readme)
 
+## Changes from upstream
+This fork reworks queues and adds a few things on top of upstream beta.
+
+- Queues tab
+  - App UX remodeled after multiqueues as the main interaction surface
+  - Keep several named queues, each with its own songs, position, and repeat mode
+  - One queue is active at a time; switch between queues without losing your place
+  - Queues are saved across restarts, including their songs, position, and repeat mode
+  - Favourites and recently added are pinned at the top of the Queues tab
+  - Shuffle-play from the Queues tab starts a random song from the queue
+  - Queues are exported as m3u8 playlists, and m3u8 playlists can be imported as queues
+
+- Queue details
+  - Rename, delete, reorder, and undo edits on any queue
+  - Sort a queue by name, artist, album, date, or duration
+  - Add all of a queue's songs to another queue with one button
+  - Queues accept duplicate songs, with a one-click option to clean them up
+  - Shuffle reorders a queue in place and keeps the currently playing song first
+  - After a shuffle, or after undoing one, the list scrolls to the song that's playing
+
+- Repeat
+  - The repeat button opens a picker for off, one, all, and "Shuffle at end, then repeat" which reshuffles and keeps playing after the queue ends.
+
+
+- Interface
+  - Playlists were completely replaced by queues
+  - The now-playing song is highlighted the same way in every list
+  - The mini player stays pinned at the bottom of the screen
+
 ## Features
 - Light, stable, and minimalistic
 - Up-to-date Material 3 design and theme
