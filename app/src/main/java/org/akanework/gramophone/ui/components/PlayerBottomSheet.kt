@@ -398,20 +398,16 @@ class PlayerBottomSheet private constructor(
         val miniHeight = previewPlayer.height
         if (miniHeight > 0 && (previewLaidOut || !previewPlayer.isLayoutRequested)) {
             standardBottomSheetBehavior?.setPeekHeight(
-                BottomTabBarLayout.peekHeight(miniHeight, laidOutBottomTabBarHeight()), false
+                BottomTabBarLayout.peekHeight(miniHeight, bottomTabBarHeight()), false
             )
         }
         bottomPadding.intValue = getBottomPadding()
     }
 
     /** The tab bar height as it is drawn, so the resting position matches the content exactly. */
-    private fun laidOutBottomTabBarHeight(): Int {
-        if (!bottomTabsEnabled || bottomTabBar.visibility == GONE) return 0
-        return if (bottomTabBar.height > 0) bottomTabBar.height else bottomTabBarHeight()
-    }
-
     private fun bottomTabBarHeight(): Int {
         if (!bottomTabsEnabled || bottomTabBar.visibility == GONE) return 0
+        if (bottomTabBar.height > 0) return bottomTabBar.height
         val w = width
         if (w > 0) {
             bottomTabBar.measure(
@@ -447,7 +443,7 @@ class PlayerBottomSheet private constructor(
     fun getBottomPadding() = BottomTabBarLayout.contentBottomPadding(
         sheetVisible = standardBottomSheetBehavior != null && actuallyVisible,
         miniPlayerHeight = previewPlayer.height,
-        tabBarHeight = laidOutBottomTabBarHeight(),
+        tabBarHeight = bottomTabBarHeight(),
     )
 
     private fun dispatchBottomSheetInsets() {
