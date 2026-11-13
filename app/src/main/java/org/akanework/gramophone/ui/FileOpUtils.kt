@@ -73,6 +73,10 @@ fun getAdapterType(adapter: AdapterFragment.BaseInterface<*>) =
             LibraryAdapterTypes.CURRENT_QUEUE
         }
 
+        adapter is SongAdapter && adapter.isSubFragment == R.id.playlist -> {
+            LibraryAdapterTypes.PLAYLIST_DYNAMIC
+        }
+
         else -> {
             throw IllegalStateException()
         }

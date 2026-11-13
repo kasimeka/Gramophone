@@ -18,6 +18,7 @@
 package org.akanework.gramophone.ui.components
 
 import android.widget.ImageView
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
@@ -30,8 +31,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -41,6 +44,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -84,6 +88,16 @@ import java.util.UUID
 
 data class DragQueue(val key: Long, val queue: Queue)
 
+data class PinnedQueueCollection(
+    val id: String,
+    val title: String,
+    val songCount: Int,
+    @DrawableRes val iconRes: Int,
+    val onClick: () -> Unit,
+    val onPlay: () -> Unit,
+    val onShuffle: () -> Unit,
+)
+
 private class QueueListDragState {
     var draggingKey by mutableStateOf<Long?>(null)
     var dragStartIndex by mutableStateOf<Int?>(null)
@@ -101,6 +115,7 @@ fun QueueListContent(
     isPlaying: Boolean,
     onQueueClick: (Queue) -> Unit,
     modifier: Modifier = Modifier,
+    pinnedCollections: List<PinnedQueueCollection> = emptyList(),
     activeCurrentRow: Int? = null,
     listState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(bottom = 88.dp),
@@ -109,13 +124,14 @@ fun QueueListContent(
     onMoveQueue: ((from: Int, to: Int) -> Unit)? = null,
 ) {
     Box(modifier.fillMaxSize()) {
-        if (queues.isEmpty()) {
+        if (queues.isEmpty() && pinnedCollections.isEmpty()) {
             Text(
                 text = stringResource(R.string.queue_list_empty),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.align(Alignment.Center),
             )
         } else {
+            val headerItemCount = if (pinnedCollections.isNotEmpty()) pinnedCollections.size + 1 else 0
             val scope = rememberCoroutineScope()
             var queueKeySeed by remember { mutableLongStateOf(0L) }
             var displayQueues by remember {
@@ -158,7 +174,7 @@ fun QueueListContent(
                     deltaY = deltaY,
                     rowHeightPx = rowHeightPx,
                     isScrollCompensation = isScrollCompensation,
-                    firstVisibleItemIndex = listState.firstVisibleItemIndex,
+                    firstVisibleItemIndex = listState.firstVisibleItemIndex - headerItemCount,
                     firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
                 )
 
@@ -167,7 +183,7 @@ fun QueueListContent(
                     displayQueues = step.state.items
                     if (step.requiresScrollAnchorReset) {
                         scope.launch {
-                            listState.scrollToItem(0, 0)
+                            listState.scrollToItem(headerItemCount, 0)
                         }
                     }
                 }
@@ -214,6 +230,33 @@ fun QueueListContent(
                     .fillMaxSize()
                     .nestedScroll(rememberNestedScrollInteropConnection()),
             ) {
+                if (pinnedCollections.isNotEmpty()) {
+                    items(items = pinnedCollections, key = { "pinned_${it.id}" }) { collection ->
+                        PinnedCollectionRow(item = collection)
+                    }
+                    item(key = "pinned_divider") {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                        )
+                    }
+                }
+                if (displayQueues.isEmpty()) {
+                    item(key = "queues_empty") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 48.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.queue_list_empty),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
                 itemsIndexed(items = displayQueues, key = { _, item -> item.key }) { index, item ->
                     val queue = item.queue
                     val isActive = queue.id == activeQueueId
@@ -302,6 +345,78 @@ fun QueueListContent(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PinnedCollectionRow(
+    item: PinnedQueueCollection,
+    modifier: Modifier = Modifier,
+) {
+    val songCount = LocalContext.current.resources
+        .getQuantityString(R.plurals.songs, item.songCount, item.songCount)
+    val canPlay = item.songCount > 0
+    val disabledTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = item.onClick)
+            .padding(start = 20.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .padding(end = 14.dp)
+                .size(44.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(item.iconRes),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 8.dp),
+        ) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = songCount,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(onClick = item.onPlay, enabled = canPlay) {
+            Icon(
+                painter = painterResource(R.drawable.ic_play_arrow),
+                contentDescription = stringResource(R.string.play),
+                tint = if (canPlay) MaterialTheme.colorScheme.primary else disabledTint,
+                modifier = Modifier.size(26.dp),
+            )
+        }
+        IconButton(onClick = item.onShuffle, enabled = canPlay) {
+            Icon(
+                imageVector = Icons.Rounded.Shuffle,
+                contentDescription = stringResource(R.string.shuffle),
+                tint = if (canPlay) MaterialTheme.colorScheme.primary else disabledTint,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }

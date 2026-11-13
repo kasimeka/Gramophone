@@ -149,6 +149,8 @@ import org.akanework.gramophone.logic.queue.QueuePlaybackAction
 import org.akanework.gramophone.logic.queue.QueuePlaybackRules
 import org.akanework.gramophone.logic.queue.QueuePlaybackState
 import org.akanework.gramophone.logic.queue.QueueRepository
+import org.akanework.gramophone.logic.queue.QueueSource
+import org.akanework.gramophone.logic.queue.QueueSourceKind
 import org.akanework.gramophone.logic.renameQueue
 import org.akanework.gramophone.logic.reorderQueue
 import org.akanework.gramophone.logic.setMediaItemsWithTitle
@@ -162,12 +164,15 @@ import org.akanework.gramophone.ui.NowPlayingPresentation
 import org.akanework.gramophone.ui.SongMenuLogic
 import org.akanework.gramophone.ui.adapters.Sorter
 import org.akanework.gramophone.ui.components.AddToQueueSheet
+import org.akanework.gramophone.ui.components.PinnedQueueCollection
 import org.akanework.gramophone.ui.components.QueueListContent
 import org.akanework.gramophone.ui.components.compose.QueueSongRow
 import org.akanework.gramophone.ui.fragments.ArtistSubFragment
 import org.akanework.gramophone.ui.fragments.DetailDialogFragment
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment
 import org.akanework.gramophone.ui.pureDark
+import uk.akane.libphonograph.dynamicitem.Favorite
+import uk.akane.libphonograph.dynamicitem.RecentlyAdded
 import uk.akane.libphonograph.items.albumId
 import uk.akane.libphonograph.items.artistId
 import java.util.UUID
@@ -201,10 +206,108 @@ private fun QueuesScreen(
     val repository = remember { activity.gramophoneApplication.queueRepository }
     val queues by repository.queues.collectAsState(initial = emptyList())
     val activeQueue by repository.lastActiveQueue.collectAsState()
+    val favorite by activity.reader.favoriteFlow.collectAsState(initial = null)
+    val recentlyAdded by activity.reader.recentlyAddedFlow.collectAsState(initial = null)
+    val favouritesTitle = stringResource(R.string.playlist_favourite)
+    val recentlyAddedTitle = stringResource(R.string.recently_added)
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var isPlaying by remember { mutableStateOf(activity.getPlayer()?.isPlaying == true) }
     var activeCurrentRow by remember { mutableStateOf(activity.getPlayer()?.currentMediaItemIndex?.takeIf { it >= 0 }) }
+
+    fun playDynamicCollection(
+        songs: List<MediaItem>,
+        title: String,
+        source: QueueSource,
+        shuffle: Boolean,
+    ) {
+        if (songs.isEmpty()) return
+        val controller = activity.getPlayer() ?: return
+        controller.setMediaItemsWithTitle(
+            songs,
+            title = title,
+            repeatMode = Player.REPEAT_MODE_OFF,
+            original = !shuffle,
+            source = source,
+        )
+        controller.prepare()
+        controller.play()
+    }
+
+    val pinnedCollections = listOf(
+        PinnedQueueCollection(
+            id = "favourites",
+            title = favouritesTitle,
+            songCount = favorite?.songList?.size ?: 0,
+            iconRes = R.drawable.ic_favorite_filled,
+            onClick = {
+                activity.startFragment(GeneralSubFragment()) {
+                    putInt("Item", R.id.playlist)
+                    putString("Class", Favorite::class.java.name)
+                }
+            },
+            onPlay = {
+                playDynamicCollection(
+                    songs = favorite?.songList.orEmpty(),
+                    title = favouritesTitle,
+                    source = QueueSource(
+                        kind = QueueSourceKind.FAVOURITES,
+                        identifier = "favourites",
+                        displayName = "Favourites",
+                    ),
+                    shuffle = false,
+                )
+            },
+            onShuffle = {
+                playDynamicCollection(
+                    songs = favorite?.songList.orEmpty(),
+                    title = favouritesTitle,
+                    source = QueueSource(
+                        kind = QueueSourceKind.FAVOURITES,
+                        identifier = "favourites",
+                        displayName = "Favourites",
+                    ),
+                    shuffle = true,
+                )
+            },
+        ),
+        PinnedQueueCollection(
+            id = "recently_added",
+            title = recentlyAddedTitle,
+            songCount = recentlyAdded?.songList?.size ?: 0,
+            iconRes = R.drawable.outline_library_add_24,
+            onClick = {
+                activity.startFragment(GeneralSubFragment()) {
+                    putInt("Item", R.id.playlist)
+                    putString("Class", RecentlyAdded::class.java.name)
+                }
+            },
+            onPlay = {
+                playDynamicCollection(
+                    songs = recentlyAdded?.songList.orEmpty(),
+                    title = recentlyAddedTitle,
+                    source = QueueSource(
+                        kind = QueueSourceKind.RECENTLY_ADDED,
+                        identifier = "recently_added",
+                        displayName = "Recently added",
+                    ),
+                    shuffle = false,
+                )
+            },
+            onShuffle = {
+                playDynamicCollection(
+                    songs = recentlyAdded?.songList.orEmpty(),
+                    title = recentlyAddedTitle,
+                    source = QueueSource(
+                        kind = QueueSourceKind.RECENTLY_ADDED,
+                        identifier = "recently_added",
+                        displayName = "Recently added",
+                    ),
+                    shuffle = true,
+                )
+            },
+        ),
+    )
 
     DisposableEffect(lifecycleOwner) {
         activity.controllerViewModel.addRecreationalPlayerListener(
@@ -230,6 +333,7 @@ private fun QueuesScreen(
             queues = queues,
             activeQueueId = activeQueue?.id,
             isPlaying = isPlaying,
+            pinnedCollections = pinnedCollections,
             activeCurrentRow = activeCurrentRow,
             onQueueClick = { openQueue(activity, it.id) },
             onPlayQueue = { queue ->
