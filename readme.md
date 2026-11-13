@@ -47,6 +47,7 @@ This fork reworks queues and adds a few things on top of upstream beta.
   - Playlists were deleted in favor of queues
   - The now-playing song is highlighted the same way in every list
   - The mini player stays pinned at the bottom of the screen
+  - The section tabs moved to the bottom, with the mini player stacked above them
 
 ## Features
 - Light, stable, and minimalistic

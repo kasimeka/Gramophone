@@ -46,10 +46,12 @@ import androidx.media3.session.MediaController
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCallback
 import com.google.android.material.motion.MaterialBottomContainerBackHelper
+import com.google.android.material.tabs.TabLayout
 import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.clone
 import org.akanework.gramophone.logic.fadOutAnimation
+import org.akanework.gramophone.logic.ui.BottomTabBarLayout
 import org.akanework.gramophone.logic.ui.MiniPlayerPresence
 import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
 import org.akanework.gramophone.logic.ui.MyBottomSheetBehavior
@@ -84,9 +86,20 @@ class PlayerBottomSheet private constructor(
         get() = activity.getPlayer()
     private val fragmentContainer: View by lazy { activity.findViewById(R.id.container)!! }
     private val lyricsFrame: View by lazy { activity.findViewById(R.id.lyric_framelayout)!! }
-    private var lastActuallyVisible: Boolean? = null
-    private var lastMeasuredHeight: Int? = null
-    private var lastPreviewHeight = 0
+    private val bottomTabBar: TabLayout by lazy { activity.findViewById(R.id.tab_layout)!! }
+    private var bottomTabBarAvailable = false
+    private var bottomTabBarReserved = false
+    private var lastSlideOffset = 0f
+    private var coveredBySheet = false
+    private var lastTabBarHeight = 0
+    private var lastBottomPadding: Int? = null
+    private var navInsets = Insets.NONE
+    private val bottomTabBarLayoutListener = View.OnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+        if (v.height != lastTabBarHeight) {
+            lastTabBarHeight = v.height
+            refreshBottomTabBar()
+        }
+    }
 
     /**
      * The current screen's policy for the mini player. Presence is derived from this policy and
@@ -117,6 +130,36 @@ class PlayerBottomSheet private constructor(
         visibility = if (show) VISIBLE else GONE
     }
 
+    /**
+     * Called by ViewPagerFragment: whether it wants the bottom section tab bar. The bar is also
+     * hidden while the full player covers it, which is handled from the sheet state.
+     */
+    /**
+     * [available]: the tab bar should be shown now. [reserved]: the main pager has enough sections
+     * for the bar. Hiding for a sub-page only makes the bar invisible, so the peek height, and the
+     * collapsed mini player with it, stays where it is.
+     */
+    fun setBottomTabBarAvailable(available: Boolean, reserved: Boolean = available) {
+        bottomTabBarAvailable = available
+        bottomTabBarReserved = reserved
+        applyBottomTabBar()
+    }
+
+    private fun applyBottomTabBar() {
+        bottomTabBar.visibility = when {
+            !bottomTabBarReserved -> GONE
+            BottomTabBarLayout.isVisible(bottomTabBarAvailable, coveredBySheet) -> VISIBLE
+            else -> View.INVISIBLE
+        }
+        if (standardBottomSheetBehavior != null) refreshBottomTabBar()
+    }
+
+    private fun refreshBottomTabBar() {
+        applyNavInsets()
+        updatePeekHeight()
+        dispatchBottomSheetInsets()
+    }
+
     val actuallyVisible: Boolean
         get() = visibility == VISIBLE
     val visibleAndExpanded: Boolean
@@ -127,11 +170,11 @@ class PlayerBottomSheet private constructor(
         previewPlayer = findViewById(R.id.preview_player)!!
         fullPlayer = findViewById(R.id.full_player)!!
         // The text in the mini player can change its height after the sheet was measured.
-        previewPlayer.addOnLayoutChangeListener { _, _, top, _, bottom, _, _, _, _ ->
-            if (bottom - top != lastPreviewHeight) {
-                lastPreviewHeight = bottom - top
-                updatePeekHeight()
-            }
+        // Every layout, not only height changes: an update skipped while this layout was pending
+        // (for example a tab bar change) is caught up here even when the height stays the same.
+        previewPlayer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            updatePeekHeight(previewLaidOut = true)
+            dispatchBottomSheetInsets()
         }
 
         setOnClickListener { open() }
@@ -209,6 +252,18 @@ class PlayerBottomSheet private constructor(
                     bottomSheetBackCallback!!.isEnabled = false
                 }
             }
+            coveredBySheet = when (newState) {
+                BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_HALF_EXPANDED -> true
+                BottomSheetBehavior.STATE_COLLAPSED, BottomSheetBehavior.STATE_HIDDEN -> false
+                else -> coveredBySheet
+            }
+            when (newState) {
+                BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_HALF_EXPANDED ->
+                    bottomTabBar.alpha = 0f
+                BottomSheetBehavior.STATE_COLLAPSED, BottomSheetBehavior.STATE_HIDDEN ->
+                    bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(lastSlideOffset)
+            }
+            applyBottomTabBar()
             dispatchBottomSheetInsets()
         }
 
@@ -223,6 +278,13 @@ class PlayerBottomSheet private constructor(
                 lyricsFrame.alpha = 0f
                 return
             }
+            // Only the drag and settle animations drive the fade; once the sheet has settled, the
+            // settled state owns the bar's alpha so a late slide callback cannot bring it back.
+            val moving = standardBottomSheetBehavior?.state.let {
+                it == BottomSheetBehavior.STATE_DRAGGING || it == BottomSheetBehavior.STATE_SETTLING
+            }
+            lastSlideOffset = slideOffset
+            if (moving) bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(slideOffset)
             previewPlayer.alpha = 1 - (slideOffset)
             fullPlayer.alpha = slideOffset
             lyricsFrame.alpha = slideOffset
@@ -313,6 +375,7 @@ class PlayerBottomSheet private constructor(
             // Layout can still reset the sheet state after attach, so presence is checked again after it.
             post { updatePresence() }
             lifecycleOwner.lifecycle.addObserver(this)
+            bottomTabBar.addOnLayoutChangeListener(bottomTabBarLayoutListener)
             updatePeekHeight()
             dispatchBottomSheetInsets()
         }
@@ -320,8 +383,9 @@ class PlayerBottomSheet private constructor(
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        lastActuallyVisible = null
-        lastMeasuredHeight = null
+        lastBottomPadding = null
+        lastTabBarHeight = 0
+        bottomTabBar.removeOnLayoutChangeListener(bottomTabBarLayoutListener)
         fullPlayer.minimize = null
         lifecycleOwner.lifecycle.removeObserver(this)
         standardBottomSheetBehavior?.removeBottomSheetCallback(bottomSheetCallback)
@@ -330,17 +394,49 @@ class PlayerBottomSheet private constructor(
         onStop(lifecycleOwner)
     }
 
-    private fun updatePeekHeight() {
-        val w = width
-        if (w <= 0) return
-        previewPlayer.measure(
-            MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
-            MeasureSpec.UNSPECIFIED
-        )
-        val h = if (previewPlayer.height > 0) previewPlayer.height else previewPlayer.measuredHeight
-        if (h > 0) {
-            standardBottomSheetBehavior?.setPeekHeight(h, false)
+    /**
+     * The mini player's height only comes from a finished layout. Measuring it from here would
+     * leave its constraint layout positioning the title and artist for the wrong height, so a
+     * pending layout reports the new height through the mini player's layout listener instead.
+     */
+    private fun updatePeekHeight(previewLaidOut: Boolean = false) {
+        if (width <= 0) return
+        val miniHeight = previewPlayer.height
+        if (miniHeight > 0 && (previewLaidOut || !previewPlayer.isLayoutRequested)) {
+            standardBottomSheetBehavior?.setPeekHeight(
+                BottomTabBarLayout.peekHeight(miniHeight, laidOutBottomTabBarHeight()), false
+            )
         }
+    }
+
+    /** The tab bar height as it is drawn, so the resting position matches the content exactly. */
+    private fun laidOutBottomTabBarHeight(): Int {
+        if (bottomTabBar.visibility == GONE) return 0
+        return if (bottomTabBar.height > 0) bottomTabBar.height else bottomTabBarHeight()
+    }
+
+    private fun bottomTabBarHeight(): Int {
+        if (bottomTabBar.visibility == GONE) return 0
+        val w = width
+        if (w > 0) {
+            bottomTabBar.measure(
+                MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
+                MeasureSpec.UNSPECIFIED
+            )
+        }
+        return bottomTabBar.measuredHeight
+    }
+
+    /**
+     * The tab bar sits on the navigation bar, so while it is shown the mini player does not pad
+     * for the navigation bar itself.
+     */
+    private fun applyNavInsets() {
+        previewPlayer.setPadding(
+            navInsets.left, 0, navInsets.right,
+            if (bottomTabBar.visibility != GONE) 0 else navInsets.bottom
+        )
+        bottomTabBar.setPadding(navInsets.left, 0, navInsets.right, navInsets.bottom)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -352,15 +448,18 @@ class PlayerBottomSheet private constructor(
         }
     }
 
-    fun getBottomPadding() = if (lastActuallyVisible == true) lastMeasuredHeight ?: 0 else 0
+    /** Bottom padding for content: the mini player while the sheet is on screen, plus the tab bar. */
+    fun getBottomPadding() = BottomTabBarLayout.contentBottomPadding(
+        sheetVisible = standardBottomSheetBehavior != null && actuallyVisible,
+        miniPlayerHeight = previewPlayer.height,
+        tabBarHeight = laidOutBottomTabBarHeight(),
+    )
 
     private fun dispatchBottomSheetInsets() {
-        if (lastMeasuredHeight == previewPlayer.measuredHeight &&
-            lastActuallyVisible == actuallyVisible
-        ) return
+        val bottomPadding = getBottomPadding()
+        if (lastBottomPadding == bottomPadding) return
         if (BuildConfig.DEBUG) Log.i(TAG, "dispatching bottom sheet insets")
-        lastMeasuredHeight = previewPlayer.measuredHeight
-        lastActuallyVisible = actuallyVisible
+        lastBottomPadding = bottomPadding
         // This dispatches the last known insets again to force regeneration of
         // FragmentContainerView's insets which will in turn call generateBottomSheetInsets().
         val i = ViewCompat.getRootWindowInsets(activity.window.decorView)
@@ -382,7 +481,8 @@ class PlayerBottomSheet private constructor(
         // fullPlayer should extend into system bars AND display cutout. previewPlayer can't use
         // fitsSystemWindows because it doesn't want top padding from status bar.
         // We have to do it manually, duh.
-        previewPlayer.setPadding(myInsets.left, 0, myInsets.right, myInsets.bottom)
+        navInsets = myInsets
+        applyNavInsets()
         // Let fullPlayer handle insets itself (and discard result as it's irrelevant to hierarchy)
         ViewCompat.dispatchApplyWindowInsets(fullPlayer, insets.clone())
         // Same for lyrics view
