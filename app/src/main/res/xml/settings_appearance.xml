@@ -54,6 +54,15 @@
             android:summary="@string/tab_order_summary"
             android:title="@string/tab_order"
             app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="ui_exp_huge_forehead"
+            android:layout="@layout/preference_switch"
+            android:summary="@string/ui_exp_huge_forehead_summary"
+            android:title="@string/ui_exp_huge_forehead"
+            android:widgetLayout="@layout/preference_switch_widget"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory

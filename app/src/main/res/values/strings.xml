@@ -1293,4 +1293,6 @@ supporting local search. This string is displayed in the search bar when using G
     <!-- Settings toggle in experimental to enable advanced workflow across the app, allowing to
     have multiple queues -->
     <string name="shuffled">%s (shuffled)</string>
+    <string name="ui_exp_huge_forehead">Huge forehead</string>
+    <string name="ui_exp_huge_forehead_summary">Top app bars are two fifths of the screen tall when on, and the standard height when off.</string>
 </resources>
