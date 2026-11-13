@@ -52,6 +52,7 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.clone
 import org.akanework.gramophone.logic.fadOutAnimation
 import org.akanework.gramophone.logic.ui.BottomTabBarLayout
+import org.akanework.gramophone.logic.ui.UiExperiments
 import org.akanework.gramophone.logic.ui.MiniPlayerPresence
 import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
 import org.akanework.gramophone.logic.ui.MyBottomSheetBehavior
@@ -100,6 +101,7 @@ class PlayerBottomSheet private constructor(
             refreshBottomTabBar()
         }
     }
+    private val bottomTabsEnabled: Boolean by lazy { UiExperiments.tabsAtBottom(context) }
 
     /**
      * The current screen's policy for the mini player. Presence is derived from this policy and
@@ -146,6 +148,7 @@ class PlayerBottomSheet private constructor(
     }
 
     private fun applyBottomTabBar() {
+        if (!bottomTabsEnabled) return
         bottomTabBar.visibility = when {
             !bottomTabBarReserved -> GONE
             BottomTabBarLayout.isVisible(bottomTabBarAvailable, coveredBySheet) -> VISIBLE
@@ -259,9 +262,9 @@ class PlayerBottomSheet private constructor(
             }
             when (newState) {
                 BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_HALF_EXPANDED ->
-                    bottomTabBar.alpha = 0f
+                    if (bottomTabsEnabled) bottomTabBar.alpha = 0f
                 BottomSheetBehavior.STATE_COLLAPSED, BottomSheetBehavior.STATE_HIDDEN ->
-                    bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(lastSlideOffset)
+                    if (bottomTabsEnabled) bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(lastSlideOffset)
             }
             applyBottomTabBar()
             dispatchBottomSheetInsets()
@@ -284,7 +287,7 @@ class PlayerBottomSheet private constructor(
                 it == BottomSheetBehavior.STATE_DRAGGING || it == BottomSheetBehavior.STATE_SETTLING
             }
             lastSlideOffset = slideOffset
-            if (moving) bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(slideOffset)
+            if (moving && bottomTabsEnabled) bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(slideOffset)
             previewPlayer.alpha = 1 - (slideOffset)
             fullPlayer.alpha = slideOffset
             lyricsFrame.alpha = slideOffset
@@ -411,12 +414,12 @@ class PlayerBottomSheet private constructor(
 
     /** The tab bar height as it is drawn, so the resting position matches the content exactly. */
     private fun laidOutBottomTabBarHeight(): Int {
-        if (bottomTabBar.visibility == GONE) return 0
+        if (!bottomTabsEnabled || bottomTabBar.visibility == GONE) return 0
         return if (bottomTabBar.height > 0) bottomTabBar.height else bottomTabBarHeight()
     }
 
     private fun bottomTabBarHeight(): Int {
-        if (bottomTabBar.visibility == GONE) return 0
+        if (!bottomTabsEnabled || bottomTabBar.visibility == GONE) return 0
         val w = width
         if (w > 0) {
             bottomTabBar.measure(
@@ -434,9 +437,9 @@ class PlayerBottomSheet private constructor(
     private fun applyNavInsets() {
         previewPlayer.setPadding(
             navInsets.left, 0, navInsets.right,
-            if (bottomTabBar.visibility != GONE) 0 else navInsets.bottom
+            if (bottomTabsEnabled && bottomTabBar.visibility != GONE) 0 else navInsets.bottom
         )
-        bottomTabBar.setPadding(navInsets.left, 0, navInsets.right, navInsets.bottom)
+        if (bottomTabsEnabled) bottomTabBar.setPadding(navInsets.left, 0, navInsets.right, navInsets.bottom)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {

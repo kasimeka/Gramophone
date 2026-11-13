@@ -27,6 +27,7 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import android.provider.Settings
 import android.view.LayoutInflater
+import android.graphics.Color
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -57,6 +58,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.clone
+import org.akanework.gramophone.logic.ui.UiExperiments
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
 import org.akanework.gramophone.logic.setExpandedAppBarHeight
 import org.akanework.gramophone.logic.getFile
@@ -168,6 +170,14 @@ class ViewPagerFragment : BaseFragment() {
         rootView.findViewById<CollapsingToolbarLayout>(R.id.collapsingtoolbar).setExpandedAppBarHeight()
         appBarLayout = rootView.findViewById(R.id.appbarlayout)
         appBarLayout.enableEdgeToEdgePaddingListener()
+        if (!UiExperiments.tabsAtBottom(requireContext())) {
+            (tabLayout.parent as? ViewGroup)?.removeView(tabLayout)
+            tabLayout.setBackgroundColor(Color.TRANSPARENT)
+            appBarLayout.addView(
+                tabLayout,
+                AppBarLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT),
+            )
+        }
         topAppBar.overflowIcon =
             AppCompatResources.getDrawable(requireContext(), R.drawable.ic_more_vert_alt_topappbar)
 
@@ -379,6 +389,10 @@ class ViewPagerFragment : BaseFragment() {
     /** The bar is shown whenever there are enough sections, including on top of sub-pages. */
     private fun updateBottomTabBar() {
         val enough = adapter.itemCount >= 2
+        if (!UiExperiments.tabsAtBottom(requireContext())) {
+            tabLayout.visibility = if (enough) View.VISIBLE else View.GONE
+            return
+        }
         (requireActivity() as MainActivity).playerBottomSheet
             .setBottomTabBarAvailable(enough, enough)
     }
