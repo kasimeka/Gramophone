@@ -56,6 +56,14 @@
             app:iconSpaceReserved="false" />
 
         <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="ui_exp_tabs_at_bottom"
+            android:layout="@layout/preference_switch"
+            android:summary="@string/ui_exp_tabs_at_bottom_summary"
+            android:title="@string/ui_exp_tabs_at_bottom"
+            android:widgetLayout="@layout/preference_switch_widget"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:key="ui_exp_huge_forehead"
             android:layout="@layout/preference_switch"
