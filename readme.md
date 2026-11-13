@@ -34,7 +34,11 @@ This fork reworks queues and adds a few things on top of upstream beta.
   - After a shuffle, or after undoing one, the list scrolls to the song that's playing
 
 - Repeat
-  - The repeat button opens a picker for off, one, all, and "Shuffle at end, then repeat" which reshuffles and keeps playing after the queue ends.
+  - The repeat button opens a picker with these options:
+    - Off
+    - One
+    - All
+    - Shuffle at end, then repeat: reshuffles the queue and keeps playing when it ends
 
 
 - Interface
