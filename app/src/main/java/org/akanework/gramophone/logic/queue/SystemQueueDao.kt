@@ -22,7 +22,10 @@ import android.database.sqlite.SQLiteDatabase
 import java.util.UUID
 
 /** Reads and writes [SystemQueue]s in the `system_queues` and `system_queue_rows` tables. */
-class SystemQueueDao(private val db: SQLiteDatabase) {
+class SystemQueueDao(private val openDatabase: () -> SQLiteDatabase) {
+    private val db: SQLiteDatabase
+        get() = openDatabase()
+
     fun load(kind: SystemQueueKind): SystemQueue? {
         db.query(
             "system_queues",

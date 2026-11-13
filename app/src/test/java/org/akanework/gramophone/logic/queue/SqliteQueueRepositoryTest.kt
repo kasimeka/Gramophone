@@ -36,7 +36,7 @@ class SqliteQueueRepositoryTest : QueueRepositoryContractTest() {
     override fun createRepository(): QueueRepository {
         val db = QueueDatabase(RuntimeEnvironment.getApplication())
         database = db
-        return StoreQueueRepository(QueueDao(db.writableDatabase), Dispatchers.Unconfined)
+        return StoreQueueRepository(QueueDao { db.writableDatabase }, Dispatchers.Unconfined)
     }
 
     override fun closeRepository(repository: QueueRepository) {
@@ -56,7 +56,7 @@ class SqliteQueueRepositoryTest : QueueRepositoryContractTest() {
         try {
             val database = QueueDatabase(context, name)
             val repository = StoreQueueRepository(
-                QueueDao(database.writableDatabase),
+                QueueDao { database.writableDatabase },
                 Dispatchers.Unconfined,
             )
 
@@ -75,7 +75,7 @@ class SqliteQueueRepositoryTest : QueueRepositoryContractTest() {
         try {
             val firstDatabase = QueueDatabase(context, name)
             val first = StoreQueueRepository(
-                QueueDao(firstDatabase.writableDatabase),
+                QueueDao { firstDatabase.writableDatabase },
                 Dispatchers.Unconfined,
             )
             val created = first.create(
@@ -97,7 +97,7 @@ class SqliteQueueRepositoryTest : QueueRepositoryContractTest() {
 
             val secondDatabase = QueueDatabase(context, name)
             val second = StoreQueueRepository(
-                QueueDao(secondDatabase.writableDatabase),
+                QueueDao { secondDatabase.writableDatabase },
                 Dispatchers.Unconfined,
             )
             val restored = second.queue(created.id).first()

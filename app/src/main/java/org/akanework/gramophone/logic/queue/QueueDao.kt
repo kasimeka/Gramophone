@@ -26,7 +26,10 @@ import java.util.UUID
  * SQLite implementation of [QueueStore]. It owns only rows and metadata; title generation,
  * mutation ordering, and flow publication belong to the repository.
  */
-class QueueDao(private val db: SQLiteDatabase) : QueueStore {
+class QueueDao(private val openDatabase: () -> SQLiteDatabase) : QueueStore {
+    private val db: SQLiteDatabase
+        get() = openDatabase()
+
     override fun queues(): List<Queue> = transaction {
         queryHeaders().map { it.toQueue(rows(it.id)) }
     }

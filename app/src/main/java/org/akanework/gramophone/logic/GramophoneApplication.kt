@@ -130,7 +130,7 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
      */
     private val queueDatabase by lazy { QueueDatabase(this) }
 
-    private val systemQueueDao by lazy { SystemQueueDao(queueDatabase.writableDatabase) }
+    private val systemQueueDao by lazy { SystemQueueDao { queueDatabase.writableDatabase } }
 
     private val exportScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -151,7 +151,7 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
 
     val queueRepository: QueueRepository by lazy {
         StoreQueueRepository(
-            QueueDao(queueDatabase.writableDatabase),
+            QueueDao { queueDatabase.writableDatabase },
             exports = queueExporter,
         )
     }
