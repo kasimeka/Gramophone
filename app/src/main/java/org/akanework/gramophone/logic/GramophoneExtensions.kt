@@ -86,6 +86,7 @@ import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_DEL
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_EDIT
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_PLAY_QUEUE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_DEDUPE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_RENAME_QUEUE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_REORDER
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QB_SHUFFLE
@@ -599,6 +600,14 @@ private fun MediaController.sendStatusCommand(command: SessionCommand): Boolean 
     sendCustomCommandOnAppThread(command).get().extras.run {
         containsKey("status") && getBoolean("status")
     }
+
+/** Remove every repeat of a song from a queue in one edit. Returns how many rows were removed. */
+fun MediaController.deduplicateQueue(queueUuid: UUID): Int =
+    sendCustomCommandOnAppThread(
+        SessionCommand(SERVICE_QB_DEDUPE, Bundle.EMPTY).apply {
+            customExtras.putString("queueUuid", queueUuid.toString())
+        }, Bundle.EMPTY
+    ).get().extras.getInt("removed", 0)
 
 /** Rename a durable queue by identity, keeping its rows, bookmark, repeat mode, and UUID. */
 fun MediaController.renameQueue(queueUuid: UUID, title: String): Boolean =

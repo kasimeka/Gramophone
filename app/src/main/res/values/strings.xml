@@ -49,6 +49,11 @@
         <item quantity="other">Playlist imported, %d songs not found</item>
     </plurals>
     <string name="import_playlist_none">No songs in this playlist match your library.</string>
+    <string name="deduplicate_queue">Remove duplicates</string>
+    <plurals name="songs_deduplicated">
+        <item quantity="one">Removed %d duplicate entry</item>
+        <item quantity="other">Removed %d duplicate entries</item>
+    </plurals>
     <string name="import_playlist_failed">Couldn\'t read this playlist.</string>
     <!-- Empty state of a queue detail screen -->
     <string name="queue_detail_empty">This queue is empty</string>

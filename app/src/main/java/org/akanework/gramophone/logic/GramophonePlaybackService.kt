@@ -120,6 +120,7 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.queue.ActiveQueuePersistence
 import org.akanework.gramophone.logic.queue.Queue
 import org.akanework.gramophone.logic.queue.QueueBookmark
+import org.akanework.gramophone.logic.queue.QueueDedupe
 import org.akanework.gramophone.logic.queue.QueueDeduplicationRules
 import org.akanework.gramophone.logic.queue.PlaylistSettleGate
 import org.akanework.gramophone.logic.queue.QueueEditOperation
@@ -210,6 +211,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         const val SERVICE_QB_UNDO_EDIT = "qb_undo_edit"
         const val SERVICE_QB_CLEAR_EDIT_UNDO = "qb_clear_edit_undo"
         const val SERVICE_QB_RENAME_QUEUE = "qb_rename"
+        const val SERVICE_QB_DEDUPE = "qb_dedupe"
 
         var instanceForWidgetAndLyricsOnly: GramophonePlaybackService? = null
     }
@@ -867,6 +869,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         availableSessionCommands.add(SessionCommand(SERVICE_QB_UNDO_EDIT, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_CLEAR_EDIT_UNDO, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QB_RENAME_QUEUE, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QB_DEDUPE, Bundle.EMPTY))
         return builder.setAvailableSessionCommands(availableSessionCommands.build()).build()
     }
 
@@ -1093,6 +1096,63 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         } else {
             applyInactiveQueueEdit(durable.id, operation, position, to)
         }
+    }
+
+    /** Remove every repeat of a song from one queue in a single edit, keeping each song's first row. */
+    private suspend fun applyQueueDedupe(command: SessionCommand): Int {
+        val player = endedWorkaroundPlayer ?: return 0
+        val durable = durableQueueForCommand(command) ?: return 0
+        return if (isDurableQueueActive(durable.id)) {
+            dedupeActiveQueue(player, durable.id)
+        } else {
+            dedupeStoredQueue(durable.id)
+        }
+    }
+
+    private suspend fun dedupeActiveQueue(player: EndedWorkaroundPlayer, queueUuid: UUID): Int {
+        playlistGate.awaitSettled()
+        val positions = QueueDedupe.duplicatePositions(
+            activeQueueMediaItems(player).map { it.mediaId }
+        )
+        if (positions.isEmpty()) return 0
+        // Remove contiguous runs from the back, so the earlier positions stay valid.
+        var end = positions.size
+        while (end > 0) {
+            var start = end - 1
+            while (start > 0 && positions[start - 1] == positions[start] - 1) start--
+            player.exoPlayer.removeMediaItems(positions[start], positions[end - 1] + 1)
+            end = start
+        }
+        playlistGate.mutated()
+        lastQueueEditUndo = null
+        lastInactiveQueueEditUndo = null
+        activeQueuePersistence.markStructuralDirty(markModified = true)
+        return positions.size
+    }
+
+    private suspend fun dedupeStoredQueue(durableId: UUID): Int {
+        var removed = 0
+        queueRepository.mutate(durableId) { current ->
+            val positions = QueueDedupe.duplicatePositions(
+                current.rows.map { MediaRowCodec.decode(it)?.mediaId }
+            )
+            removed = positions.size
+            if (positions.isEmpty()) return@mutate current
+            val dropped = positions.toHashSet()
+            var bookmark = current.bookmark
+            var size = current.rows.size
+            for (position in positions.asReversed()) {
+                size--
+                bookmark = bookmark.afterRemoval(position, size)
+            }
+            current.copy(
+                rows = current.rows.filterIndexed { index, _ -> index !in dropped },
+                bookmark = bookmark,
+                isModified = true,
+                updatedAt = System.currentTimeMillis(),
+            )
+        }
+        return removed
     }
 
     /** Whether [queueUuid] is the queue the player currently holds. */
@@ -2025,6 +2085,14 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 Futures.transform(deleteFuture, { null }, MoreExecutors.directExecutor())
             }
             return deleteFuture
+        }
+
+        if (customCommand.customAction == SERVICE_QB_DEDUPE) {
+            return scope.future {
+                val removed = applyQueueDedupe(customCommand)
+                if (removed > 0) notifyQueues(CLIENT_QB_REFRESH_ALL, null)
+                SessionResult(SessionResult.RESULT_SUCCESS).also { it.extras.putInt("removed", removed) }
+            }
         }
 
         if (customCommand.customAction == SERVICE_QB_RENAME_QUEUE) {

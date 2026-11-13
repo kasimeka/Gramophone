@@ -62,6 +62,7 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.AlertDialog
+import android.widget.Toast
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -140,6 +141,7 @@ import org.akanework.gramophone.logic.discardQueueEditUndo
 import org.akanework.gramophone.logic.editQueue
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
 import org.akanework.gramophone.logic.getFile
+import org.akanework.gramophone.logic.deduplicateQueue
 import org.akanework.gramophone.logic.gramophoneApplication
 import org.akanework.gramophone.logic.moveQueueRow
 import org.akanework.gramophone.logic.playQueue
@@ -747,6 +749,19 @@ private fun QueueDetailScreen(
         }
     }
 
+    fun deduplicateRows() {
+        scope.launch(Dispatchers.IO) {
+            val removed = activity.getPlayer()?.deduplicateQueue(loadedQueue.id) ?: 0
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    context.resources.getQuantityString(R.plurals.songs_deduplicated, removed, removed),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+        }
+    }
+
     fun moveRow(from: Int, to: Int, committedRows: List<String>, previousRows: List<String>) {
         scope.launch {
             pendingMove = previousRows to committedRows
@@ -1124,6 +1139,7 @@ private fun QueueDetailScreen(
                             },
                             onAddAllToQueue = ::addAllToQueue,
                             onReorder = ::reorderQueueBy,
+                            onDeduplicate = ::deduplicateRows,
                         )
                     }
                     itemsIndexed(items = displayRows, key = { _, row -> row.key }) { index, row ->
@@ -1266,6 +1282,7 @@ private fun QueueDetailDecorPanel(
     onScrollToCurrent: () -> Unit,
     onAddAllToQueue: () -> Unit,
     onReorder: (String) -> Unit,
+    onDeduplicate: () -> Unit,
 ) {
     var reorderMenuOpen by remember { mutableStateOf(false) }
 
@@ -1305,6 +1322,23 @@ private fun QueueDetailDecorPanel(
                 Icon(
                     painter = painterResource(R.drawable.ic_playlist_add),
                     contentDescription = stringResource(R.string.add_to_queue),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+            tooltip = { PlainTooltip { Text(stringResource(R.string.deduplicate_queue)) } },
+            state = rememberTooltipState(),
+        ) {
+            IconButton(
+                onClick = onDeduplicate,
+                enabled = songCount > 1,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_dedupe),
+                    contentDescription = stringResource(R.string.deduplicate_queue),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp),
                 )
