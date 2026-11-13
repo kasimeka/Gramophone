@@ -62,6 +62,9 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import android.widget.Toast
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -403,6 +406,12 @@ private fun RenameQueueDialog(
 ) {
     var title by remember { mutableStateOf(initialTitle) }
     val trimmed = title.trim()
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_queue)) },
@@ -410,6 +419,7 @@ private fun RenameQueueDialog(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
+                modifier = Modifier.focusRequester(focusRequester),
                 singleLine = true,
                 label = { Text(stringResource(R.string.queue_name)) },
             )

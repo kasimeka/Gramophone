@@ -26,6 +26,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -247,6 +250,12 @@ private fun CreateQueueDialog(
 ) {
     var title by remember { mutableStateOf(initialTitle) }
     val trimmed = title.trim()
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.new_queue)) },
@@ -254,6 +263,7 @@ private fun CreateQueueDialog(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
+                modifier = Modifier.focusRequester(focusRequester),
                 singleLine = true,
                 label = { Text(stringResource(R.string.queue_name)) },
             )
