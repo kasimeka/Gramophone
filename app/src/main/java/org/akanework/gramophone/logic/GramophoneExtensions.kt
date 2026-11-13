@@ -93,8 +93,11 @@ import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QUERY_TIMER
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_MEDIA_ITEMS_ATOMIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_QUERY_REPEAT_MODE
+import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_REPEAT_MODE
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_TIMER
 import org.akanework.gramophone.logic.queue.QueueEditOperation
+import org.akanework.gramophone.logic.queue.QueueRepeatMode
 import org.akanework.gramophone.logic.queue.QueueSource
 import org.akanework.gramophone.logic.utils.AfFormatInfo
 import org.akanework.gramophone.logic.utils.AudioFormatDetector
@@ -338,6 +341,23 @@ fun MediaController.getTimerAsync(): ListenableFuture<Pair<Int?, Boolean>> =
 
 fun MediaController.getTimer(): Pair<Int?, Boolean> =
     getTimerAsync().get()
+
+fun MediaController.getRepeatModeOptionAsync(): ListenableFuture<QueueRepeatMode> =
+    Futures.transform(
+        sendCustomCommandOnAppThread(
+            SessionCommand(SERVICE_QUERY_REPEAT_MODE, Bundle.EMPTY), Bundle.EMPTY
+        ),
+        { result -> QueueRepeatMode.fromValue(result!!.extras.getInt("mode")) },
+        MoreExecutors.directExecutor()
+    )
+
+fun MediaController.setRepeatModeOption(mode: QueueRepeatMode) {
+    sendCustomCommandOnAppThread(
+        SessionCommand(SERVICE_SET_REPEAT_MODE, Bundle.EMPTY).apply {
+            customExtras.putInt("mode", mode.value)
+        }, Bundle.EMPTY
+    )
+}
 
 fun MediaController.setTimer(value: Int, waitUntilSongEnd: Boolean) {
     sendCustomCommandOnAppThread(

@@ -193,6 +193,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         const val SERVICE_GET_AUDIO_FORMAT = "get_audio_format"
         const val SERVICE_GET_LYRICS = "get_lyrics"
         const val SERVICE_TIMER_CHANGED = "changed_timer"
+        const val SERVICE_SET_REPEAT_MODE = "set_repeat_mode"
+        const val SERVICE_QUERY_REPEAT_MODE = "query_repeat_mode"
+        const val SERVICE_REPEAT_CHANGED = "changed_repeat"
         const val SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY = "set_media_items_seamlessly"
         const val SERVICE_SET_MEDIA_ITEMS_ATOMIC = "set_media_items_atomic"
 
@@ -284,7 +287,8 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     private fun getRepeatCommand() =
         when (controller!!.repeatMode) {
             Player.REPEAT_MODE_OFF -> customCommands[0]
-            Player.REPEAT_MODE_ALL -> customCommands[1]
+            Player.REPEAT_MODE_ALL ->
+                if (endedWorkaroundPlayer?.shuffleOnWrap == true) customCommands[5] else customCommands[1]
             Player.REPEAT_MODE_ONE -> customCommands[2]
             else -> throw IllegalArgumentException()
         }
@@ -300,7 +304,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
     private val timer: Runnable = Runnable {
         if (timerPauseOnEnd) {
-            endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems = true
+            setEndOfItemPause(EndOfItemPause.SLEEP_TIMER)
         } else {
             controller!!.pause()
         }
@@ -383,9 +387,13 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     .setDisplayName(getString(R.string.repeat_mode))
                     .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ALL)
                     .build(),
-                CommandButton.Builder(CommandButton.ICON_REPEAT_ALL) // repeat all currently enabled, click will repeat one
+                CommandButton.Builder(CommandButton.ICON_REPEAT_ALL) // repeat all currently enabled, click will shuffle repeat all
                     .setDisplayName(getString(R.string.repeat_mode))
-                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ONE)
+                    .setSessionCommand(
+                        SessionCommand(SERVICE_SET_REPEAT_MODE, Bundle().apply {
+                            putInt("mode", QueueRepeatMode.SHUFFLE_ALL.value)
+                        })
+                    )
                     .build(),
                 CommandButton.Builder(CommandButton.ICON_REPEAT_ONE) // repeat one currently enabled, click will disable
                     .setDisplayName(getString(R.string.repeat_mode))
@@ -398,6 +406,11 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 CommandButton.Builder(CommandButton.ICON_HEART_FILLED) // favorite, click will unfavorite
                     .setDisplayName(getString(R.string.unfavorite))
                     .setSessionCommand(SessionCommand(SessionCommand.COMMAND_CODE_SESSION_SET_RATING), HeartRating(false))
+                    .build(),
+                CommandButton.Builder(CommandButton.ICON_UNDEFINED) // repeat all shuffled currently enabled, click will repeat one
+                    .setCustomIconResId(R.drawable.ic_repeat_shuffle)
+                    .setDisplayName(getString(R.string.repeat_mode))
+                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ONE)
                     .build(),
             )
         afFormatTracker = AfFormatTracker(this, playbackHandler, handler)
@@ -481,6 +494,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             { lyrics },
             getNotificationLyric = { lastSentNotificationLyric }
         )
+        player.onNextFromLastInShuffle = {
+            shuffleAroundCurrent { player.seekToNextMediaItem() }
+        }
         player.exoPlayer.addAnalyticsListener(EventLogger())
         player.exoPlayer.addAnalyticsListener(afFormatTracker)
         player.exoPlayer.addAnalyticsListener(this)
@@ -834,6 +850,8 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         availableSessionCommands.add(SessionCommand.COMMAND_CODE_SESSION_SET_RATING)
         availableSessionCommands.add(SessionCommand(SERVICE_SET_TIMER, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_QUERY_TIMER, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_SET_REPEAT_MODE, Bundle.EMPTY))
+        availableSessionCommands.add(SessionCommand(SERVICE_QUERY_REPEAT_MODE, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_GET_LYRICS, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_GET_AUDIO_FORMAT, Bundle.EMPTY))
         availableSessionCommands.add(SessionCommand(SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY, Bundle.EMPTY))
@@ -1374,10 +1392,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     playlistGate.mutated()
                 }
                 player.play()
-                handler.post {
-                    activeQueuePersistence.markStructuralDirty()
-                    scope.launch { broadcastQueueSongsRefresh() }
-                }
+                onPlaylistReordered()
                 return true
             }
 
@@ -1395,26 +1410,97 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             // never reloads the current period: playback continues without a restart or stutter.
             val currentIndex = player.exoPlayer.currentMediaItemIndex
             val tail = result.order.drop(1).map { items[it] }
-            if (currentIndex > 0) {
-                withoutMarkingUserModified {
-                    player.exoPlayer.moveMediaItem(currentIndex, 0)
-                }
-                playlistGate.mutated()
-            }
-            if (tail.isNotEmpty()) {
-                withoutMarkingUserModified {
-                    player.exoPlayer.replaceMediaItems(1, items.size, tail)
-                }
-                playlistGate.mutated()
-            }
-            handler.post {
-                activeQueuePersistence.markStructuralDirty()
-                scope.launch { broadcastQueueSongsRefresh() }
-            }
+            replacePlayingTail(player, currentIndex, tail, items.size)
+            onPlaylistReordered()
             return true
         }
 
         return applyInactiveQueueShuffleResult(durable, durable.id, shufflePlay, playDifferentSong, command)
+    }
+
+    /**
+     * Moves the playing row to the front and replaces the [count] rows after it with [tail]. The
+     * playing period is never replaced, so playback continues without a restart or stutter.
+     */
+    private fun replacePlayingTail(
+        player: EndedWorkaroundPlayer,
+        currentIndex: Int,
+        tail: List<MediaItem>,
+        count: Int,
+    ) {
+        if (currentIndex > 0) {
+            withoutMarkingUserModified {
+                player.exoPlayer.moveMediaItem(currentIndex, 0)
+            }
+            playlistGate.mutated()
+        }
+        if (tail.isNotEmpty()) {
+            withoutMarkingUserModified {
+                player.exoPlayer.replaceMediaItems(1, count, tail)
+            }
+            playlistGate.mutated()
+        }
+    }
+
+    /** Mark the active queue structurally dirty and refresh the queue lists after a playlist reorder. */
+    private fun onPlaylistReordered() {
+        handler.post {
+            activeQueuePersistence.markStructuralDirty()
+            scope.launch { broadcastQueueSongsRefresh() }
+        }
+    }
+
+    /** Why playback pauses at the end of the current row. Only one reason is active at a time. */
+    private enum class EndOfItemPause { NONE, SLEEP_TIMER, QUEUE_SHUFFLE }
+
+    private var endOfItemPause = EndOfItemPause.NONE
+
+    /** The single writer of the player's pause-at-end flag, so the two reasons never share it. */
+    private fun setEndOfItemPause(kind: EndOfItemPause) {
+        endOfItemPause = kind
+        endedWorkaroundPlayer?.exoPlayer?.pauseAtEndOfMediaItems = kind != EndOfItemPause.NONE
+    }
+
+    /**
+     * Shuffle as if the user pressed shuffle with the current row moved first, then run [then]
+     * once the new order is in the player.
+     */
+    private fun shuffleAroundCurrent(then: () -> Unit) {
+        val player = endedWorkaroundPlayer ?: return
+        val exo = player.exoPlayer
+        val size = exo.mediaItemCount
+        val current = exo.currentMediaItemIndex
+        if (size < 3) return then()
+        val items = PlayerQueueOrderTarget(player).snapshotMediaItems()
+        scope.launch {
+            val result = withContext(Dispatchers.Default) {
+                QueueOrderEditor.shuffleEverything(items.indices.toList(), current)
+            } as? QueueEditResult.Applied
+            if (result != null && exo.mediaItemCount == size && exo.currentMediaItemIndex == current) {
+                replacePlayingTail(player, current, result.order.drop(1).map { items[it] }, size)
+                onPlaylistReordered()
+            }
+            then()
+        }
+    }
+
+    /** Pause at the end of the last row when repeat all with shuffle is on and nothing else holds the pause. */
+    private fun armShuffleAtEnd() {
+        val player = endedWorkaroundPlayer ?: return
+        val exo = player.exoPlayer
+        if (!player.shuffleOnWrap || exo.mediaItemCount < 3) return
+        if (exo.currentMediaItemIndex != exo.mediaItemCount - 1 || endOfItemPause != EndOfItemPause.NONE) return
+        setEndOfItemPause(EndOfItemPause.QUEUE_SHUFFLE)
+    }
+
+    private fun disarmShuffleAtEnd() {
+        if (endOfItemPause == EndOfItemPause.QUEUE_SHUFFLE) setEndOfItemPause(EndOfItemPause.NONE)
+    }
+
+    /** Keep the queue-end pause on exactly when the current row is the last one. */
+    private fun syncShuffleAtEnd() {
+        val exo = endedWorkaroundPlayer?.exoPlayer ?: return
+        if (exo.currentMediaItemIndex == exo.mediaItemCount - 1) armShuffleAtEnd() else disarmShuffleAtEnd()
     }
 
     /** Reorder a durable queue by metadata sort type or `"REVERSE"`, marking it user-modified. */
@@ -2012,9 +2098,12 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                         timerPauseOnEnd = pauseOnEnd
                         timerDuration = SystemClock.elapsedRealtime() + duration
                     } else {
-                        val currentPauseOnEnd =
-                            endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems
-                        endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems = pauseOnEnd
+                        val currentPauseOnEnd = endOfItemPause == EndOfItemPause.SLEEP_TIMER
+                        if (pauseOnEnd) {
+                            setEndOfItemPause(EndOfItemPause.SLEEP_TIMER)
+                        } else if (endOfItemPause == EndOfItemPause.SLEEP_TIMER) {
+                            setEndOfItemPause(EndOfItemPause.NONE)
+                        }
                         if (timerDuration != null) {
                             timerDuration = null
                         } else if (pauseOnEnd != currentPauseOnEnd) {
@@ -2032,6 +2121,24 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     SessionResult(SessionResult.RESULT_SUCCESS)
                 }
 
+                SERVICE_SET_REPEAT_MODE -> {
+                    endedWorkaroundPlayer!!.applyRepeatMode(customCommand.customExtras.getInt("mode"))
+                    if (endedWorkaroundPlayer!!.shuffleOnWrap) armShuffleAtEnd() else disarmShuffleAtEnd()
+                    refreshMediaButtonCustomLayout()
+                    activeQueuePersistence.saveProgressNow()
+                    mediaSession!!.broadcastCustomCommand(
+                        SessionCommand(SERVICE_REPEAT_CHANGED, Bundle.EMPTY),
+                        Bundle.EMPTY
+                    )
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
+
+                SERVICE_QUERY_REPEAT_MODE -> {
+                    SessionResult(SessionResult.RESULT_SUCCESS).also {
+                        it.extras.putInt("mode", endedWorkaroundPlayer!!.repeatMode())
+                    }
+                }
+
                 SERVICE_QUERY_TIMER -> {
                     SessionResult(SessionResult.RESULT_SUCCESS).also {
                         timerDuration?.let { td ->
@@ -2042,8 +2149,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                             it.extras.putBoolean("pauseOnEnd", timerPauseOnEnd)
                         } ?: it.extras.putBoolean(
                             "pauseOnEnd",
-                            this@GramophonePlaybackService
-                                .endedWorkaroundPlayer!!.exoPlayer.pauseAtEndOfMediaItems
+                            endOfItemPause == EndOfItemPause.SLEEP_TIMER
                         )
                     }
                 }
@@ -2184,11 +2290,16 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         reason: @Player.PlayWhenReadyChangeReason Int
     ) {
         if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
-            this.endedWorkaroundPlayer?.exoPlayer?.pauseAtEndOfMediaItems = false
-            mediaSession!!.broadcastCustomCommand(
-                SessionCommand(SERVICE_TIMER_CHANGED, Bundle.EMPTY),
-                Bundle.EMPTY
-            )
+            val kind = endOfItemPause
+            setEndOfItemPause(EndOfItemPause.NONE)
+            when (kind) {
+                EndOfItemPause.SLEEP_TIMER -> mediaSession!!.broadcastCustomCommand(
+                    SessionCommand(SERVICE_TIMER_CHANGED, Bundle.EMPTY),
+                    Bundle.EMPTY
+                )
+                EndOfItemPause.QUEUE_SHUFFLE -> shuffleAroundCurrent { endedWorkaroundPlayer?.play() }
+                EndOfItemPause.NONE -> Unit
+            }
         }
     }
 
@@ -2437,6 +2548,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        syncShuffleAtEnd()
         if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
             bitrate = null
             bitrateFetcher.launch {
@@ -2500,6 +2612,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) {
             playlistGate.timelineApplied()
             lastPlaylistLoaded.complete(Unit)
+            syncShuffleAtEnd()
             refreshMediaButtonCustomLayout()
             if ((endedWorkaroundPlayer?.mediaItemCount ?: 0) == 0 &&
                 activeQueuePersistence.activeQueueId() != null

@@ -20,17 +20,29 @@ package org.akanework.gramophone.logic.queue
 import java.util.UUID
 
 /**
- * Repeat mode stored with a queue. Values match the player's existing repeat modes, so restoring
- * a queue keeps repeat-one and repeat-all meaning.
+ * Repeat mode stored with a queue. OFF, ONE and ALL match the player's repeat modes, so restoring
+ * a queue keeps their meaning. SHUFFLE_ALL is repeat-all that reshuffles the rest of the queue
+ * each time playback wraps to its start; the player runs it as ALL plus a shuffle-on-wrap flag.
  */
 enum class QueueRepeatMode(val value: Int) {
     OFF(0),
     ONE(1),
     ALL(2),
+    SHUFFLE_ALL(3),
     ;
+
+    /** The player repeat mode this mode runs under. */
+    val playerValue: Int
+        get() = if (this == SHUFFLE_ALL) ALL.value else value
+
+    val shufflesOnWrap: Boolean
+        get() = this == SHUFFLE_ALL
 
     companion object {
         fun fromValue(value: Int): QueueRepeatMode = entries.firstOrNull { it.value == value } ?: OFF
+
+        fun fromPlayer(playerRepeatMode: Int, shuffleOnWrap: Boolean): QueueRepeatMode =
+            if (playerRepeatMode == ALL.value && shuffleOnWrap) SHUFFLE_ALL else fromValue(playerRepeatMode)
     }
 }
 

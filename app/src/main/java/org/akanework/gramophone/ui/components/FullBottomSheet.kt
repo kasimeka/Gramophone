@@ -36,6 +36,7 @@ import android.util.AttributeSet
 import android.view.AbsSavedState
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewPropertyAnimator
@@ -43,6 +44,7 @@ import android.view.WindowInsets
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
+import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ListView
@@ -123,9 +125,12 @@ import org.akanework.gramophone.logic.getAudioFormatAsync
 import org.akanework.gramophone.logic.getBooleanStrict
 import org.akanework.gramophone.logic.getIntStrict
 import org.akanework.gramophone.logic.getLyricsAsync
+import org.akanework.gramophone.logic.getRepeatModeOptionAsync
 import org.akanework.gramophone.logic.getTimerAsync
 import org.akanework.gramophone.logic.playOrPause
 import org.akanework.gramophone.logic.setTextAnimation
+import org.akanework.gramophone.logic.queue.QueueRepeatMode
+import org.akanework.gramophone.logic.setRepeatModeOption
 import org.akanework.gramophone.logic.setTimer
 import org.akanework.gramophone.logic.shuffleQueue
 import org.akanework.gramophone.logic.startAnimation
@@ -307,6 +312,8 @@ class FullBottomSheet
         activity.controllerViewModel.customCommandListeners.addCallback(activity.lifecycle) { _, command, _ ->
             when (command.customAction) {
                 GramophonePlaybackService.SERVICE_TIMER_CHANGED -> updateTimer()
+
+                GramophonePlaybackService.SERVICE_REPEAT_CHANGED -> refreshRepeatButton()
 
                 GramophonePlaybackService.SERVICE_GET_LYRICS -> {
                     instance?.getLyricsAsync()?.let { future ->
@@ -522,14 +529,20 @@ class FullBottomSheet
             }, uiExecutor)
         }
 
+        bottomSheetLoopButton.isCheckable = false
+        // Consuming touch keeps the button from entering its pressed state, so it looks untouched until the picker opens.
+        bottomSheetLoopButton.setOnTouchListener { view, event ->
+            if (event.actionMasked == MotionEvent.ACTION_UP &&
+                event.x in 0f..view.width.toFloat() && event.y in 0f..view.height.toFloat()
+            ) {
+                ViewCompat.performHapticFeedback(view, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
+                showRepeatModeDialog()
+            }
+            true
+        }
         bottomSheetLoopButton.setOnClickListener {
             ViewCompat.performHapticFeedback(it, HapticFeedbackConstantsCompat.CONTEXT_CLICK)
-            instance?.repeatMode = when (instance?.repeatMode) {
-                Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-                Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-                Player.REPEAT_MODE_ONE -> Player.REPEAT_MODE_OFF
-                else -> throw IllegalStateException()
-            }
+            showRepeatModeDialog()
         }
 
         bottomSheetPlaybackSpeedButton.setOnClickListener {
@@ -653,7 +666,7 @@ class FullBottomSheet
         activity.controllerViewModel.addRecreationalPlayerListener(activity.lifecycle, this) {
             firstTime = true
             updateTimer()
-            onRepeatModeChanged(instance?.repeatMode ?: Player.REPEAT_MODE_OFF)
+            refreshRepeatButton()
             refreshShuffleEnabled()
             onPlaybackStateChanged(instance?.playbackState ?: Player.STATE_IDLE)
             onMediaItemTransition(
@@ -1578,25 +1591,59 @@ class FullBottomSheet
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {
-        when (repeatMode) {
-            Player.REPEAT_MODE_ALL -> {
-                bottomSheetLoopButton.isChecked = true
-                bottomSheetLoopButton.icon =
-                    AppCompatResources.getDrawable(context, R.drawable.ic_repeat)
-            }
+        refreshRepeatButton()
+    }
 
-            Player.REPEAT_MODE_ONE -> {
-                bottomSheetLoopButton.isChecked = true
-                bottomSheetLoopButton.icon =
-                    AppCompatResources.getDrawable(context, R.drawable.ic_repeat_one)
-            }
+    private var repeatModeOption = QueueRepeatMode.OFF
 
-            Player.REPEAT_MODE_OFF -> {
-                bottomSheetLoopButton.isChecked = false
-                bottomSheetLoopButton.icon =
-                    AppCompatResources.getDrawable(context, R.drawable.ic_repeat)
+    private fun refreshRepeatButton() {
+        val player = instance ?: return
+        val future = player.getRepeatModeOptionAsync()
+        future.addListener({
+            runCatching { future.get() }.getOrNull()?.let(::showRepeatModeOption)
+        }, ContextCompat.getMainExecutor(context))
+    }
+
+    // The button is not checkable, so a tap cannot change it. Checkability is enabled only to set the state.
+    private fun setLoopButtonLit(lit: Boolean) {
+        bottomSheetLoopButton.isCheckable = true
+        bottomSheetLoopButton.isChecked = lit
+        bottomSheetLoopButton.isCheckable = false
+    }
+
+    private fun showRepeatModeOption(mode: QueueRepeatMode) {
+        repeatModeOption = mode
+        setLoopButtonLit(mode != QueueRepeatMode.OFF)
+        bottomSheetLoopButton.icon = AppCompatResources.getDrawable(
+            context,
+            when (mode) {
+                QueueRepeatMode.OFF, QueueRepeatMode.ALL -> R.drawable.ic_repeat
+                QueueRepeatMode.ONE -> R.drawable.ic_repeat_one
+                QueueRepeatMode.SHUFFLE_ALL -> R.drawable.ic_repeat_shuffle
             }
-        }
+        )
+    }
+
+    private fun showRepeatModeDialog() {
+        val player = instance ?: return
+        val options = listOf(
+            RepeatOption(QueueRepeatMode.OFF, R.string.repeat_off, R.drawable.ic_repeat),
+            RepeatOption(QueueRepeatMode.ONE, R.string.repeat_one, R.drawable.ic_repeat_one),
+            RepeatOption(QueueRepeatMode.ALL, R.string.repeat_all, R.drawable.ic_repeat),
+            RepeatOption(
+                QueueRepeatMode.SHUFFLE_ALL, R.string.repeat_all_shuffled, R.drawable.ic_repeat_shuffle
+            ),
+        )
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.repeat_mode)
+            .setSingleChoiceItems(
+                RepeatOptionAdapter(context, options),
+                options.indexOfFirst { it.mode == repeatModeOption },
+            ) { dialog, which ->
+                player.setRepeatModeOption(options[which].mode)
+                dialog.dismiss()
+            }
+            .show()
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -1690,4 +1737,22 @@ class FullBottomSheet
         var lastDynamicColorsOptions: DynamicColorsOptions? = null
     }
 
+}
+
+private data class RepeatOption(val mode: QueueRepeatMode, val label: Int, val icon: Int)
+
+private class RepeatOptionAdapter(
+    context: Context,
+    private val options: List<RepeatOption>,
+) : ArrayAdapter<RepeatOption>(context, android.R.layout.select_dialog_singlechoice, options) {
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = super.getView(position, convertView, parent) as CheckedTextView
+        val option = options[position]
+        view.text = context.getString(option.label)
+        view.compoundDrawablePadding = (12 * context.resources.displayMetrics.density).toInt()
+        val icon = AppCompatResources.getDrawable(context, option.icon)?.mutate()
+        icon?.alpha = if (option.mode == QueueRepeatMode.OFF) 97 else 255
+        view.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null)
+        return view
+    }
 }

@@ -35,6 +35,7 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.MultiQueueObject
 import org.akanework.gramophone.logic.parseQueueTitle
 import org.akanework.gramophone.logic.queue.ActiveQueuePlayer
+import org.akanework.gramophone.logic.queue.QueueRepeatMode
 import org.akanework.gramophone.logic.utils.SemanticLyrics
 import org.json.JSONObject
 import org.akanework.gramophone.logic.getBooleanStrict
@@ -69,7 +70,24 @@ class EndedWorkaroundPlayer(
 
     override fun playbackState(): Int = super.getPlaybackState()
 
-    override fun repeatMode(): Int = super.getRepeatMode()
+    override fun repeatMode(): Int =
+        QueueRepeatMode.fromPlayer(super.getRepeatMode(), shuffleOnWrap).value
+
+    /** Repeat-all that reshuffles the rest of the queue when playback wraps to its start. */
+    var shuffleOnWrap: Boolean = false
+        private set
+
+    /** Apply a repeat mode from a queue or the user. Accepts [QueueRepeatMode.SHUFFLE_ALL]. */
+    fun applyRepeatMode(repeatMode: Int) {
+        val mode = QueueRepeatMode.fromValue(repeatMode)
+        handleSetRepeatMode(mode.playerValue)
+        shuffleOnWrap = mode.shufflesOnWrap
+    }
+
+    override fun handleSetRepeatMode(repeatMode: Int): ListenableFuture<*> {
+        shuffleOnWrap = false
+        return super.handleSetRepeatMode(repeatMode)
+    }
 
     companion object {
         private const val TAG = "EndedWorkaroundPlayer"
@@ -252,7 +270,7 @@ class EndedWorkaroundPlayer(
         playbackParameters: PlaybackParameters?,
     ) {
         cloneQueue(generateQueueId(), title)
-        if (repeatMode != null) super.handleSetRepeatMode(repeatMode)
+        if (repeatMode != null) applyRepeatMode(repeatMode)
         if (shuffleModeEnabled) super.handleSetShuffleModeEnabled(false)
         if (playbackParameters != null) super.handleSetPlaybackParameters(playbackParameters)
         super.handleSetMediaItems(mediaItems, startIndex, startPositionMs)
@@ -278,7 +296,7 @@ class EndedWorkaroundPlayer(
             val count = mediaItemCount
             val isLast = count - index == 1
             cloneQueue(generateQueueId(), title)
-            if (repeatMode != null) super.handleSetRepeatMode(repeatMode)
+            if (repeatMode != null) applyRepeatMode(repeatMode)
             if (shuffleModeEnabled) super.handleSetShuffleModeEnabled(false)
             if (playbackParameters != null) super.handleSetPlaybackParameters(playbackParameters)
             if (index == 0)
@@ -360,11 +378,22 @@ class EndedWorkaroundPlayer(
         return Futures.immediateVoidFuture()
     }
 
+    /** Set by the service: reshuffles and then moves on, instead of wrapping, from the last row. */
+    var onNextFromLastInShuffle: (() -> Unit)? = null
+
     override fun handleSeek(
         mediaItemIndex: Int,
         positionMs: Long,
         seekCommand: Int
     ): ListenableFuture<*> {
+        val nextCommand = seekCommand == Player.COMMAND_SEEK_TO_NEXT ||
+                seekCommand == Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
+        val onLastRow = currentMediaItemIndex == mediaItemCount - 1
+        val reshuffle = onNextFromLastInShuffle
+        if (nextCommand && shuffleOnWrap && onLastRow && mediaItemCount >= 3 && reshuffle != null) {
+            reshuffle()
+            return Futures.immediateVoidFuture()
+        }
         val alwaysSkipPrevious = prefs.getBooleanStrict("always_skip_previous", false)
         if (isEnded && seekCommand == Player.COMMAND_SEEK_TO_DEFAULT_POSITION) {
             // Play after an ended queue restarts from the first row, even when the caller asked

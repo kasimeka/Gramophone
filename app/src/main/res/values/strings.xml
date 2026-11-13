@@ -129,8 +129,12 @@
     <string name="details">Details</string>
     <!-- Tooltip of shuffle clickable toggle button -->
     <string name="shuffle">Shuffle</string>
-    <!-- Tooltip of repeat mode 3-state clickable toggle button -->
+    <!-- Tooltip and title of the repeat mode button, which opens a picker of the modes below -->
     <string name="repeat_mode">Repeat mode</string>
+    <string name="repeat_off">Repeat off</string>
+    <string name="repeat_all">Repeat all</string>
+    <string name="repeat_one">Repeat one</string>
+    <string name="repeat_all_shuffled">Shuffle at end, then repeat</string>
     <!-- Fallback name when a queue has no title -->
     <string name="unknown_queue">Unknown queue</string>
     <string name="gramophone_crashed" translatable="false">Crash log</string>
