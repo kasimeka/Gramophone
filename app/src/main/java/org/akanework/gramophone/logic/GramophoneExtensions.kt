@@ -23,6 +23,7 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
+import android.util.TypedValue
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -54,6 +55,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -103,6 +105,7 @@ import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVIC
 import org.akanework.gramophone.logic.GramophonePlaybackService.Companion.SERVICE_SET_TIMER
 import org.akanework.gramophone.logic.queue.QueueEditOperation
 import org.akanework.gramophone.logic.queue.QueueRepeatMode
+import org.akanework.gramophone.logic.ui.UiExperiments
 import org.akanework.gramophone.logic.queue.QueueSource
 import org.akanework.gramophone.logic.utils.AfFormatInfo
 import org.akanework.gramophone.logic.utils.AudioFormatDetector
@@ -646,12 +649,22 @@ fun Handler.postAtFrontOfQueueAsync(callback: Runnable) {
 }
 
 fun CollapsingToolbarLayout.setExpandedAppBarHeight() {
-    layoutParams.height = resources.displayMetrics.heightPixels * 2 / 5
+    layoutParams.height = if (UiExperiments.hugeForehead(context)) {
+        resources.displayMetrics.heightPixels * 2 / 5
+    } else {
+        val value = TypedValue()
+        context.theme.resolveAttribute(com.google.android.material.R.attr.collapsingToolbarLayoutMediumSize, value, true)
+        TypedValue.complexToDimensionPixelSize(value.data, resources.displayMetrics)
+    }
     requestLayout()
 }
 
 @Composable
-fun expandedAppBarHeight(): Dp = LocalConfiguration.current.screenHeightDp.dp * 2 / 5
+fun expandedAppBarHeight(): Dp {
+    return if (UiExperiments.hugeForehead(LocalContext.current)) {
+        LocalConfiguration.current.screenHeightDp.dp * 2 / 5
+    } else 152.dp
+}
 
 fun View.enableEdgeToEdgePaddingListener(
     ime: Boolean = false, top: Boolean = false,
