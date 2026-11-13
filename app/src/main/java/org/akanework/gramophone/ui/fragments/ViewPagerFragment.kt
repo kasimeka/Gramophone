@@ -18,15 +18,19 @@
 package org.akanework.gramophone.ui.fragments
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.media.audiofx.AudioEffect
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.view.ViewCompat
@@ -47,11 +51,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.clone
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
+import org.akanework.gramophone.logic.getFile
+import org.akanework.gramophone.logic.gramophoneApplication
 import org.akanework.gramophone.logic.needsManualSnackBarInset
+import org.akanework.gramophone.logic.queue.M3uImport
 import org.akanework.gramophone.logic.updateMargin
+import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.logic.utils.SdScanner
 import org.akanework.gramophone.logic.setMediaItemsWithTitle
 import org.akanework.gramophone.ui.MainActivity
@@ -75,6 +84,55 @@ class ViewPagerFragment : BaseFragment() {
     private lateinit var adapter: ViewPager2Adapter
     private lateinit var tabLayout: TabLayout
     private var tabLayoutMediator: TabLayoutMediator? = null
+    private val importPlaylistLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) importPlaylist(uri)
+        }
+
+    private fun importPlaylist(uri: Uri) {
+        val context = requireContext()
+        val activity = requireActivity() as MainActivity
+        viewLifecycleOwner.lifecycleScope.launch {
+            val title = queryDisplayName(context, uri)
+                ?.substringBeforeLast('.')
+                ?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.import_playlist_default_title)
+            val text = withContext(Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            }
+            if (text == null) {
+                Toast.makeText(context, R.string.import_playlist_failed, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val songsByPath = withContext(Dispatchers.Default) {
+                activity.reader.songListFlow.first().mapNotNull { song ->
+                    song.getFile()?.absolutePath?.let { it to song }
+                }.toMap()
+            }
+            val result = M3uImport.resolve(M3uImport.entries(text)) { songsByPath[it] }
+            if (result.matches.isEmpty()) {
+                Toast.makeText(context, R.string.import_playlist_none, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            activity.gramophoneApplication.queueRepository.create(
+                source = null,
+                rows = result.matches.map { MediaRowCodec.encode(it) },
+                title = title,
+            )
+            val message = if (result.unmatched > 0) {
+                context.resources.getQuantityString(
+                    R.plurals.import_playlist_imported_missing, result.unmatched, result.unmatched
+                )
+            } else {
+                context.getString(R.string.import_playlist_imported)
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun queryDisplayName(context: Context, uri: Uri): String? =
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -194,6 +252,11 @@ class ViewPagerFragment : BaseFragment() {
                             }
                         }
                     }
+                }
+
+                R.id.import_playlist -> {
+                    // m3u8 files often have no registered MIME type, so the picker accepts any file.
+                    importPlaylistLauncher.launch(arrayOf("*/*"))
                 }
 
                 R.id.settings -> {

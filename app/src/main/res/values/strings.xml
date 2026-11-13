@@ -41,6 +41,15 @@
     <string name="new_queue">New queue</string>
     <!-- Default title format for auto-generated numbered queues in dialogs -->
     <string name="new_queue_n">New Queue #%d</string>
+    <string name="home_menu_import_playlist">Import playlist</string>
+    <string name="import_playlist_default_title">Imported playlist</string>
+    <string name="import_playlist_imported">Playlist imported</string>
+    <plurals name="import_playlist_imported_missing">
+        <item quantity="one">Playlist imported, %d song not found</item>
+        <item quantity="other">Playlist imported, %d songs not found</item>
+    </plurals>
+    <string name="import_playlist_none">No songs in this playlist match your library.</string>
+    <string name="import_playlist_failed">Couldn\'t read this playlist.</string>
     <!-- Empty state of a queue detail screen -->
     <string name="queue_detail_empty">This queue is empty</string>
     <!-- Dialog title for entering a new queue name -->

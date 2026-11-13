@@ -22,6 +22,10 @@
         android:title="@string/home_menu_refresh"
         app:showAsAction="never" />
     <item
+        android:id="@+id/import_playlist"
+        android:title="@string/home_menu_import_playlist"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/equalizer"
         android:icon="@drawable/ic_equalizer"
         android:title="@string/home_menu_equalizer"
