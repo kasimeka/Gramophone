@@ -22,8 +22,9 @@ package org.akanework.gramophone.logic.ui
  * player, and the full player covers it when the sheet is expanded or half-expanded.
  */
 object BottomTabBarLayout {
-    fun isVisible(available: Boolean, coveredBySheet: Boolean): Boolean {
-        return available && !coveredBySheet
+    /** Shown while it is wanted and the opening sheet has not faded it out yet. */
+    fun isVisible(available: Boolean, sheetSlide: Float): Boolean {
+        return available && alphaForSlide(sheetSlide) > 0f
     }
 
     /** Collapsed peek height: the mini player rests above the tab bar. */
@@ -36,11 +37,8 @@ object BottomTabBarLayout {
         return (if (sheetVisible) miniPlayerHeight else 0) + tabBarHeight
     }
 
-    /** Slide offset at which the tab bar has finished fading out as the sheet opens. */
-    private const val FADE_OUT_END = 0.2f
-
-    /** Tab bar alpha for a sheet slide offset: fully shown when collapsed, gone before the sheet opens. */
+    /** Tab bar alpha for a sheet slide offset: it fades with the mini player, so the two leave together. */
     fun alphaForSlide(slideOffset: Float): Float {
-        return (1f - slideOffset / FADE_OUT_END).coerceIn(0f, 1f)
+        return (1f - slideOffset).coerceIn(0f, 1f)
     }
 }

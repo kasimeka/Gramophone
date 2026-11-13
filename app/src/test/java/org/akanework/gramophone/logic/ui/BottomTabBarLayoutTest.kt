@@ -24,18 +24,18 @@ import org.junit.Test
 
 class BottomTabBarLayoutTest {
     @Test
-    fun showsWhenAvailableAndNotCoveredBySheet() {
-        assertTrue(BottomTabBarLayout.isVisible(available = true, coveredBySheet = false))
+    fun showsWhenAvailableAndSheetCollapsed() {
+        assertTrue(BottomTabBarLayout.isVisible(available = true, sheetSlide = 0f))
     }
 
     @Test
     fun hidesWhenFullPlayerCoversIt() {
-        assertFalse(BottomTabBarLayout.isVisible(available = true, coveredBySheet = true))
+        assertFalse(BottomTabBarLayout.isVisible(available = true, sheetSlide = 1f))
     }
 
     @Test
     fun hidesWhenNotAvailable() {
-        assertFalse(BottomTabBarLayout.isVisible(available = false, coveredBySheet = false))
+        assertFalse(BottomTabBarLayout.isVisible(available = false, sheetSlide = 0f))
     }
 
     @Test
@@ -79,10 +79,10 @@ class BottomTabBarLayoutTest {
     }
 
     @Test
-    fun tabBarIsShownWhenCollapsedAndFadedOutBeforeTheSheetOpens() {
+    fun tabBarFadesInStepWithTheMiniPlayerAsTheSheetOpens() {
         assertEquals(1f, BottomTabBarLayout.alphaForSlide(0f), 0.001f)
-        assertEquals(0.5f, BottomTabBarLayout.alphaForSlide(0.1f), 0.001f)
-        assertEquals(0f, BottomTabBarLayout.alphaForSlide(0.2f), 0.001f)
+        assertEquals(0.9f, BottomTabBarLayout.alphaForSlide(0.1f), 0.001f)
+        assertEquals(0.5f, BottomTabBarLayout.alphaForSlide(0.5f), 0.001f)
         assertEquals(0f, BottomTabBarLayout.alphaForSlide(1f), 0.001f)
     }
 }

@@ -91,8 +91,8 @@ class PlayerBottomSheet private constructor(
     private val bottomTabBar: TabLayout by lazy { activity.findViewById(R.id.tab_layout)!! }
     private var bottomTabBarAvailable = false
     private var bottomTabBarReserved = false
-    private var lastSlideOffset = 0f
-    private var coveredBySheet = false
+    /** How far the sheet is open, from 0 (collapsed) to 1 (expanded). The tab bar's fade follows it. */
+    private var sheetSlide = 0f
     private var lastTabBarHeight = 0
     private var lastBottomPadding: Int? = null
     private var navInsets = Insets.NONE
@@ -136,28 +136,26 @@ class PlayerBottomSheet private constructor(
     }
 
     /**
-     * Called by ViewPagerFragment: whether it wants the bottom section tab bar. The bar is also
-     * hidden while the full player covers it, which is handled from the sheet state.
-     */
-    /**
-     * [available]: the tab bar should be shown now. [reserved]: the main pager has enough sections
-     * for the bar. Hiding for a sub-page only makes the bar invisible, so the peek height, and the
-     * collapsed mini player with it, stays where it is.
+     * Called by ViewPagerFragment. [available]: the tab bar should be shown now. [reserved]: the
+     * main pager has enough sections for the bar. Hiding for a sub-page only makes the bar
+     * invisible, so the peek height, and the collapsed mini player with it, stays where it is.
      */
     fun setBottomTabBarAvailable(available: Boolean, reserved: Boolean = available) {
         bottomTabBarAvailable = available
         bottomTabBarReserved = reserved
-        applyBottomTabBar()
+        updateTabBar()
+        if (standardBottomSheetBehavior != null) refreshBottomTabBar()
     }
 
-    private fun applyBottomTabBar() {
+    /** The tab bar's only writer: its alpha and visibility both follow from [sheetSlide]. */
+    private fun updateTabBar() {
         if (!bottomTabsEnabled) return
+        bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(sheetSlide)
         bottomTabBar.visibility = when {
             !bottomTabBarReserved -> GONE
-            BottomTabBarLayout.isVisible(bottomTabBarAvailable, coveredBySheet) -> VISIBLE
+            BottomTabBarLayout.isVisible(bottomTabBarAvailable, sheetSlide) -> VISIBLE
             else -> View.INVISIBLE
         }
-        if (standardBottomSheetBehavior != null) refreshBottomTabBar()
     }
 
     private fun refreshBottomTabBar() {
@@ -258,18 +256,12 @@ class PlayerBottomSheet private constructor(
                     bottomSheetBackCallback!!.isEnabled = false
                 }
             }
-            coveredBySheet = when (newState) {
-                BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_HALF_EXPANDED -> true
-                BottomSheetBehavior.STATE_COLLAPSED, BottomSheetBehavior.STATE_HIDDEN -> false
-                else -> coveredBySheet
+            sheetSlide = when (newState) {
+                BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_HALF_EXPANDED -> 1f
+                BottomSheetBehavior.STATE_COLLAPSED, BottomSheetBehavior.STATE_HIDDEN -> 0f
+                else -> sheetSlide
             }
-            when (newState) {
-                BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_HALF_EXPANDED ->
-                    if (bottomTabsEnabled) bottomTabBar.alpha = 0f
-                BottomSheetBehavior.STATE_COLLAPSED, BottomSheetBehavior.STATE_HIDDEN ->
-                    if (bottomTabsEnabled) bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(lastSlideOffset)
-            }
-            applyBottomTabBar()
+            updateTabBar()
             dispatchBottomSheetInsets()
             bottomPadding.intValue = getBottomPadding()
         }
@@ -285,13 +277,8 @@ class PlayerBottomSheet private constructor(
                 lyricsFrame.alpha = 0f
                 return
             }
-            // Only the drag and settle animations drive the fade; once the sheet has settled, the
-            // settled state owns the bar's alpha so a late slide callback cannot bring it back.
-            val moving = standardBottomSheetBehavior?.state.let {
-                it == BottomSheetBehavior.STATE_DRAGGING || it == BottomSheetBehavior.STATE_SETTLING
-            }
-            lastSlideOffset = slideOffset
-            if (moving && bottomTabsEnabled) bottomTabBar.alpha = BottomTabBarLayout.alphaForSlide(slideOffset)
+            sheetSlide = slideOffset
+            updateTabBar()
             previewPlayer.alpha = 1 - (slideOffset)
             fullPlayer.alpha = slideOffset
             lyricsFrame.alpha = slideOffset
