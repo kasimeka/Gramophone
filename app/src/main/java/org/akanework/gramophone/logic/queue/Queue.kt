@@ -29,20 +29,30 @@ enum class QueueRepeatMode(val value: Int) {
     ONE(1),
     ALL(2),
     SHUFFLE_ALL(3),
+    /** Repeat off, but when the queue ends the next queue in the Queues tab starts from its bookmark. */
+    PLAY_NEXT_QUEUE(4),
     ;
+
+    /** The following option in picker order. The notification button and the picker share this cycle. */
+    val next: QueueRepeatMode
+        get() = entries[(ordinal + 1) % entries.size]
 
     /** The player repeat mode this mode runs under. */
     val playerValue: Int
-        get() = if (this == SHUFFLE_ALL) ALL.value else value
+        get() = when (this) {
+            SHUFFLE_ALL -> ALL.value
+            PLAY_NEXT_QUEUE -> OFF.value
+            else -> value
+        }
 
     val shufflesOnWrap: Boolean
         get() = this == SHUFFLE_ALL
 
+    val playsNextQueue: Boolean
+        get() = this == PLAY_NEXT_QUEUE
+
     companion object {
         fun fromValue(value: Int): QueueRepeatMode = entries.firstOrNull { it.value == value } ?: OFF
-
-        fun fromPlayer(playerRepeatMode: Int, shuffleOnWrap: Boolean): QueueRepeatMode =
-            if (playerRepeatMode == ALL.value && shuffleOnWrap) SHUFFLE_ALL else fromValue(playerRepeatMode)
     }
 }
 

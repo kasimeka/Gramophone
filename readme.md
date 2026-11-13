@@ -39,6 +39,7 @@ This fork reworks queues and adds a few things on top of upstream beta.
     - One
     - All
     - Shuffle at end, then repeat: reshuffles the queue and keeps playing when it ends
+    - Play next queue: when the queue ends, the next queue in the Queues tab starts from its bookmark; the last queue pauses
 
 
 - Interface

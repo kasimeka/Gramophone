@@ -1620,6 +1620,7 @@ class FullBottomSheet
                 QueueRepeatMode.OFF, QueueRepeatMode.ALL -> R.drawable.ic_repeat
                 QueueRepeatMode.ONE -> R.drawable.ic_repeat_one
                 QueueRepeatMode.SHUFFLE_ALL -> R.drawable.ic_repeat_shuffle
+                QueueRepeatMode.PLAY_NEXT_QUEUE -> R.drawable.ic_low_priority
             }
         )
     }
@@ -1632,6 +1633,9 @@ class FullBottomSheet
             RepeatOption(QueueRepeatMode.ALL, R.string.repeat_all, R.drawable.ic_repeat),
             RepeatOption(
                 QueueRepeatMode.SHUFFLE_ALL, R.string.repeat_all_shuffled, R.drawable.ic_repeat_shuffle
+            ),
+            RepeatOption(
+                QueueRepeatMode.PLAY_NEXT_QUEUE, R.string.repeat_play_next_queue, R.drawable.ic_low_priority
             ),
         )
         MaterialAlertDialogBuilder(context)

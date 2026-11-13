@@ -121,6 +121,7 @@ import org.akanework.gramophone.logic.queue.ActiveQueuePersistence
 import org.akanework.gramophone.logic.queue.Queue
 import org.akanework.gramophone.logic.queue.QueueBookmark
 import org.akanework.gramophone.logic.queue.QueueDedupe
+import org.akanework.gramophone.logic.queue.QueueListRules
 import org.akanework.gramophone.logic.queue.QueueDeduplicationRules
 import org.akanework.gramophone.logic.queue.PlaylistSettleGate
 import org.akanework.gramophone.logic.queue.QueueEditOperation
@@ -286,21 +287,34 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     private val lyricsFetcher = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
     private val bitrateFetcher = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
 
-    private fun getRepeatCommand() =
-        when (controller!!.repeatMode) {
-            Player.REPEAT_MODE_OFF -> customCommands[0]
-            Player.REPEAT_MODE_ALL ->
-                if (endedWorkaroundPlayer?.shuffleOnWrap == true) customCommands[5] else customCommands[1]
-            Player.REPEAT_MODE_ONE -> customCommands[2]
-            else -> throw IllegalArgumentException()
+    /** Shows the current repeat mode and cycles to the next one through the same path as the picker. */
+    private fun getRepeatCommand(): CommandButton {
+        val mode = endedWorkaroundPlayer?.repeatChoice ?: QueueRepeatMode.OFF
+        val builder = when (mode) {
+            QueueRepeatMode.OFF -> CommandButton.Builder(CommandButton.ICON_REPEAT_OFF)
+            QueueRepeatMode.ONE -> CommandButton.Builder(CommandButton.ICON_REPEAT_ONE)
+            QueueRepeatMode.ALL -> CommandButton.Builder(CommandButton.ICON_REPEAT_ALL)
+            QueueRepeatMode.SHUFFLE_ALL -> CommandButton.Builder(CommandButton.ICON_UNDEFINED)
+                .setCustomIconResId(R.drawable.ic_repeat_shuffle)
+            QueueRepeatMode.PLAY_NEXT_QUEUE -> CommandButton.Builder(CommandButton.ICON_UNDEFINED)
+                .setCustomIconResId(R.drawable.ic_low_priority)
         }
+        return builder
+            .setDisplayName(getString(R.string.repeat_mode))
+            .setSessionCommand(
+                SessionCommand(SERVICE_SET_REPEAT_MODE, Bundle().apply {
+                    putInt("mode", mode.next.value)
+                })
+            )
+            .build()
+    }
 
     private fun getFavoriteCommand(): CommandButton {
         val isFavorite = (controller?.currentMediaItem?.mediaMetadata?.userRating as? HeartRating)?.isHeart == true
         return if (isFavorite) {
-            customCommands[4]
+            customCommands[1]
         } else {
-            customCommands[3]
+            customCommands[0]
         }
     }
 
@@ -385,22 +399,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
         customCommands =
             listOf(
-                CommandButton.Builder(CommandButton.ICON_REPEAT_OFF) // repeat currently disabled, click will repeat all
-                    .setDisplayName(getString(R.string.repeat_mode))
-                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ALL)
-                    .build(),
-                CommandButton.Builder(CommandButton.ICON_REPEAT_ALL) // repeat all currently enabled, click will shuffle repeat all
-                    .setDisplayName(getString(R.string.repeat_mode))
-                    .setSessionCommand(
-                        SessionCommand(SERVICE_SET_REPEAT_MODE, Bundle().apply {
-                            putInt("mode", QueueRepeatMode.SHUFFLE_ALL.value)
-                        })
-                    )
-                    .build(),
-                CommandButton.Builder(CommandButton.ICON_REPEAT_ONE) // repeat one currently enabled, click will disable
-                    .setDisplayName(getString(R.string.repeat_mode))
-                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_OFF)
-                    .build(),
                 CommandButton.Builder(CommandButton.ICON_HEART_UNFILLED) // not favorite, click will favorite
                     .setDisplayName(getString(R.string.favorite))
                     .setSessionCommand(SessionCommand(SessionCommand.COMMAND_CODE_SESSION_SET_RATING), HeartRating(true))
@@ -408,11 +406,6 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 CommandButton.Builder(CommandButton.ICON_HEART_FILLED) // favorite, click will unfavorite
                     .setDisplayName(getString(R.string.unfavorite))
                     .setSessionCommand(SessionCommand(SessionCommand.COMMAND_CODE_SESSION_SET_RATING), HeartRating(false))
-                    .build(),
-                CommandButton.Builder(CommandButton.ICON_UNDEFINED) // repeat all shuffled currently enabled, click will repeat one
-                    .setCustomIconResId(R.drawable.ic_repeat_shuffle)
-                    .setDisplayName(getString(R.string.repeat_mode))
-                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ONE)
                     .build(),
             )
         afFormatTracker = AfFormatTracker(this, playbackHandler, handler)
@@ -1502,6 +1495,22 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         }
     }
 
+    /**
+     * Play next queue: when the active queue ends, start the queue listed after it, from its bookmark.
+     * The last queue has no successor, so playback stays paused at its end.
+     */
+    private fun playNextQueueAfterEnd() {
+        val activeId = activeQueuePersistence.activeQueueId() ?: return
+        scope.launch {
+            val ordered = QueueListRules.ordered(queueRepository.queues.first())
+            val next = QueuePlaybackRules.nextQueueAfter(ordered, activeId) ?: return@launch
+            val command = SessionCommand(SERVICE_QB_PLAY_QUEUE, Bundle.EMPTY).apply {
+                customExtras.putString("queueUuid", next.id.toString())
+            }
+            if (playDurableQueue(command)) notifyQueues(CLIENT_QB_REFRESH_ALL, null)
+        }
+    }
+
     /** Mark the active queue structurally dirty and refresh the queue lists after a playlist reorder. */
     private fun onPlaylistReordered() {
         handler.post {
@@ -1820,43 +1829,43 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         return true
     }
 
+    suspend fun buildMqCustomCommand(action: String, queueId: Long?): SessionCommand {
+        return SessionCommand(action, Bundle.EMPTY).apply {
+            val plr = endedWorkaroundPlayer!!
+            queueId?.let {
+                customExtras.putLong("queueId", it)
+            }
+            if (action != CLIENT_QB_REFRESH_CLEAR) {
+                customExtras.putBinder(
+                    "activeQueue",
+                    MultiQueueList(listOf(plr.getActiveQueue()))
+                )
+                val inactive = inactiveQueueSnapshots()
+                    .map { it.copy(queue = ArrayList()) }
+                customExtras.putBinder(
+                    "inactiveQueues",
+                    MultiQueueList(inactive)
+                )
+            }
+        }
+    }
+
+    suspend fun notifyQueues(action: String, queueId: Long?) {
+        for (connected in mediaSession!!.connectedControllers) {
+            mediaSession!!.sendCustomCommand(
+                connected,
+                buildMqCustomCommand(action, queueId),
+                Bundle.EMPTY,
+            )
+        }
+    }
+
     override fun onCustomCommand(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
         customCommand: SessionCommand,
         args: Bundle
     ): ListenableFuture<SessionResult> {
-        suspend fun buildMqCustomCommand(action: String, queueId: Long?): SessionCommand {
-            return SessionCommand(action, Bundle.EMPTY).apply {
-                val plr = endedWorkaroundPlayer!!
-                queueId?.let {
-                    customExtras.putLong("queueId", it)
-                }
-                if (action != CLIENT_QB_REFRESH_CLEAR) {
-                    customExtras.putBinder(
-                        "activeQueue",
-                        MultiQueueList(listOf(plr.getActiveQueue()))
-                    )
-                    val inactive = inactiveQueueSnapshots()
-                        .map { it.copy(queue = ArrayList()) }
-                    customExtras.putBinder(
-                        "inactiveQueues",
-                        MultiQueueList(inactive)
-                    )
-                }
-            }
-        }
-
-        suspend fun notifyQueues(action: String, queueId: Long?) {
-            for (connected in mediaSession!!.connectedControllers) {
-                mediaSession!!.sendCustomCommand(
-                    connected,
-                    buildMqCustomCommand(action, queueId),
-                    Bundle.EMPTY,
-                )
-            }
-        }
-
         if (customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_SEAMLESSLY
             || customCommand.customAction == SERVICE_SET_MEDIA_ITEMS_ATOMIC) {
             val songList = MediaItemList.getList(
@@ -2591,6 +2600,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         if (state == Player.STATE_ENDED) {
             activeQueuePersistence.stopProgressSaving(save = false)
             activeQueuePersistence.saveNow()
+            if (endedWorkaroundPlayer?.playsNextQueue == true) playNextQueueAfterEnd()
         }
     }
 

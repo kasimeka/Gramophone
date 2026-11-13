@@ -17,6 +17,8 @@
 
 package org.akanework.gramophone.logic.queue
 
+import java.util.UUID
+
 
 /** What pressing a play control should do. */
 sealed interface QueuePlaybackAction {
@@ -113,4 +115,10 @@ object QueuePlaybackRules {
      * With no active queue the action is hidden rather than implying a destination.
      */
     fun libraryPlayNextAvailable(activeQueue: Queue?): Boolean = activeQueue != null
+
+    /** The queue listed after [activeId] in [ordered], or null for the last queue or an unlisted one. */
+    fun nextQueueAfter(ordered: List<Queue>, activeId: UUID): Queue? {
+        val index = ordered.indexOfFirst { it.id == activeId }
+        return if (index < 0) null else ordered.getOrNull(index + 1)
+    }
 }

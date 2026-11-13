@@ -140,6 +140,7 @@
     <string name="repeat_all">Repeat all</string>
     <string name="repeat_one">Repeat one</string>
     <string name="repeat_all_shuffled">Shuffle at end, then repeat</string>
+    <string name="repeat_play_next_queue">Play next queue</string>
     <!-- Fallback name when a queue has no title -->
     <string name="unknown_queue">Unknown queue</string>
     <string name="gramophone_crashed" translatable="false">Crash log</string>

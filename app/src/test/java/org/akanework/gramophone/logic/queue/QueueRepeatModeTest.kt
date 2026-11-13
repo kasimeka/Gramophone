@@ -31,20 +31,42 @@ class QueueRepeatModeTest {
     }
 
     @Test
-    fun playerModesKeepTheirValuesAndDoNotShuffle() {
+    fun playNextQueueIsStoredAsItsOwnValueAndRunsAsRepeatOff() {
+        assertEquals(QueueRepeatMode.PLAY_NEXT_QUEUE, QueueRepeatMode.fromValue(4))
+        assertEquals(QueueRepeatMode.OFF.value, QueueRepeatMode.PLAY_NEXT_QUEUE.playerValue)
+        assertTrue(QueueRepeatMode.PLAY_NEXT_QUEUE.playsNextQueue)
+        assertFalse(QueueRepeatMode.PLAY_NEXT_QUEUE.shufflesOnWrap)
+    }
+
+    @Test
+    fun playerModesKeepTheirValuesAndDoNotShuffleOrPlayNext() {
         for (mode in listOf(QueueRepeatMode.OFF, QueueRepeatMode.ONE, QueueRepeatMode.ALL)) {
             assertEquals(mode, QueueRepeatMode.fromValue(mode.value))
             assertEquals(mode.value, mode.playerValue)
             assertFalse(mode.shufflesOnWrap)
+            assertFalse(mode.playsNextQueue)
         }
     }
 
     @Test
-    fun playerStateReadsBackAsShuffleOnlyForRepeatAllWithTheFlag() {
-        assertEquals(QueueRepeatMode.SHUFFLE_ALL, QueueRepeatMode.fromPlayer(2, shuffleOnWrap = true))
-        assertEquals(QueueRepeatMode.ALL, QueueRepeatMode.fromPlayer(2, shuffleOnWrap = false))
-        assertEquals(QueueRepeatMode.ONE, QueueRepeatMode.fromPlayer(1, shuffleOnWrap = true))
-        assertEquals(QueueRepeatMode.OFF, QueueRepeatMode.fromPlayer(0, shuffleOnWrap = true))
+    fun repeatCycleVisitsEveryModeInPickerOrderAndReturnsToOff() {
+        var mode = QueueRepeatMode.OFF
+        val visited = mutableListOf<QueueRepeatMode>()
+        repeat(QueueRepeatMode.entries.size) {
+            visited += mode
+            mode = mode.next
+        }
+        assertEquals(
+            listOf(
+                QueueRepeatMode.OFF,
+                QueueRepeatMode.ONE,
+                QueueRepeatMode.ALL,
+                QueueRepeatMode.SHUFFLE_ALL,
+                QueueRepeatMode.PLAY_NEXT_QUEUE,
+            ),
+            visited,
+        )
+        assertEquals(QueueRepeatMode.OFF, mode)
     }
 
     @Test

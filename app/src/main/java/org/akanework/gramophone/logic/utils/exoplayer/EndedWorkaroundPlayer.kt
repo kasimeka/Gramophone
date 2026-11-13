@@ -70,22 +70,28 @@ class EndedWorkaroundPlayer(
 
     override fun playbackState(): Int = super.getPlaybackState()
 
-    override fun repeatMode(): Int =
-        QueueRepeatMode.fromPlayer(super.getRepeatMode(), shuffleOnWrap).value
-
-    /** Repeat-all that reshuffles the rest of the queue when playback wraps to its start. */
-    var shuffleOnWrap: Boolean = false
+    /** The repeat option the user picked. The player runs it as one of its own repeat modes. */
+    var repeatChoice: QueueRepeatMode = QueueRepeatMode.OFF
         private set
 
-    /** Apply a repeat mode from a queue or the user. Accepts [QueueRepeatMode.SHUFFLE_ALL]. */
+    val shuffleOnWrap: Boolean
+        get() = repeatChoice.shufflesOnWrap
+
+    val playsNextQueue: Boolean
+        get() = repeatChoice.playsNextQueue
+
+    override fun repeatMode(): Int = repeatChoice.value
+
+    /** Apply a repeat option from a queue or the user, including the ones the player cannot express. */
     fun applyRepeatMode(repeatMode: Int) {
         val mode = QueueRepeatMode.fromValue(repeatMode)
         handleSetRepeatMode(mode.playerValue)
-        shuffleOnWrap = mode.shufflesOnWrap
+        repeatChoice = mode
     }
 
+    /** A repeat change from a standard player command maps only onto off, one, and all. */
     override fun handleSetRepeatMode(repeatMode: Int): ListenableFuture<*> {
-        shuffleOnWrap = false
+        repeatChoice = QueueRepeatMode.fromValue(repeatMode)
         return super.handleSetRepeatMode(repeatMode)
     }
 
