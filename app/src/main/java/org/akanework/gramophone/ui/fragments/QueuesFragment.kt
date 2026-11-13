@@ -763,8 +763,11 @@ private fun QueueDetailScreen(
     }
 
     fun reorderQueueBy(sortType: String) {
-        scope.launch(Dispatchers.IO) {
-            activity.getPlayer()?.reorderQueue(loadedQueue.id, sortType)
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                activity.getPlayer()?.reorderQueue(loadedQueue.id, sortType) == true
+            }
+            if (ok) showUndo(R.string.queue_reordered)
         }
     }
 
@@ -1325,6 +1328,7 @@ private fun QueueDetailDecorPanel(
                     R.string.sort_by_add_date to Sorter.Type.ByAddDateDescending.name,
                     R.string.sort_by_release_date to Sorter.Type.ByReleaseDateDescending.name,
                     R.string.sort_by_modified_date to Sorter.Type.ByModifiedDateDescending.name,
+                    R.string.sort_by_duration to Sorter.Type.ByDurationDescending.name,
                 )
                 options.forEach { (labelRes, sortType) ->
                     DropdownMenuItem(

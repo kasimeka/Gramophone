@@ -172,7 +172,8 @@ class DecorPanelBinder(
             Pair(R.id.add_date, Sorter.Type.ByAddDateDescending),
             Pair(R.id.release_date, Sorter.Type.ByReleaseDateDescending),
             Pair(R.id.mod_date, Sorter.Type.ByModifiedDateDescending),
-            Pair(R.id.file_path, Sorter.Type.ByFilePathAscending)
+            Pair(R.id.file_path, Sorter.Type.ByFilePathAscending),
+            Pair(R.id.duration, Sorter.Type.ByDurationDescending),
         )
         val layoutMap = mapOf(
             Pair(R.id.list, BaseAdapter.LayoutType.LIST),

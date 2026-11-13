@@ -76,6 +76,11 @@
             android:orderInCategory="12"
             android:title="@string/sort_by_file_path"
             app:showAsAction="never" />
+        <item
+            android:id="@+id/duration"
+            android:orderInCategory="13"
+            android:title="@string/sort_by_duration"
+            app:showAsAction="never" />
     </group>
     <item
         android:id="@+id/reverse_order"

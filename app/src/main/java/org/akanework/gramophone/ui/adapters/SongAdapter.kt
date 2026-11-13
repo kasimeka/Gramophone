@@ -292,7 +292,8 @@ class SongAdapter(
             Sorter.Type.ByReleaseDateDescending, Sorter.Type.ByReleaseDateAscending,
             Sorter.Type.ByModifiedDateDescending, Sorter.Type.ByModifiedDateAscending,
             Sorter.Type.ByFilePathDescending, Sorter.Type.ByFilePathAscending,
-            Sorter.Type.ByDiscAndTrack
+            Sorter.Type.ByDiscAndTrack,
+            Sorter.Type.ByDurationDescending, Sorter.Type.ByDurationAscending,
         )
     ) {
         override fun getId(item: MediaItem): String {
@@ -334,6 +335,10 @@ class SongAdapter(
 
         override fun getAddDate(item: MediaItem): Long {
             return item.mediaMetadata.addDate ?: -1
+        }
+
+        override fun getDuration(item: MediaItem): Long {
+            return item.mediaMetadata.durationMs ?: 0L
         }
 
         override fun getReleaseDate(item: MediaItem): Long {

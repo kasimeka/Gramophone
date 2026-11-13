@@ -413,6 +413,7 @@
     <string name="will_play_next">Will play next</string>
     <!-- Snackbar confirmation after removing a song from the queue -->
     <string name="removed_from_queue">Removed from queue</string>
+    <string name="queue_reordered">Queue reordered</string>
     <!-- Snackbar confirmation after reordering the queue -->
     <!-- Toast confirmation after shuffling the queue from the full player, which has no undo -->
     <string name="queue_shuffled">Queue shuffled</string>
@@ -458,6 +459,7 @@
     <string name="no">No</string>
     <!-- Sort songs/albums/etc by file path (used when user added numbering to file names) -->
     <string name="sort_by_file_path">File path</string>
+    <string name="sort_by_duration">Duration</string>
     <!-- This is one of the possible speaker layouts supported by Android. It's used to display
     supported speaker layouts for USB DACs and active speaker layout for current playback. -->
     <string name="spk_channel_out_mono">Mono</string>

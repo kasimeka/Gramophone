@@ -50,6 +50,7 @@ class Sorter<T>(
         open fun getReleaseDate(item: T): Long = throw UnsupportedOperationException()
         open fun getModifiedDate(item: T): Long = throw UnsupportedOperationException()
         open fun getDiscAndTrack(item: T): Int = throw UnsupportedOperationException()
+        open fun getDuration(item: T): Long = throw UnsupportedOperationException()
         fun canGetTitle(): Boolean = typesSupported.contains(Type.ByTitleAscending)
                 || typesSupported.contains(Type.ByTitleDescending)
 
@@ -84,6 +85,9 @@ class Sorter<T>(
 
         fun canGetModifiedDate(): Boolean = typesSupported.contains(Type.ByModifiedDateAscending)
                 || typesSupported.contains(Type.ByModifiedDateDescending)
+
+        fun canGetDuration(): Boolean = typesSupported.contains(Type.ByDurationAscending)
+                || typesSupported.contains(Type.ByDurationDescending)
     }
 
     fun interface NaturalOrderHelper<T> {
@@ -105,6 +109,7 @@ class Sorter<T>(
         ByModifiedDateDescending, ByModifiedDateAscending,
         ByFilePathDescending, ByFilePathAscending,
         ByDiscAndTrack, ByDiscAndTrackDescending,
+        ByDurationDescending, ByDurationAscending,
         None;
 
         companion object {
@@ -139,6 +144,8 @@ class Sorter<T>(
                 ByFilePathAscending -> ByFilePathDescending
                 ByDiscAndTrack -> ByDiscAndTrackDescending
                 ByDiscAndTrackDescending -> ByDiscAndTrack
+                ByDurationDescending -> ByDurationAscending
+                ByDurationAscending -> ByDurationDescending
                 None -> null
             }
         }
@@ -359,6 +366,18 @@ class Sorter<T>(
                 )
             }
 
+            Type.ByDurationDescending -> {
+                SupportComparator.createInversionComparator(
+                    compareBy { sortingHelper.getDuration(it) }, true
+                )
+            }
+
+            Type.ByDurationAscending -> {
+                SupportComparator.createInversionComparator(
+                    compareBy { sortingHelper.getDuration(it) }, false
+                )
+            }
+
             Type.NaturalOrder -> {
                 SupportComparator.createInversionComparator(
                     compareBy { naturalOrderHelper!!.lookup(it) }, false
@@ -432,6 +451,10 @@ class Sorter<T>(
 
             Type.ByModifiedDateDescending, Type.ByModifiedDateAscending -> {
                 CalculationUtils.convertUnixTimestampToMonthDay(sortingHelper.getModifiedDate(item))
+            }
+
+            Type.ByDurationDescending, Type.ByDurationAscending -> {
+                CalculationUtils.convertDurationToTimeStamp(sortingHelper.getDuration(item))
             }
 
             Type.NaturalOrder, Type.NaturalOrderDescending -> {

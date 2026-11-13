@@ -1435,6 +1435,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             if (order == items.indices.toList()) return false
             lastQueueEditUndo = null
             lastInactiveQueueEditUndo = null
+            lastQueueEditUndo = QueueEditUndoState(
+                durable.id, QueueEditOperation.MOVE, items.indices.toList(), items
+            )
+            lastInactiveQueueEditUndo = null
             withoutMarkingUserModified {
                 PlayerQueueOrderTarget(player).applyDisplayedOrder(order)
             }
@@ -1445,7 +1449,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             return true
         }
 
-        var applied = false
+        var before: Queue? = null
         queueRepository.mutate(durable.id) { current ->
             if (current.rows.size <= 1) return@mutate current
             val items = current.rows.mapNotNull(MediaRowCodec::decode)
@@ -1454,12 +1458,14 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             if (order == items.indices.toList()) return@mutate current
             val target = StoredQueueOrderTarget(current)
             target.applyDisplayedOrder(order)
-            applied = true
+            before = current
             target.queue.copy(isModified = true)
         }
-        if (!applied) return false
+        val captured = before ?: return false
         lastQueueEditUndo = null
-        lastInactiveQueueEditUndo = null
+        lastInactiveQueueEditUndo = InactiveQueueEditUndoState(
+            durable.id, captured.rows, captured.bookmark
+        )
         handler.post {
             scope.launch {
                 broadcastQueueSongsRefresh(queueId = inactiveQueueIdForRefresh(command))
