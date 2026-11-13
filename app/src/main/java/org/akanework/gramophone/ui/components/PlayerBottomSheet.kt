@@ -102,6 +102,7 @@ class PlayerBottomSheet private constructor(
             refreshBottomTabBar()
         }
     }
+    private var listenedTabBar: TabLayout? = null
     private val bottomTabsEnabled: Boolean by lazy { UiExperiments.tabsAtBottom(context) }
     /** The content bottom padding as observable state, so Compose content recomposes when it changes. */
     val bottomPadding = mutableIntStateOf(0)
@@ -369,6 +370,8 @@ class PlayerBottomSheet private constructor(
             // Layout can still reset the sheet state after attach, so presence is checked again after it.
             post { updatePresence() }
             lifecycleOwner.lifecycle.addObserver(this)
+            // The tab bar can be gone by the time the sheet detaches during an activity relaunch.
+            listenedTabBar = bottomTabBar
             bottomTabBar.addOnLayoutChangeListener(bottomTabBarLayoutListener)
             updatePeekHeight()
             dispatchBottomSheetInsets()
@@ -379,7 +382,8 @@ class PlayerBottomSheet private constructor(
         super.onDetachedFromWindow()
         lastBottomPadding = null
         lastTabBarHeight = 0
-        bottomTabBar.removeOnLayoutChangeListener(bottomTabBarLayoutListener)
+        listenedTabBar?.removeOnLayoutChangeListener(bottomTabBarLayoutListener)
+        listenedTabBar = null
         fullPlayer.minimize = null
         lifecycleOwner.lifecycle.removeObserver(this)
         standardBottomSheetBehavior?.removeBottomSheetCallback(bottomSheetCallback)
