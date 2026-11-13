@@ -52,6 +52,7 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.clone
 import org.akanework.gramophone.logic.fadOutAnimation
 import org.akanework.gramophone.logic.ui.BottomTabBarLayout
+import androidx.compose.runtime.mutableIntStateOf
 import org.akanework.gramophone.logic.ui.UiExperiments
 import org.akanework.gramophone.logic.ui.MiniPlayerPresence
 import org.akanework.gramophone.logic.ui.MiniPlayerScreenPolicy
@@ -102,6 +103,8 @@ class PlayerBottomSheet private constructor(
         }
     }
     private val bottomTabsEnabled: Boolean by lazy { UiExperiments.tabsAtBottom(context) }
+    /** The content bottom padding as observable state, so Compose content recomposes when it changes. */
+    val bottomPadding = mutableIntStateOf(0)
 
     /**
      * The current screen's policy for the mini player. Presence is derived from this policy and
@@ -268,6 +271,7 @@ class PlayerBottomSheet private constructor(
             }
             applyBottomTabBar()
             dispatchBottomSheetInsets()
+            bottomPadding.intValue = getBottomPadding()
         }
 
         override fun onSlide(
@@ -410,6 +414,7 @@ class PlayerBottomSheet private constructor(
                 BottomTabBarLayout.peekHeight(miniHeight, laidOutBottomTabBarHeight()), false
             )
         }
+        bottomPadding.intValue = getBottomPadding()
     }
 
     /** The tab bar height as it is drawn, so the resting position matches the content exactly. */

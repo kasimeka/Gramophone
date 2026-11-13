@@ -900,7 +900,7 @@ private fun QueueDetailScreen(
     }
     BackHandler(enabled = searchOpen) { closeSearch() }
     val bottomPaddingDp = with(LocalDensity.current) {
-        activity.playerBottomSheet.getBottomPadding().toDp()
+        activity.playerBottomSheet.bottomPadding.intValue.toDp()
     }
 
     Box(Modifier.fillMaxSize().onGloballyPositioned { rootOrigin = it.positionInWindow() }) {
