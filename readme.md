@@ -24,6 +24,7 @@ This fork reworks queues and adds a few things on top of upstream beta.
   - Favourites and recently added are pinned at the top of the Queues tab
   - Shuffle-play from the Queues tab starts a random song from the queue
   - Queues are exported as m3u8 playlists, and m3u8 playlists can be imported as queues
+  - Favourites are stored as a system queue and mirrored to gramophone_favourite.m3u8 in the queues folder
 
 - Queue details
   - Rename, delete, reorder, and undo edits on any queue
@@ -48,6 +49,7 @@ This fork reworks queues and adds a few things on top of upstream beta.
   - The now-playing song is highlighted the same way in every list
   - The mini player stays pinned at the bottom of the screen
   - The section tabs moved to the bottom, with the mini player stacked above them
+  - Appearance settings has two switches that apply immediately: "Tabs at bottom" (on by default) puts the section tabs under the mini player, and "Huge forehead" (off by default) makes the top app bars two fifths of the screen tall
 
 ## Features
 - Light, stable, and minimalistic
