@@ -36,14 +36,14 @@ This fork reworks queues and adds a few things on top of upstream beta.
 - Repeat
   - The repeat button opens a picker with these options:
     - Off
-    - One
-    - All
+    - Repeat one
+    - Repeat all
     - Shuffle at end, then repeat: reshuffles the queue and keeps playing when it ends
     - Play next queue: when the queue ends, the next queue in the Queues tab starts from its bookmark; the last queue pauses
 
 
 - Interface
-  - Playlists were completely replaced by queues
+  - Playlists were deleted in favor of queues
   - The now-playing song is highlighted the same way in every list
   - The mini player stays pinned at the bottom of the screen
 
