@@ -121,6 +121,7 @@ import org.akanework.gramophone.logic.queue.ActiveQueuePersistence
 import org.akanework.gramophone.logic.queue.Queue
 import org.akanework.gramophone.logic.queue.QueueBookmark
 import org.akanework.gramophone.logic.queue.QueueDeduplicationRules
+import org.akanework.gramophone.logic.queue.PlaylistSettleGate
 import org.akanework.gramophone.logic.queue.QueueEditOperation
 import org.akanework.gramophone.logic.queue.QueueEditResult
 import org.akanework.gramophone.logic.queue.QueueOrderEditor
@@ -224,6 +225,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
     private var controller: MediaBrowser? = null
     private var controllerFuture: ListenableFuture<MediaBrowser>? = null
 
+    private val playlistGate = PlaylistSettleGate()
     private var lastQueueEditUndo: QueueEditUndoState? = null
     private data class QueueEditUndoState(
         val queueUuid: UUID,
@@ -1089,6 +1091,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         position: Int,
         to: Int,
     ): Boolean {
+        playlistGate.awaitSettled()
         val target = PlayerQueueOrderTarget(player)
         val order = target.displayedOrder()
         if (position !in order.indices) return false
@@ -1123,8 +1126,11 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             }
         }
 
+        playlistGate.mutated()
         lastInactiveQueueEditUndo = null
-        if (player.exoPlayer.mediaItemCount == 0) {
+        // Count from the order, not the player: the player may not have applied the change yet.
+        val rowsAfter = if (operation == QueueEditOperation.REMOVE) order.size - 1 else order.size
+        if (rowsAfter == 0) {
             // An empty active queue has no player snapshot to mirror; persist the cleared rows.
             activeQueuePersistence.saveClearedNow(queueUuid)
         } else {
@@ -1197,6 +1203,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         val undo = lastQueueEditUndo ?: return false
         if (undo.queueUuid != queueUuid) return false
 
+        playlistGate.awaitSettled()
         val cleared = player.exoPlayer.mediaItemCount == 0
         if (!cleared && !isDurableQueueActive(queueUuid)) return false
         if (cleared) {
@@ -1209,6 +1216,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
         val target = PlayerQueueOrderTarget(player)
         val restored = when (undo.operation) {
+            // Restoring a reorder reads the playlist, so it must follow any change still applying.
             QueueEditOperation.PLAY_NEXT, QueueEditOperation.MOVE -> {
                 target.restoreDisplayedOrder(undo.displayedOrder, undo.mediaItems)
             }
@@ -1222,20 +1230,25 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                     removedIndex,
                     undo.mediaItems[removedIndex]
                 )
+                playlistGate.mutated()
+                playlistGate.awaitSettled()
                 if (!target.restoreDisplayedOrder(undo.displayedOrder, undo.mediaItems)) {
                     player.exoPlayer.removeMediaItem(removedIndex)
+                    playlistGate.mutated()
                     return false
                 }
                 true
             }
         }
         if (!restored) return false
+        playlistGate.mutated()
 
         lastQueueEditUndo = null
         if (cleared) {
+            playlistGate.awaitSettled()
             activeQueuePersistence.saveNowAwait()
         } else {
-            activeQueuePersistence.saveNow()
+            activeQueuePersistence.markStructuralDirty(markModified = true)
         }
         return true
     }
@@ -1330,6 +1343,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         val isActive = durable != null && isDurableQueueActive(durable.id)
 
         if (isActive || durable == null) {
+            playlistGate.awaitSettled()
             if (player.exoPlayer.mediaItemCount <= 0) return false
             if (player.currentMediaItem?.mediaMetadata?.isPlayable == false) return false
             val size = player.exoPlayer.mediaItemCount
@@ -1357,12 +1371,13 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 val reordered = withContext(Dispatchers.Default) {
                     result.order.map { items[it] }
                 }
-                withoutMarkingUserModified {
+                withoutMarkingUserModified<Unit> {
                     player.exoPlayer.setMediaItems(reordered, 0, 0L)
+                    playlistGate.mutated()
                 }
                 player.play()
                 handler.post {
-                    activeQueuePersistence.saveNow(markModified = false)
+                    activeQueuePersistence.markStructuralDirty()
                     scope.launch { broadcastQueueSongsRefresh() }
                 }
                 return true
@@ -1386,11 +1401,13 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                 withoutMarkingUserModified {
                     player.exoPlayer.moveMediaItem(currentIndex, 0)
                 }
+                playlistGate.mutated()
             }
             if (tail.isNotEmpty()) {
                 withoutMarkingUserModified {
                     player.exoPlayer.replaceMediaItems(1, items.size, tail)
                 }
+                playlistGate.mutated()
             }
             handler.post {
                 activeQueuePersistence.markStructuralDirty()
@@ -2483,6 +2500,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
 
     override fun onTimelineChanged(timeline: Timeline, reason: @Player.TimelineChangeReason Int) {
         if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) {
+            playlistGate.timelineApplied()
             lastPlaylistLoaded.complete(Unit)
             refreshMediaButtonCustomLayout()
             if ((endedWorkaroundPlayer?.mediaItemCount ?: 0) == 0 &&
