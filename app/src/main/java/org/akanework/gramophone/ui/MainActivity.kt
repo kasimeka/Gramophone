@@ -88,6 +88,9 @@ import org.akanework.gramophone.logic.postAtFrontOfQueueAsync
 import org.akanework.gramophone.logic.setMediaItemsWithTitle
 import org.nift4.mediastorecompat.MediaStoreCompat
 import org.akanework.gramophone.logic.ui.BaseActivity
+import org.akanework.gramophone.logic.ui.UiExperiments
+import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
 import org.akanework.gramophone.ui.components.PlayerBottomSheet
 import org.akanework.gramophone.ui.fragments.BaseFragment
 import org.akanework.gramophone.ui.fragments.SearchFragment
@@ -144,10 +147,17 @@ class MainActivity : BaseActivity() {
     /**
      * onCreate - core of MainActivity.
      */
+    private val uiExperimentListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        // The layout is built once, so a changed experiment switch rebuilds the main screen.
+        if (key == UiExperiments.HUGE_FOREHEAD || key == UiExperiments.TABS_AT_BOTTOM) recreate()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i("MainActivity", "onCreate($intent)")
         installSplashScreen().setKeepOnScreenCondition { !ready }
         super.onCreate(savedInstanceState)
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .registerOnSharedPreferenceChangeListener(uiExperimentListener)
         lifecycle.addObserver(controllerViewModel)
         enableEdgeToEdgeProperly()
         if (savedInstanceState?.containsKey("DeletePendingRequest") == true) {
@@ -569,6 +579,8 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .unregisterOnSharedPreferenceChangeListener(uiExperimentListener)
         findViewById<ViewGroup>(R.id.container)?.let { TransitionManager.endTransitions(it) }
         // https://github.com/androidx/media/issues/805
         if (needsMissingOnDestroyCallWorkarounds()
