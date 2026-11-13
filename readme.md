@@ -32,6 +32,7 @@ This fork reworks queues and adds a few things on top of upstream beta.
   - Queues accept duplicate songs, with a one-click option to clean them up
   - Shuffle reorders a queue in place and keeps the currently playing song first
   - After a shuffle, or after undoing one, the list scrolls to the song that's playing
+  - Search inside a queue; tapping a result scrolls to it and highlights it without playing it
 
 - Repeat
   - The repeat button opens a picker with these options:

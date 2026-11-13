@@ -17,6 +17,8 @@
 
 package org.akanework.gramophone.ui.components.compose
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -44,6 +46,7 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,8 +73,13 @@ import coil3.request.placeholder
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.getFile
 import org.akanework.gramophone.ui.SongMenuContext
+import kotlinx.coroutines.delay
 import uk.akane.libphonograph.items.albumId
 import uk.akane.libphonograph.items.artistId
+
+private const val HIGHLIGHT_FADE_IN_MS = 200
+private const val HIGHLIGHT_HOLD_MS = 600L
+private const val HIGHLIGHT_FADE_OUT_MS = 400
 
 /**
  * Song row used in queue detail, reusing the regular song row's content, menu, and actions with
@@ -99,6 +107,8 @@ fun QueueSongRow(
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
     onDragCancel: () -> Unit,
+    highlighted: Boolean = false,
+    onHighlightEnd: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -106,6 +116,15 @@ fun QueueSongRow(
     val currentOnDrag by rememberUpdatedState(onDrag)
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
     val currentOnDragCancel by rememberUpdatedState(onDragCancel)
+    val currentOnHighlightEnd by rememberUpdatedState(onHighlightEnd)
+    val highlightAlpha = remember { Animatable(0f) }
+    LaunchedEffect(highlighted) {
+        if (!highlighted) return@LaunchedEffect
+        highlightAlpha.animateTo(1f, tween(HIGHLIGHT_FADE_IN_MS))
+        delay(HIGHLIGHT_HOLD_MS)
+        highlightAlpha.animateTo(0f, tween(HIGHLIGHT_FADE_OUT_MS))
+        currentOnHighlightEnd()
+    }
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
@@ -144,6 +163,7 @@ fun QueueSongRow(
                 .fillMaxWidth()
                 .height(72.dp)
                 .background(MaterialTheme.colorScheme.surface)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = highlightAlpha.value))
                 .pointerInput(Unit) {
                     detectDragGesturesAfterLongPress(
                         onDragStart = { currentOnDragStart() },

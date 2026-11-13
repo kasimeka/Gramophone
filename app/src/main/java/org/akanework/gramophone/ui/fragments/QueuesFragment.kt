@@ -24,6 +24,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -47,6 +50,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,6 +58,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
@@ -125,7 +130,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ShareCompat
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -147,11 +154,14 @@ import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
 import org.akanework.gramophone.logic.getFile
 import org.akanework.gramophone.logic.deduplicateQueue
 import org.akanework.gramophone.logic.gramophoneApplication
+import org.akanework.gramophone.logic.closeKeyboard
 import org.akanework.gramophone.logic.moveQueueRow
 import org.akanework.gramophone.logic.playQueue
+import org.akanework.gramophone.logic.showKeyboard
 import org.akanework.gramophone.logic.queue.Queue
 import org.akanework.gramophone.logic.queue.QueueEditOperation
 import org.akanework.gramophone.logic.queue.QueueOrderEditor
+import org.akanework.gramophone.logic.utils.matchesSearch
 import org.akanework.gramophone.logic.queue.QueuePlaybackAction
 import org.akanework.gramophone.logic.queue.QueuePlaybackRules
 import org.akanework.gramophone.logic.queue.QueuePlaybackState
@@ -174,6 +184,7 @@ import org.akanework.gramophone.ui.components.AddToQueueSheet
 import org.akanework.gramophone.ui.components.PinnedQueueCollection
 import org.akanework.gramophone.ui.components.QueueListContent
 import org.akanework.gramophone.ui.components.compose.QueueSongRow
+import org.akanework.gramophone.ui.components.compose.SearchAppBar
 import org.akanework.gramophone.ui.fragments.ArtistSubFragment
 import org.akanework.gramophone.ui.fragments.DetailDialogFragment
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment
@@ -554,6 +565,10 @@ private fun QueueDetailScreen(
     var currentPlayingKey by remember(loadedQueue.id) { mutableStateOf<Long?>(null) }
     var actionsOpen by remember { mutableStateOf(false) }
     var renameOpen by rememberSaveable { mutableStateOf(false) }
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var scrollToRow by remember(loadedQueue.id) { mutableStateOf<Int?>(null) }
+    var highlightRowKey by remember(loadedQueue.id) { mutableStateOf<Long?>(null) }
     var deleteOpen by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -567,6 +582,12 @@ private fun QueueDetailScreen(
     var displayRows by remember(loadedQueue.id) {
         mutableStateOf(loadedQueue.rows.map { DragRow(rowKeySeed++, it) })
     }
+    val visibleRows = remember(displayRows, searchQuery) {
+        val text = searchQuery.trim()
+        displayRows.withIndex().filter { (_, row) ->
+            text.isEmpty() || MediaRowCodec.decode(row.encoded)?.matchesSearch(text) == true
+        }
+    }
     val dragState = remember(loadedQueue.id) { QueueDragState() }
     // Tracks an in-flight local reorder as (previous, committed). Prevents the stale pre-move
     // repository snapshot from clobbering the optimistic order while the async move commits.
@@ -575,6 +596,17 @@ private fun QueueDetailScreen(
         mutableStateOf<Pair<List<String>, List<String>>?>(null)
     }
     val latestDisplayRowsState = androidx.compose.runtime.rememberUpdatedState(displayRows)
+
+    // After a search result is tapped, the full queue is back; scroll to the row once it is laid out.
+    LaunchedEffect(scrollToRow) {
+        val target = scrollToRow ?: return@LaunchedEffect
+        snapshotFlow { listState.layoutInfo.totalItemsCount }
+            .filter { it > target + 1 }
+            .first()
+        listState.animateScrollToItem(target + 1)
+        highlightRowKey = latestDisplayRowsState.value.getOrNull(target)?.key
+        scrollToRow = null
+    }
 
     LaunchedEffect(initialScrollToCurrent, loadedQueue.id, displayRows.size, playerState.currentRow, isActive) {
         if (initialScrollToCurrent && !hasScrolledInitial && isActive) {
@@ -851,61 +883,82 @@ private fun QueueDetailScreen(
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    fun closeSearch() {
+        searchOpen = false
+        searchQuery = ""
+        scrollBehavior.state.heightOffset = 0f
+    }
+    BackHandler(enabled = searchOpen) { closeSearch() }
     val bottomPaddingDp = with(LocalDensity.current) {
         activity.playerBottomSheet.getBottomPadding().toDp()
     }
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            // The collapsing title is replaced by the search bar while searching, so it must not take scroll.
+            modifier = if (searchOpen) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                LargeTopAppBar(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) {
-                        scope.launch {
-                            scrollBehavior.state.heightOffset = 0f
-                            listState.animateScrollToItem(0)
-                        }
-                    },
-                    title = { Text(loadedQueue.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = { activity.supportFragmentManager.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
-                        }
-                    },
-                    actions = {
-                        Box {
-                            IconButton(onClick = { actionsOpen = true }) {
+                if (searchOpen) {
+                    SearchAppBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onClose = ::closeSearch,
+                    )
+                } else {
+                    LargeTopAppBar(
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            scope.launch {
+                                scrollBehavior.state.heightOffset = 0f
+                                listState.animateScrollToItem(0)
+                            }
+                        },
+                        title = { Text(loadedQueue.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                        scrollBehavior = scrollBehavior,
+                        navigationIcon = {
+                            IconButton(onClick = { activity.supportFragmentManager.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { searchOpen = true }) {
                                 Icon(
-                                    Icons.Rounded.MoreVert,
-                                    contentDescription = stringResource(R.string.more_options),
+                                    painter = painterResource(R.drawable.ic_search),
+                                    contentDescription = stringResource(R.string.home_menu_search),
                                 )
                             }
-                            DropdownMenu(
-                                expanded = actionsOpen,
-                                onDismissRequest = { actionsOpen = false },
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.rename)) },
-                                    onClick = {
-                                        actionsOpen = false
-                                        renameOpen = true
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.delete)) },
-                                    onClick = {
-                                        actionsOpen = false
-                                        deleteOpen = true
-                                    },
-                                )
+                            Box {
+                                IconButton(onClick = { actionsOpen = true }) {
+                                    Icon(
+                                        Icons.Rounded.MoreVert,
+                                        contentDescription = stringResource(R.string.more_options),
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = actionsOpen,
+                                    onDismissRequest = { actionsOpen = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.rename)) },
+                                        onClick = {
+                                            actionsOpen = false
+                                            renameOpen = true
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.delete)) },
+                                        onClick = {
+                                            actionsOpen = false
+                                            deleteOpen = true
+                                        },
+                                    )
+                                }
                             }
-                        }
-                    },
-                )
+                        },
+                    )
+                }
             },
             floatingActionButton = {
                 if (isActive) {
@@ -1150,7 +1203,10 @@ private fun QueueDetailScreen(
                             onDeduplicate = ::deduplicateRows,
                         )
                     }
-                    itemsIndexed(items = displayRows, key = { _, row -> row.key }) { index, row ->
+                    itemsIndexed(items = visibleRows, key = { _, visible -> visible.value.key }) { _, visible ->
+                        // The real queue position, not the position in the filtered list.
+                        val index = visible.index
+                        val row = visible.value
                         val encoded = row.encoded
                         val decoded = remember(encoded) { MediaRowCodec.decode(encoded) }
                         val isDragging = dragState.draggingKey == row.key
@@ -1161,9 +1217,19 @@ private fun QueueDetailScreen(
                             isCurrent = isActive && currentPlayingKey == row.key,
                             isPlaying = isActive && playerState.isPlaying,
                             canPlayNext = QueueOrderEditor.canPlayNext(displayRows.size, anchor, index),
+                            highlighted = highlightRowKey == row.key,
+                            onHighlightEnd = {
+                                if (highlightRowKey == row.key) highlightRowKey = null
+                            },
                             onPlay = {
-                                scope.launch(Dispatchers.IO) {
-                                    activity.getPlayer()?.playQueue(loadedQueue.id, index)
+                                if (searchOpen) {
+                                    // A search result only reveals its place in the full queue; it does not play.
+                                    closeSearch()
+                                    scrollToRow = index
+                                } else {
+                                    scope.launch(Dispatchers.IO) {
+                                        activity.getPlayer()?.playQueue(loadedQueue.id, index)
+                                    }
                                 }
                             },
                             onPlayNext = { playNext(index) },
@@ -1200,6 +1266,8 @@ private fun QueueDetailScreen(
                                 dragState.dragOffset = 0f
                             },
                             onDragStart = {
+                                // Reordering needs the full queue in view; a filtered list cannot be dragged.
+                                if (searchQuery.isNotBlank()) return@QueueSongRow
                                 val index = displayRows.indexOfFirst { it.key == row.key }
                                 dragState.draggingKey = row.key
                                 dragState.dragStartIndex = index.takeIf { it >= 0 }
@@ -1212,7 +1280,7 @@ private fun QueueDetailScreen(
 
                 QueueFastScrollbar(
                     listState = listState,
-                    totalItems = displayRows.size + 1,
+                    totalItems = visibleRows.size + 1,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .fillMaxHeight()

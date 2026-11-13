@@ -36,6 +36,7 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.closeKeyboard
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
 import org.akanework.gramophone.logic.showKeyboard
+import org.akanework.gramophone.logic.utils.matchesSearch
 import org.akanework.gramophone.logic.ui.MyRecyclerView
 import org.akanework.gramophone.ui.adapters.SongAdapter
 import org.akanework.gramophone.ui.adapters.Sorter
@@ -79,13 +80,7 @@ class SearchFragment : BaseFragment() {
                 }) { list, text ->
                     list.filter {
                         // TODO sort results by match quality? (using raw=natural order)
-                        val isMatchingTitle =
-                            it.mediaMetadata.title?.contains(text, true) == true
-                        val isMatchingAlbum =
-                            it.mediaMetadata.albumTitle?.contains(text, true) == true
-                        val isMatchingArtist =
-                            it.mediaMetadata.artist?.contains(text, true) == true
-                        isMatchingTitle || isMatchingAlbum || isMatchingArtist
+                        it.matchesSearch(text)
                     }
                 },
                 isSubFragment = R.id.search, allowDiffUtils = true,
