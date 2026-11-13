@@ -559,6 +559,7 @@ private fun QueueDetailScreen(
     val dragState = remember(loadedQueue.id) { QueueDragState() }
     // Tracks an in-flight local reorder as (previous, committed). Prevents the stale pre-move
     // repository snapshot from clobbering the optimistic order while the async move commits.
+    var scrollAfterRowsChange by remember(loadedQueue.id) { mutableStateOf(false) }
     var pendingMove by remember(loadedQueue.id) {
         mutableStateOf<Pair<List<String>, List<String>>?>(null)
     }
@@ -583,21 +584,33 @@ private fun QueueDetailScreen(
         }
     }
 
+    val scrollToNowPlaying: suspend () -> Unit = {
+        val target = QueuePlaybackRules.nowPlayingScrollTarget(
+            rowCount = latestDisplayRowsState.value.size,
+            isActive = isActive,
+            currentRow = playerState.currentRow
+                ?: activity.getPlayer()?.currentMediaItemIndex?.takeIf { it >= 0 },
+        )
+        if (target != null) {
+            val listTarget = target + 1
+            snapshotFlow { listState.layoutInfo.totalItemsCount }
+                .filter { it > listTarget }
+                .first()
+            listState.animateScrollToItem(listTarget)
+        }
+    }
+
     LaunchedEffect(scrollRequests, loadedQueue.id) {
         scrollRequests.collect {
-            val target = QueuePlaybackRules.nowPlayingScrollTarget(
-                rowCount = latestDisplayRowsState.value.size,
-                isActive = isActive,
-                currentRow = playerState.currentRow
-                    ?: activity.getPlayer()?.currentMediaItemIndex?.takeIf { it >= 0 },
-            )
-            if (target != null) {
-                val listTarget = target + 1
-                snapshotFlow { listState.layoutInfo.totalItemsCount }
-                    .filter { it > listTarget }
-                    .first()
-                listState.animateScrollToItem(listTarget)
-            }
+            scrollToNowPlaying()
+        }
+    }
+
+    // A shuffle or its undo scrolls once the rows it changed have reached the screen.
+    LaunchedEffect(displayRows) {
+        if (scrollAfterRowsChange) {
+            scrollAfterRowsChange = false
+            scrollToNowPlaying()
         }
     }
 
@@ -705,7 +718,7 @@ private fun QueueDetailScreen(
     )
     val canShuffle = QueueOrderEditor.canShuffleEverything(rows.size, anchor)
 
-    fun showUndo(messageRes: Int) {
+    fun showUndo(messageRes: Int, scrollOnUndo: Boolean = false) {
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
             val result = snackbarHostState.showSnackbar(
@@ -714,6 +727,7 @@ private fun QueueDetailScreen(
                 duration = SnackbarDuration.Long,
             )
             if (result == SnackbarResult.ActionPerformed) {
+                if (scrollOnUndo) scrollAfterRowsChange = true
                 withContext(Dispatchers.IO) {
                     activity.getPlayer()?.undoQueueEdit(loadedQueue.id)
                 }
@@ -758,7 +772,10 @@ private fun QueueDetailScreen(
             val ok = withContext(Dispatchers.IO) {
                 activity.getPlayer()?.shuffleQueue(loadedQueue.id, shufflePlay = false) == true
             }
-            if (ok) showUndo(R.string.queue_shuffled)
+            if (ok) {
+                scrollAfterRowsChange = true
+                showUndo(R.string.queue_shuffled, scrollOnUndo = true)
+            }
         }
     }
 
