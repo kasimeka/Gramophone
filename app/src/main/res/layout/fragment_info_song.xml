@@ -19,10 +19,12 @@
             android:layout_height="?attr/collapsingToolbarLayoutLargeSize"
             app:collapsedTitleTextAppearance="?textAppearanceTitleLarge"
             app:collapsedTitleTextColor="?attr/colorOnSurface"
+            app:expandedTitleGravity="bottom"
+            app:expandedTitleMarginBottom="24dp"
             app:expandedTitleMarginStart="24dp"
             app:expandedTitleTextAppearance="?textAppearanceHeadlineLarge"
             app:expandedTitleTextColor="?attr/colorOnSurface"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:title="@string/details">
 
             <com.google.android.material.appbar.MaterialToolbar

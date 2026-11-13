@@ -48,11 +48,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import org.akanework.gramophone.R
+import org.akanework.gramophone.logic.expandedAppBarHeight
 import org.akanework.gramophone.logic.utils.data.Contributors
 import org.akanework.gramophone.logic.utils.data.GitHubUser
 import org.akanework.gramophone.ui.BaseComposeActivity
@@ -164,9 +165,11 @@ class ContributorsSettingsActivity : BaseComposeActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ContributorsSettingsScreen() {
+        val appBarHeight = expandedAppBarHeight()
         Scaffold(
             topBar = {
-                TopAppBar(
+                LargeTopAppBar(
+                    expandedHeight = appBarHeight,
                     title = { Text(stringResource(R.string.settings_contributors)) },
                     navigationIcon = {
                         IconButton(onClick = { finish() }) {

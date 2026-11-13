@@ -3,13 +3,21 @@ package org.akanework.gramophone.ui.components.compose
 import android.view.LayoutInflater
 import android.widget.EditText
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.lerp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,8 +36,18 @@ import org.akanework.gramophone.logic.showKeyboard
 import org.akanework.gramophone.ui.MainActivity
 
 /**
- * The search bar shared by global search and queue search: back on the navigation side, the
- * search field in the title slot.
+ * Scroll behaviour for the search bars. The app bar drags itself when given a scroll behaviour,
+ * and without a snap it stays wherever the drag leaves it.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun rememberSearchBarScrollBehavior(): TopAppBarScrollBehavior =
+    TopAppBarDefaults.exitUntilCollapsedScrollBehavior(snapAnimationSpec = null)
+
+/**
+ * The search bar shared by global search and queue search: back on the navigation side and a
+ * single search field overlaid at the bottom of the bar so LargeTopAppBar never composes a
+ * duplicate title into its collapsed top row.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,24 +56,46 @@ fun SearchAppBar(
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
     expandedHeight: Dp = 152.dp,
-    scrollBehavior: TopAppBarScrollBehavior? = null,
+    scrollBehavior: TopAppBarScrollBehavior = rememberSearchBarScrollBehavior(),
+    modifier: Modifier = Modifier,
     onFieldReady: (EditText) -> Unit = {},
 ) {
-    LargeTopAppBar(
-        expandedHeight = expandedHeight,
-        title = {
-            SearchField(query = query, onQueryChange = onQueryChange, onFieldReady = onFieldReady)
-        },
-        scrollBehavior = scrollBehavior,
-        navigationIcon = {
-            IconButton(onClick = onClose) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
+    Box(modifier = modifier) {
+        LargeTopAppBar(
+            expandedHeight = expandedHeight,
+            title = {},
+            scrollBehavior = scrollBehavior,
+            navigationIcon = {
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                    )
+                }
+            },
+        )
+        val fraction = scrollBehavior.state.collapsedFraction
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(
+                    start = lerp(16.dp, 56.dp, fraction),
+                    end = 16.dp,
+                    bottom = lerp(12.dp, 8.dp, fraction),
                 )
-            }
-        },
-    )
+                .draggable(
+                    orientation = Orientation.Vertical,
+                    state = rememberDraggableState { delta ->
+                        val state = scrollBehavior.state
+                        state.heightOffset = (state.heightOffset + delta)
+                            .coerceIn(state.heightOffsetLimit, 0f)
+                    },
+                ),
+        ) {
+            SearchField(query = query, onQueryChange = onQueryChange, onFieldReady = onFieldReady)
+        }
+    }
 }
 
 /** The search text field (R.layout.search_field), with the keyboard shown while it is on screen. */

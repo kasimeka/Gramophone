@@ -28,9 +28,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import org.akanework.gramophone.R
+import org.akanework.gramophone.logic.expandedAppBarHeight
 import org.akanework.gramophone.ui.BaseComposeActivity
 import org.akanework.gramophone.ui.GramophoneTheme
 
@@ -58,11 +59,13 @@ class OssLicensesSettingsActivity : BaseComposeActivity() {
     @Composable
     private fun OssLicensesSettingsScreen() {
         val libraries by produceLibraries(R.raw.aboutlibraries)
-        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(snapAnimationSpec = null)
+        val appBarHeight = expandedAppBarHeight()
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                TopAppBar(
+                LargeTopAppBar(
+                    expandedHeight = appBarHeight,
                     title = { Text(stringResource(R.string.settings_open_source_licenses)) },
                     navigationIcon = {
                         IconButton(onClick = { finish() }) {

@@ -31,11 +31,13 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
+import org.akanework.gramophone.logic.setExpandedAppBarHeight
 import org.akanework.gramophone.logic.ui.BaseActivity
 import org.akanework.gramophone.ui.adapters.BlacklistFolderAdapter
 
@@ -49,6 +51,7 @@ class BlacklistSettingsActivity : BaseActivity() {
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
         val viewPager2 = findViewById<ViewPager2>(R.id.fragment_viewpager)
 
+        findViewById<CollapsingToolbarLayout>(R.id.collapsingtoolbar).setExpandedAppBarHeight()
         findViewById<AppBarLayout>(R.id.appbarlayout).enableEdgeToEdgePaddingListener()
 
         topAppBar.setNavigationOnClickListener {

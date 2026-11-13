@@ -21,10 +21,12 @@
             app:collapsedTitleTextAppearance="?textAppearanceTitleLarge"
             app:collapsedTitleTextColor="?attr/colorOnSurface"
             app:contentScrim="@android:color/transparent"
+            app:expandedTitleGravity="bottom"
+            app:expandedTitleMarginBottom="24dp"
             app:expandedTitleMarginStart="24dp"
             app:expandedTitleTextAppearance="?textAppearanceHeadlineLarge"
             app:expandedTitleTextColor="?attr/colorOnSurface"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:title="@string/app_name"
             app:titleCollapseMode="scale">
 
@@ -35,6 +37,8 @@
                 android:elevation="0dp"
                 android:paddingStart="24dp"
                 android:paddingEnd="8dp"
+                android:layout_gravity="bottom"
+                android:layout_marginBottom="16dp"
                 app:layout_collapseMode="pin"
                 app:menu="@menu/home_menu" />
 

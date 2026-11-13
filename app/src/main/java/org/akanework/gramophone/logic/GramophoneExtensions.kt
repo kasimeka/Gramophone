@@ -52,7 +52,11 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.graphics.Insets
@@ -640,6 +644,14 @@ fun Handler.postAtFrontOfQueueAsync(callback: Runnable) {
         isAsynchronous = true
     })
 }
+
+fun CollapsingToolbarLayout.setExpandedAppBarHeight() {
+    layoutParams.height = resources.displayMetrics.heightPixels * 2 / 5
+    requestLayout()
+}
+
+@Composable
+fun expandedAppBarHeight(): Dp = LocalConfiguration.current.screenHeightDp.dp * 2 / 5
 
 fun View.enableEdgeToEdgePaddingListener(
     ime: Boolean = false, top: Boolean = false,

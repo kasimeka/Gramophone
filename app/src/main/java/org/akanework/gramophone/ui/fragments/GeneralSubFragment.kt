@@ -36,6 +36,7 @@ import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
+import org.akanework.gramophone.logic.setExpandedAppBarHeight
 import org.akanework.gramophone.logic.ui.MyRecyclerView
 import org.akanework.gramophone.logic.utils.flows.PauseManagingSharedFlow.Companion.sharePauseableIn
 import org.akanework.gramophone.logic.utils.flows.provideReplayCacheInvalidationManager
@@ -69,6 +70,7 @@ class GeneralSubFragment : BaseFragment() {
         val topAppBar = rootView.findViewById<MaterialToolbar>(R.id.topAppBar)
         val collapsingToolbarLayout =
             rootView.findViewById<CollapsingToolbarLayout>(R.id.collapsingtoolbar)
+        collapsingToolbarLayout.setExpandedAppBarHeight()
         val recyclerView = rootView.findViewById<MyRecyclerView>(R.id.recyclerview)
         val appBarLayout = rootView.findViewById<AppBarLayout>(R.id.appbarlayout)
         appBarLayout.enableEdgeToEdgePaddingListener()

@@ -99,7 +99,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -129,6 +128,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ShareCompat
@@ -152,6 +157,7 @@ import org.akanework.gramophone.logic.discardQueueEditUndo
 import org.akanework.gramophone.logic.editQueue
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
 import org.akanework.gramophone.logic.getFile
+import org.akanework.gramophone.logic.expandedAppBarHeight
 import org.akanework.gramophone.logic.deduplicateQueue
 import org.akanework.gramophone.logic.gramophoneApplication
 import org.akanework.gramophone.logic.closeKeyboard
@@ -185,6 +191,7 @@ import org.akanework.gramophone.ui.components.PinnedQueueCollection
 import org.akanework.gramophone.ui.components.QueueListContent
 import org.akanework.gramophone.ui.components.compose.QueueSongRow
 import org.akanework.gramophone.ui.components.compose.SearchAppBar
+import org.akanework.gramophone.ui.components.compose.rememberSearchBarScrollBehavior
 import org.akanework.gramophone.ui.fragments.ArtistSubFragment
 import org.akanework.gramophone.ui.fragments.DetailDialogFragment
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment
@@ -564,6 +571,8 @@ private fun QueueDetailScreen(
     }
     var currentPlayingKey by remember(loadedQueue.id) { mutableStateOf<Long?>(null) }
     var actionsOpen by remember { mutableStateOf(false) }
+    var overflowBounds by remember { mutableStateOf<Rect?>(null) }
+    var rootOrigin by remember { mutableStateOf(Offset.Zero) }
     var renameOpen by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -882,7 +891,8 @@ private fun QueueDetailScreen(
         SongMenuLogic.confirmDelete(activity, item)
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = rememberSearchBarScrollBehavior()
+    val appBarHeight = expandedAppBarHeight()
     fun closeSearch() {
         searchOpen = false
         searchQuery = ""
@@ -893,7 +903,35 @@ private fun QueueDetailScreen(
         activity.playerBottomSheet.getBottomPadding().toDp()
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().onGloballyPositioned { rootOrigin = it.positionInWindow() }) {
+        // Outside the top bar, which lays its title out more than once and would open the menu twice.
+        overflowBounds?.let { bounds ->
+            DropdownMenu(
+                expanded = actionsOpen,
+                onDismissRequest = { actionsOpen = false },
+                offset = with(LocalDensity.current) {
+                    DpOffset(
+                        (bounds.left - rootOrigin.x).toDp(),
+                        (bounds.bottom - rootOrigin.y).toDp(),
+                    )
+                },
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.rename)) },
+                    onClick = {
+                        actionsOpen = false
+                        renameOpen = true
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete)) },
+                    onClick = {
+                        actionsOpen = false
+                        deleteOpen = true
+                    },
+                )
+            }
+        }
         Scaffold(
             // The collapsing title is replaced by the search bar while searching, so it must not take scroll.
             modifier = if (searchOpen) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -902,10 +940,13 @@ private fun QueueDetailScreen(
                     SearchAppBar(
                         query = searchQuery,
                         onQueryChange = { searchQuery = it },
-                        onClose = ::closeSearch,
+                        onClose = { closeSearch() },
+                        expandedHeight = appBarHeight,
+                        scrollBehavior = scrollBehavior,
                     )
                 } else {
                     LargeTopAppBar(
+                        expandedHeight = appBarHeight,
                         modifier = Modifier.clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -915,46 +956,35 @@ private fun QueueDetailScreen(
                                 listState.animateScrollToItem(0)
                             }
                         },
-                        title = { Text(loadedQueue.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-                        scrollBehavior = scrollBehavior,
-                        navigationIcon = {
-                            IconButton(onClick = { activity.supportFragmentManager.popBackStack() }) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { searchOpen = true }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_search),
-                                    contentDescription = stringResource(R.string.home_menu_search),
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    loadedQueue.title,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
                                 )
-                            }
-                            Box {
-                                IconButton(onClick = { actionsOpen = true }) {
+                                IconButton(onClick = { searchOpen = true }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_search),
+                                        contentDescription = stringResource(R.string.home_menu_search),
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { actionsOpen = true },
+                                    modifier = Modifier.onGloballyPositioned { overflowBounds = it.boundsInWindow() },
+                                ) {
                                     Icon(
                                         Icons.Rounded.MoreVert,
                                         contentDescription = stringResource(R.string.more_options),
                                     )
                                 }
-                                DropdownMenu(
-                                    expanded = actionsOpen,
-                                    onDismissRequest = { actionsOpen = false },
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.rename)) },
-                                        onClick = {
-                                            actionsOpen = false
-                                            renameOpen = true
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.delete)) },
-                                        onClick = {
-                                            actionsOpen = false
-                                            deleteOpen = true
-                                        },
-                                    )
-                                }
+                            }
+                        },
+                        scrollBehavior = scrollBehavior,
+                        navigationIcon = {
+                            IconButton(onClick = { activity.supportFragmentManager.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
                             }
                         },
                     )

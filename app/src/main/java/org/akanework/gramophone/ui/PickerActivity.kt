@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
 import org.akanework.gramophone.logic.enableEdgeToEdgeProperly
+import org.akanework.gramophone.logic.setExpandedAppBarHeight
 import org.akanework.gramophone.logic.gramophoneApplication
 import org.akanework.gramophone.logic.hasAudioPermission
 import org.akanework.gramophone.logic.hasScopedStorageV2
@@ -53,6 +54,7 @@ abstract class PickerActivity<T : Any> : BaseActivity() {
         val topAppBar = findViewById<MaterialToolbar>(R.id.topAppBar)
         val collapsingToolbarLayout =
             findViewById<CollapsingToolbarLayout>(R.id.collapsingtoolbar)
+        collapsingToolbarLayout.setExpandedAppBarHeight()
         val recyclerView = findViewById<MyRecyclerView>(R.id.recyclerview)
         val appBarLayout = findViewById<AppBarLayout>(R.id.appbarlayout)
         appBarLayout.enableEdgeToEdgePaddingListener()

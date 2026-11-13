@@ -27,6 +27,7 @@ import coil3.load
 import coil3.request.crossfade
 import coil3.request.error
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
+import org.akanework.gramophone.logic.setExpandedAppBarHeight
 import org.akanework.gramophone.logic.getBitrate
 import org.akanework.gramophone.logic.getFile
 import org.akanework.gramophone.logic.hasImprovedMediaStore
@@ -54,6 +56,7 @@ class DetailDialogFragment : BaseFragment(MiniPlayerScreenPolicy.DENIED) {
         savedInstanceState: Bundle?
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_info_song, container, false)
+        rootView.findViewById<CollapsingToolbarLayout>(R.id.collapsingtoolbar).setExpandedAppBarHeight()
         rootView.findViewById<AppBarLayout>(R.id.appbarlayout).enableEdgeToEdgePaddingListener()
         rootView.findViewById<View>(R.id.scrollView).enableEdgeToEdgePaddingListener()
         rootView.findViewById<MaterialToolbar>(R.id.topAppBar).setNavigationOnClickListener {

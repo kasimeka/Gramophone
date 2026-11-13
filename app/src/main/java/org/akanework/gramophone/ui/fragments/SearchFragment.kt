@@ -26,7 +26,14 @@ import android.widget.EditText
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.appbar.AppBarLayout
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.ComposeView
+import org.akanework.gramophone.logic.expandedAppBarHeight
+import org.akanework.gramophone.ui.components.compose.SearchAppBar
+import org.akanework.gramophone.ui.GramophoneTheme
+import org.akanework.gramophone.ui.pureDark
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +60,7 @@ class SearchFragment : BaseFragment() {
     private lateinit var editText: EditText
     private lateinit var qTitle: Flow<String>
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -60,9 +68,6 @@ class SearchFragment : BaseFragment() {
     ): View? {
         // Inflate the layout for this fragment
         val rootView = inflater.inflate(R.layout.fragment_search, container, false)
-        val appBarLayout = rootView.findViewById<AppBarLayout>(R.id.appbarlayout)
-        appBarLayout.enableEdgeToEdgePaddingListener()
-        editText = rootView.findViewById(R.id.edit_text)
         val recyclerView = rootView.findViewById<MyRecyclerView>(R.id.recyclerview)
         val searchTextFlow = MutableStateFlow(arguments?.getString("query", "") ?: "")
         qTitle = searchTextFlow.map { requireContext().getString(R.string.search_query, it) }
@@ -87,23 +92,25 @@ class SearchFragment : BaseFragment() {
                 rawOrderExposed = Sorter.Type.ByTitleAscending,
                 queueSource = searchSource,
             )
-        val returnButton = rootView.findViewById<Button>(R.id.return_button)
 
         recyclerView.enableEdgeToEdgePaddingListener(ime = true)
-        recyclerView.setAppBar(appBarLayout)
         recyclerView.layoutManager = LinearLayoutManager(activity)
         recyclerView.adapter = songAdapter.concatAdapter
 
         // Build FastScroller.
         recyclerView.fastScroll(songAdapter, songAdapter.itemHeightHelper)
 
-        editText.setText(searchTextFlow.value)
-        editText.addTextChangedListener { rawText ->
-            searchTextFlow.value = rawText?.toString() ?: ""
-        }
-
-        returnButton.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+        rootView.findViewById<ComposeView>(R.id.search_app_bar).setContent {
+            GramophoneTheme(pureDark = pureDark(requireContext())) {
+                val query by searchTextFlow.collectAsState()
+                SearchAppBar(
+                    query = query,
+                    onQueryChange = { searchTextFlow.value = it },
+                    onClose = { requireActivity().supportFragmentManager.popBackStack() },
+                    expandedHeight = expandedAppBarHeight(),
+                    onFieldReady = { editText = it },
+                )
+            }
         }
 
         return rootView

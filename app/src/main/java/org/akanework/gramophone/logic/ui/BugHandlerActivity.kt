@@ -47,6 +47,7 @@ import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.media3.common.util.Log
+import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
@@ -64,6 +65,7 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.allowDiskAccessInStrictMode
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
 import org.akanework.gramophone.logic.hasOsClipboardDialog
+import org.akanework.gramophone.logic.setExpandedAppBarHeight
 import org.akanework.gramophone.logic.updateMargin
 import java.io.File
 import java.nio.charset.Charset
@@ -86,6 +88,7 @@ class BugHandlerActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_bug_handler)
+        findViewById<CollapsingToolbarLayout>(R.id.collapsingtoolbar).setExpandedAppBarHeight()
         findViewById<View>(R.id.appbarlayout).enableEdgeToEdgePaddingListener()
         findViewById<MaterialToolbar>(R.id.topAppBar).setNavigationOnClickListener { goBack() }
         onBackPressedDispatcher.addCallback { goBack() }
