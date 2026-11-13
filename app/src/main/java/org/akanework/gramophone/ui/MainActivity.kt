@@ -223,8 +223,12 @@ class MainActivity : BaseActivity() {
 
 
 
-    fun markIsFavoriteStatus(mediaIds: Collection<String>, favorite: Boolean) {
-        gramophoneApplication.favoritesStore.setFavorite(mediaIds, favorite)
+    fun markIsFavoriteStatus(
+        mediaIds: Collection<String>,
+        favorite: Boolean,
+        known: Collection<MediaItem> = emptyList(),
+    ) {
+        gramophoneApplication.favoritesStore.setFavorite(mediaIds, favorite, known)
     }
 
 

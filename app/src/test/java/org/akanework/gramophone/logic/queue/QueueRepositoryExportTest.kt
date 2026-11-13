@@ -65,10 +65,10 @@ class QueueRepositoryExportTest {
     }
 
     private class RecordingSink : QueueExportSink {
-        val enqueued = mutableListOf<Queue>()
+        val enqueued = mutableListOf<MirrorableQueue>()
         var deleted: UUID? = null
 
-        override fun enqueue(queue: Queue) {
+        override fun enqueue(queue: MirrorableQueue) {
             enqueued += queue
         }
 

@@ -32,7 +32,7 @@ import java.io.IOException
 import java.util.UUID
 
 /** Decode persisted rows to resolvable absolute-path rows, dropping unresolvable rows. */
-fun queueExportRows(queue: Queue): List<QueueExportRow> =
+fun queueExportRows(queue: MirrorableQueue): List<QueueExportRow> =
     queue.rows.mapNotNull { MediaRowCodec.decode(it) }
         .mapNotNull { item ->
             val path = item.getFile()?.absolutePath ?: return@mapNotNull null
@@ -49,8 +49,10 @@ fun queueExportRows(queue: Queue): List<QueueExportRow> =
  * API 29+, so it is indexed and readable by other players; below 29 the legacy file plus media
  * scanner path is used. The scanner's folder filter excludes `Android/media` from the library.
  */
-class AndroidQueueMirrorWriter(private val context: Context) : QueueMirrorWriter {
-    private val relativePath = "Android/media/${context.packageName}/Queues"
+class AndroidQueueMirrorWriter(
+    private val context: Context,
+    private val relativePath: String,
+) : QueueMirrorWriter {
     private val legacyDirectory = File(Environment.getExternalStorageDirectory(), relativePath)
 
     override fun write(fileName: String, content: ByteArray) {

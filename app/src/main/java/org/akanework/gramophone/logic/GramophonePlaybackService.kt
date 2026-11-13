@@ -749,7 +749,10 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         if (rating !is HeartRating) {
             return Futures.immediateFuture(SessionResult(SessionError.ERROR_BAD_VALUE))
         }
-        gramophoneApplication.favoritesStore.setFavorite(listOf(mediaId), rating.isHeart)
+        val current = this.controller?.currentMediaItem?.takeIf { it.mediaId == mediaId }
+        gramophoneApplication.favoritesStore.setFavorite(
+            listOf(mediaId), rating.isHeart, listOfNotNull(current)
+        )
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }
 

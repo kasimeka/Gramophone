@@ -1576,8 +1576,8 @@ class FullBottomSheet
     }
 
     override fun onCheckedChanged(button: MaterialButton?, isChecked: Boolean) {
-        instance?.currentMediaItem?.mediaId?.let { mediaId ->
-            activity.markIsFavoriteStatus(listOf(mediaId), isChecked)
+        instance?.currentMediaItem?.let { item ->
+            activity.markIsFavoriteStatus(listOf(item.mediaId), isChecked, listOf(item))
         }
         bottomSheetFavoriteButton.removeOnCheckedChangeListener(this) // see onMediaMetadataChanged
     }

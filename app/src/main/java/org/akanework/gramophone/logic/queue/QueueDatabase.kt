@@ -79,6 +79,26 @@ class QueueDatabase(
             "INSERT INTO queue_meta (id, numbered_counter, last_active_id) VALUES (1, ?, NULL)",
             arrayOf(QueueTitles.FIRST_NUMBERED_COUNTER),
         )
+        db.execSQL(
+            """
+            CREATE TABLE system_queues (
+                id TEXT PRIMARY KEY NOT NULL,
+                title TEXT NOT NULL,
+                updated_at INTEGER NOT NULL,
+                export_file_name TEXT
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE system_queue_rows (
+                queue_id TEXT NOT NULL REFERENCES system_queues(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                payload TEXT NOT NULL,
+                PRIMARY KEY (queue_id, position)
+            )
+            """.trimIndent()
+        )
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {

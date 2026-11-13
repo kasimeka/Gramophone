@@ -143,23 +143,41 @@ data class QueueBookmark(
  * serialized media-row payloads, so a queue survives a missing or changed MediaStore entry.
  * [manualOrder] is the queue's stable user-controlled position in the queues list.
  */
+/**
+ * What the mirror exporter reads from a queue. Durable queues implement it, and so can any other
+ * list that is mirrored to an m3u8, such as the system Favourites list.
+ */
+interface MirrorableQueue {
+    val id: UUID
+    val title: String
+    val rows: List<String>
+    val updatedAt: Long
+    val exportFileName: String?
+
+    /** A mirror name that does not follow the title, or null for the usual `<slug>_<id>.m3u8`. */
+    val fixedMirrorName: String?
+}
+
 data class Queue(
-    val id: UUID,
-    val title: String,
+    override val id: UUID,
+    override val title: String,
     val source: QueueSource?,
-    val rows: List<String>,
+    override val rows: List<String>,
     val bookmark: QueueBookmark = QueueBookmark(),
     val repeatMode: QueueRepeatMode = QueueRepeatMode.OFF,
     val createdAt: Long,
-    val updatedAt: Long = createdAt,
+    override val updatedAt: Long = createdAt,
     val lastPlayedAt: Long? = null,
     /** Name of the queue's m3u8 mirror, as last written by the background exporter. */
-    val exportFileName: String? = null,
+    override val exportFileName: String? = null,
     /** Stable position in the queues list. Lower values appear earlier. */
     val manualOrder: Long = createdAt,
     /** Whether the user has manually modified the queue's content, order, or name. */
     val isModified: Boolean = false,
-) {
+) : MirrorableQueue {
+    override val fixedMirrorName: String?
+        get() = if (source?.kind == QueueSourceKind.FAVOURITES) QueueExport.FAVOURITES_FILE_NAME else null
+
     val hasBeenPlayed: Boolean
         get() = lastPlayedAt != null
 
@@ -184,6 +202,24 @@ data class Queue(
 
     /** Add serialized rows at the end without changing the bookmark or the queue's identity. */
     fun withAppendedRows(newRows: List<String>): Queue = copy(rows = rows + newRows, isModified = true)
+
+    /** Remove the rows at [positions] in one pass, keeping the bookmark on a surviving row. */
+    fun withoutRows(positions: Collection<Int>, now: Long = System.currentTimeMillis()): Queue {
+        val drop = positions.filter { it in rows.indices }.toHashSet()
+        if (drop.isEmpty()) return this
+        var newBookmark = bookmark
+        var size = rows.size
+        for (position in drop.sortedDescending()) {
+            size--
+            newBookmark = newBookmark.afterRemoval(position, size)
+        }
+        return copy(
+            rows = rows.filterIndexed { index, _ -> index !in drop },
+            bookmark = newBookmark,
+            updatedAt = now,
+            isModified = true,
+        )
+    }
 
     /** Remove the row at [position], clamping the bookmark to a surviving row. */
     fun withoutRow(position: Int, now: Long = System.currentTimeMillis()): Queue {

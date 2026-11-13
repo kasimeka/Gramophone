@@ -24,7 +24,7 @@ import java.util.UUID
 
 /** The repository's fire-and-forget seam: never touches storage on the caller's thread. */
 interface QueueExportSink {
-    fun enqueue(queue: Queue)
+    fun enqueue(queue: MirrorableQueue)
     fun delete(id: UUID)
 }
 
@@ -39,7 +39,7 @@ interface QueueMirrorWriter {
 }
 
 sealed interface PendingExport {
-    data class Write(val queue: Queue) : PendingExport
+    data class Write(val queue: MirrorableQueue) : PendingExport
     data class Remove(val id: UUID) : PendingExport
 }
 
@@ -50,7 +50,7 @@ sealed interface PendingExport {
  */
 class QueueExporter(
     private val writer: QueueMirrorWriter,
-    private val rowSource: (Queue) -> List<QueueExportRow>,
+    private val rowSource: (MirrorableQueue) -> List<QueueExportRow>,
     private val onExported: suspend (UUID, String) -> Unit = { _, _ -> },
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val coalesceWindowMs: Long = 300L,
@@ -60,7 +60,7 @@ class QueueExporter(
     @Volatile
     private var started = false
 
-    override fun enqueue(queue: Queue) {
+    override fun enqueue(queue: MirrorableQueue) {
         synchronized(pending) {
             pending[queue.id] = PendingExport.Write(queue)
         }
@@ -114,7 +114,7 @@ class QueueExporter(
      * Rebuild mirrors that are missing or older than the queue's last edit. Runs off the main
      * thread; the exporter remains an exporter only, so existing mirror contents are not imported.
      */
-    suspend fun reconcile(queues: List<Queue>) {
+    suspend fun reconcile(queues: List<MirrorableQueue>) {
         withContext(dispatcher) {
             queues.forEach { queue ->
                 val fileName = queue.exportFileName
@@ -140,7 +140,7 @@ class QueueExporter(
                 synchronized(pending) {
                     if (pending[queue.id] is PendingExport.Remove) return
                 }
-                val fileName = QueueExport.fileName(queue.title, queue.id)
+                val fileName = QueueExport.mirrorName(queue)
                 val content = QueueExport.content(rowSource(queue))
                 synchronized(pending) {
                     if (pending[queue.id] is PendingExport.Remove) return

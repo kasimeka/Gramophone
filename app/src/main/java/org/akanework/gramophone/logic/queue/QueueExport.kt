@@ -51,6 +51,12 @@ object QueueExport {
     /** The mirror name is stable for a queue id; only the slug follows the title. */
     fun fileName(title: String, id: UUID): String = "${slug(title)}_$id.m3u8"
 
+    /** The Favourites mirror keeps the name users already know from the playlist era. */
+    const val FAVOURITES_FILE_NAME = "gramophone_favourite.m3u8"
+
+    fun mirrorName(queue: MirrorableQueue): String =
+        queue.fixedMirrorName ?: fileName(queue.title, queue.id)
+
     /** `#EXTM3U`, then one `#EXTINF:<seconds>,<artist> - <title>` and absolute path per row. */
     fun content(rows: List<QueueExportRow>): ByteArray {
         val out = StringBuilder("#EXTM3U\r\n")

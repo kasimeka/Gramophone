@@ -58,6 +58,7 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.queue.AndroidQueueMirrorWriter
 import org.akanework.gramophone.logic.queue.QueueDao
 import org.akanework.gramophone.logic.queue.QueueDatabase
+import org.akanework.gramophone.logic.queue.SystemQueueDao
 import org.akanework.gramophone.logic.queue.QueueExporter
 import org.akanework.gramophone.logic.queue.QueueRepository
 import org.akanework.gramophone.logic.queue.StoreQueueRepository
@@ -129,6 +130,8 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
      */
     private val queueDatabase by lazy { QueueDatabase(this) }
 
+    private val systemQueueDao by lazy { SystemQueueDao(queueDatabase.writableDatabase) }
+
     private val exportScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
@@ -137,9 +140,12 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
      */
     private val queueExporter: QueueExporter by lazy {
         QueueExporter(
-            writer = AndroidQueueMirrorWriter(this),
+            writer = AndroidQueueMirrorWriter(this, "Android/media/$packageName/Queues"),
             rowSource = ::queueExportRows,
-            onExported = { id, fileName -> queueRepository.setExportFileName(id, fileName) },
+            onExported = { id, fileName ->
+                queueRepository.setExportFileName(id, fileName)
+                favoritesStore.recordExport(id, fileName)
+            },
         )
     }
 
@@ -281,7 +287,13 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
             })
         }
         uacManager = UacManager(this)
-        favoritesStore = FavoritesStore(this)
+        favoritesStore = FavoritesStore(
+            scope = exportScope,
+            dao = systemQueueDao,
+            exports = queueExporter,
+            songs = { reader.songListFlow.first() },
+            legacyPlaylist = { LegacyFavouritesPlaylist.read(this) },
+        )
         reader = FlowReader(
             this,
             if (BuildConfig.DISABLE_MEDIA_STORE_FILTER) MutableStateFlow(0) else
@@ -314,6 +326,8 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
             queueExporter.start(exportScope)
             // Rebuild only mirrors that are missing or older than the last queue edit.
             queueExporter.reconcile(queueRepository.queues.first())
+            favoritesStore.importLegacyPlaylistIfNeeded()
+            favoritesStore.snapshot()?.let { queueExporter.reconcile(listOf(it)) }
             if (prefs.getBoolean("needToAdd_isMusicBlacklist", true)) {
                 prefs.edit(true) {
                     putBoolean("needToAdd_isMusicBlacklist", false)

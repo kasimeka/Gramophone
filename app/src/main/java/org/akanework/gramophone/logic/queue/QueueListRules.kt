@@ -56,6 +56,7 @@ object QueueListRules {
 
     fun ordered(queues: Collection<Queue>): List<Queue> = queues.sortedWith(manualOrder)
 
+
     /**
      * The row for one queue. The active queue reports PLAYING only while the player is actually
      * playing; an ended queue keeps its finished state, and an empty queue is a normal empty row.
