@@ -19,6 +19,7 @@ package org.akanework.gramophone.ui.fragments
 
 import org.akanework.gramophone.logic.queue.QueueDragReorder
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -612,11 +613,6 @@ private fun QueueDetailScreen(
             scrollAfterRowsChange = false
             scrollToNowPlaying()
         }
-    }
-
-    fun resolveCurrentPlayingKey(rows: List<DragRow>, currentRow: Int?): Long? {
-        val index = currentRow ?: playerState.currentRow ?: return currentPlayingKey
-        return rows.getOrNull(index)?.key ?: currentPlayingKey
     }
 
     LaunchedEffect(loadedQueue.rows, dragState.draggingKey, pendingMove) {
@@ -1369,6 +1365,8 @@ private fun QueueDetailDecorPanel(
     }
 }
 
+// The thumb position follows scroll state, so reading it during composition is intentional.
+@SuppressLint("FrequentlyChangingValue")
 @Composable
 private fun QueueFastScrollbar(
     listState: LazyListState,

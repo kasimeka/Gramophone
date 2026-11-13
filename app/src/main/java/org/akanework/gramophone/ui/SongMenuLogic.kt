@@ -50,19 +50,12 @@ import java.io.File
 /** Context for the regular song overflow menu (Songs tab, queue detail rows, etc.). */
 data class SongMenuContext(
     val canPlayNext: Boolean,
-    val showRemoveFromQueue: Boolean,
 ) {
     companion object {
         fun forLibrary(activity: MainActivity): SongMenuContext = SongMenuContext(
             canPlayNext = QueuePlaybackRules.libraryPlayNextAvailable(
                 activity.gramophoneApplication.queueRepository.lastActiveQueue.value
             ),
-            showRemoveFromQueue = false,
-        )
-
-        fun forQueue(canPlayNext: Boolean): SongMenuContext = SongMenuContext(
-            canPlayNext = canPlayNext,
-            showRemoveFromQueue = true,
         )
     }
 }
@@ -102,19 +95,14 @@ object SongMenuLogic {
             isVisible = true
             isEnabled = canShare(item)
         }
-        menu.findItem(R.id.remove_from_queue)?.isVisible = menuContext.showRemoveFromQueue
     }
 
-    /**
-     * Handle standard song menu actions. Returns true if handled.
-     * [onRemoveFromQueue] is invoked only when remove-from-queue is selected and allowed.
-     */
+    /** Handle standard song menu actions. Returns true if handled. */
     fun handle(
         activity: MainActivity,
         item: MediaItem,
         itemId: Int,
         menuContext: SongMenuContext,
-        onRemoveFromQueue: (() -> Unit)? = null,
     ): Boolean = when (itemId) {
         R.id.play_next -> {
             if (!menuContext.canPlayNext) return true
@@ -165,11 +153,6 @@ object SongMenuLogic {
 
         R.id.share -> {
             share(activity, item)
-            true
-        }
-
-        R.id.remove_from_queue -> {
-            if (menuContext.showRemoveFromQueue) onRemoveFromQueue?.invoke()
             true
         }
 

@@ -19,7 +19,6 @@ package org.akanework.gramophone.logic.queue
 
 import org.akanework.gramophone.logic.utils.CalculationUtils.convertDurationToTimeStamp
 import org.akanework.gramophone.logic.utils.MediaRowCodec
-import java.util.UUID
 
 /** What a queue row says about the queue right now. */
 enum class QueueRowState {
@@ -56,9 +55,6 @@ object QueueListRules {
         .thenBy { it.id.toString() }
 
     fun ordered(queues: Collection<Queue>): List<Queue> = queues.sortedWith(manualOrder)
-
-    @Deprecated("Queues use stable manual order; active queue is not pinned.", ReplaceWith("ordered(queues)"))
-    fun bottomAnchored(queues: Collection<Queue>, activeQueueId: UUID?): List<Queue> = ordered(queues)
 
     /**
      * The row for one queue. The active queue reports PLAYING only while the player is actually

@@ -19,11 +19,9 @@ package org.akanework.gramophone.logic.queue
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.random.Random
 
 class QueuePlaybackRulesTest {
     private fun state(
@@ -50,11 +48,6 @@ class QueuePlaybackRulesTest {
             QueuePlaybackAction.Disabled,
             QueuePlaybackRules.queuePlayButton(state(rowCount = 0))
         )
-        assertEquals(
-            QueuePlaybackAction.Disabled,
-            QueuePlaybackRules.playerPlayButton(state(rowCount = 0))
-        )
-        assertNull(QueuePlaybackRules.libraryPlayStartRow(0))
     }
 
     @Test
@@ -121,42 +114,6 @@ class QueuePlaybackRulesTest {
                     bookmark = QueueBookmark(row = 2, positionMs = 42_000L),
                     hasBeenPlayed = true,
                     isActive = true,
-                )
-            )
-        )
-    }
-
-    @Test
-    fun playerButtonPausesWhilePlaying() {
-        assertEquals(
-            QueuePlaybackAction.Pause,
-            QueuePlaybackRules.playerPlayButton(state(rowCount = 3, isPlaying = true))
-        )
-    }
-
-    @Test
-    fun playerButtonResumesAtTheLastTimestamp() {
-        assertEquals(
-            QueuePlaybackAction.Play(row = 1, positionMs = 12_000L),
-            QueuePlaybackRules.playerPlayButton(
-                state(
-                    rowCount = 3,
-                    bookmark = QueueBookmark(row = 1, positionMs = 12_000L),
-                    hasBeenPlayed = true,
-                )
-            )
-        )
-    }
-
-    @Test
-    fun playerButtonRestartsAnEndedQueue() {
-        assertEquals(
-            QueuePlaybackAction.Play(row = 0, positionMs = 0L),
-            QueuePlaybackRules.playerPlayButton(
-                state(
-                    rowCount = 3,
-                    bookmark = QueueBookmark(row = 2, positionMs = 200_000L, ended = true),
-                    hasBeenPlayed = true,
                 )
             )
         )
@@ -280,37 +237,5 @@ class QueuePlaybackRulesTest {
                 currentRow = null,
             )
         )
-    }
-
-    @Test
-    fun libraryPlayStartsAtTheFirstOrTappedRowWithoutTruncating() {
-        assertEquals(0, QueuePlaybackRules.libraryPlayStartRow(5))
-        assertEquals(3, QueuePlaybackRules.libraryPlayStartRow(5, tappedRow = 3))
-        assertEquals(4, QueuePlaybackRules.libraryPlayStartRow(5, tappedRow = 99))
-        assertEquals(0, QueuePlaybackRules.libraryPlayStartRow(5, tappedRow = -1))
-    }
-
-    @Test
-    fun libraryShuffleAllUsesAFullPermutationWithNoAnchor() {
-        val rows = QueuePlaybackRules.libraryShuffleAllOrder(5, Random(1))
-
-        assertEquals(5, rows.size)
-        assertEquals((0..4).toSet(), rows.toSet())
-        assertNotEquals((0..4).toList(), rows)
-    }
-
-    @Test
-    fun libraryShuffleAllCanStartAnywhere() {
-        val firstRows = (0..49)
-            .map { QueuePlaybackRules.libraryShuffleAllOrder(5, Random(it)).first() }
-            .toSet()
-
-        assertEquals((0..4).toSet(), firstRows)
-    }
-
-    @Test
-    fun libraryShuffleAllOfOneRowIsTheSameRow() {
-        assertEquals(listOf(0), QueuePlaybackRules.libraryShuffleAllOrder(1))
-        assertEquals(emptyList<Int>(), QueuePlaybackRules.libraryShuffleAllOrder(0))
     }
 }

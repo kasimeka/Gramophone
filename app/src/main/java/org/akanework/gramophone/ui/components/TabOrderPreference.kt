@@ -210,8 +210,9 @@ class TabOrderPreference(context: Context, attrs: AttributeSet) : DialogPreferen
                     false
                 }
             } else if (holder is TabOrderSeparatorViewHolder) {
-                holder.itemView.setOnTouchListener { _, event ->
+                holder.itemView.setOnTouchListener { view, event ->
                     if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                        view.performClick()
                         onStartDrag(holder)
                     }
                     false

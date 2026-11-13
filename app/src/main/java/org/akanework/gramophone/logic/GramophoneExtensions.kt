@@ -54,6 +54,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.graphics.Insets
 import androidx.core.os.BundleCompat
 import androidx.core.view.ViewCompat
@@ -159,7 +160,7 @@ fun MediaItem.mediaStoreId(): Long? {
         }
     }
     try {
-        val parsed = Uri.parse(mediaId)
+        val parsed = mediaId.toUri()
         if (parsed.scheme == "content") {
             val id = ContentUris.parseId(parsed)
             if (id >= 0) return id

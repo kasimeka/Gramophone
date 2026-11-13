@@ -37,7 +37,6 @@
         <item quantity="many">%d Álbumes</item>
         <item quantity="other">%d Álbumes</item>
     </plurals>
-    <string name="unknown_playlist">Lista de reproducción desconocida</string>
     <string name="dialog_year">Año</string>
     <string name="dialog_artist">Artista</string>
     <string name="opensource_info">Bajo licencia GPL-3.0 \nCopyright %s</string>
@@ -61,7 +60,6 @@
     <string name="check_for_updates">¡Consulte nuestro canal para estar al día!</string>
     <string name="shuffle">Aleatorio</string>
     <string name="dialog_disc_number">Número de disco</string>
-    <string name="category_playlists">Listas de reproducción</string>
     <string name="follow_system">Sistema</string>
     <string name="list">Lista</string>
     <string name="search">Buscar</string>
@@ -115,11 +113,9 @@
     <string name="settings_library_summary">Administrar la biblioteca multimedia</string>
     <string name="sort_by_modified_date">Fecha de modificación</string>
     <string name="settings_customization_summary">Gestionar las opciones de personalización</string>
-    <string name="settings_play_on_launch_summary">Reproducir la música al iniciar</string>
     <string name="settings_player_ui_summary">Interfaz del reproductor completo y letras</string>
     <string name="settings_lyrics_center_summary">Centrar las letras de las canciones</string>
     <string name="settings_title_bold_summary">Poner en negrita el título en el reproductor completo</string>
-    <string name="settings_play_on_launch">Reproducir al iniciar</string>
     <string name="settings_lyric">Letra</string>
     <string name="settings_category_links">Enlaces</string>
     <string name="settings_color_accuracy_summary">Generar colores precisos</string>
@@ -134,7 +130,6 @@
     <string name="settings_crash_application">La aplicación falló</string>
     <string name="settings_crash_application_summary">Crash-O-Matic 3000</string>
     <string name="album_cover">Portada del álbum</string>
-    <string name="dialog_edit_metadata">Editar</string>
     <string name="dialog_lyrics">Letras</string>
     <string name="settings_category_filters">Filtros</string>
     <string name="settings_category_misc">Varias</string>
@@ -146,7 +141,6 @@
     <string name="timer">Temporizador</string>
     <string name="current_playlist">Lista de reproducción actual</string>
     <string name="fgs_failed_text">Haga clic aquí para abrir la aplicación y continuar la reproducción</string>
-    <string name="fgs_failed_channel">No se puede reanudar la reproducción</string>
     <string name="fgs_failed_title">Error al reanudar la reproducción de música</string>
     <string name="album_covers_enhance">Carga de portada de álbum mejorada</string>
     <string name="share">Compartir</string>
@@ -163,7 +157,6 @@
     <string name="scroll_to_albums">Ir a los álbumes</string>
     <string name="play">Reproducir</string>
     <string name="more">Más</string>
-    <string name="remove">Eliminar</string>
     <string name="skip_next">Saltar a la siguiente</string>
     <string name="expand_less">Cerrar</string>
     <string name="position_slider">Control deslizante</string>
@@ -180,7 +173,6 @@
     <string name="lyric_widget_description">Widget que muestra la letra de la pista actual en la reproducción</string>
     <string name="delete">Borrar</string>
     <string name="yes">Sí</string>
-    <string name="no">No</string>
     <string name="sort_by_album_artist">Artista del álbum - &gt; título</string>
     <string name="delete_really">¿Seguro/a que querés borrar \"%s\"? Esta acción no puede ser cambiada.</string>
     <string name="sort_by_file_path">Ruta del archivo</string>
@@ -263,7 +255,6 @@
     <string name="settings_open_source_licenses">Licencias de código abierto</string>
     <string name="spk_encoding_pcm_32bit">PCM de 32 bits (enteros)</string>
     <string name="spk_encoding_e_ac3">E-AC-3</string>
-    <string name="delete_failed_playlist">Borrado de lista de reproducción fallido: %s</string>
     <string name="spk_channel_out_7point1point2">7.1.2</string>
     <string name="spk_channel_out_5point1point4">5.1.4</string>
     <string name="spk_channel_out_front_wide_left">Frontal izquierdo amplio</string>
@@ -302,11 +293,6 @@
     <string name="spk_encoding_aac_adts_ltp">AAC-LTP en ADTS</string>
     <string name="spk_encoding_aac_adts_he_v1">HE-AAC v1 en ADTS</string>
     <string name="spk_encoding_aac_latm_lc">AAC-LC en LATM</string>
-    <string name="rename_failed_playlist">Error al renombrar lista de reproducción: %s</string>
-    <string name="playlist_name">Nombre de la lista de reproducción</string>
-    <string name="create_failed_playlist">Error al crear lista de reproducción: %s</string>
-    <string name="rename_playlist">Renombrar lista de reproducción</string>
-    <string name="add_to_playlist">Añadir a la lista de reproducción</string>
     <string name="mix_port_flag_incall_music">Música durante llamadas</string>
     <string name="mix_port_flag_voip_rx">VoIP RX</string>
     <string name="spk_encoding_iec61937">IEC 61937</string>
@@ -346,7 +332,6 @@
     <string name="settings_audio_quality_info_summary">Mostrar información de calidad de audio/formato en la pantalla del reproductor</string>
     <string name="cannot_find_file">No se puede encontrar este archivo</string>
     <string name="log_attachment">Los registros se enviarán como anexo automáticamente</string>
-    <string name="create_playlist">Crear una lista de reproducción…</string>
     <string name="rename">Renombrar</string>
     <string name="spk_encoding_amr_wb_plus">AMR-WB+</string>
     <string name="spk_encoding_amr_nb">AMR-NB</string>
@@ -404,11 +389,9 @@
     <string name="settings_replaygain_drc">Habilita DRC</string>
     <string name="settings_replaygain_drc_desc">Utilice «Compresión de Rango Dinámico» (DRC) como protección contra recortes (recomendado). Si se desactiva, el volumen será reducido en su lugar (el volumen no está en el mismo nivel, destruyendo efecto de normalización).</string>
     <string name="log_will_auto_send">Los registros se enviarán de forma automática; por favor, describa el problema a continuación</string>
-    <string name="forbidden_symbol_error">El nombre contiene caracteres no válidos</string>
     <string name="track_gain">Igual sonoridad en todas las pistas</string>
     <string name="album_gain">Preservar la dinamica del album</string>
     <string name="smart">Inteligente</string>
-    <string name="scroll_to_playing">Ir a la canción actual</string>
     <string name="gramophone_crashed_explainer2">Gramophone se detuvo :(\n\n¡Por favor, envía un informe de error para que los fallos como este puedan solucionarse!\n\nCada situación es tan única como la música; ¡sin tu ayuda, es probable que este error <b>NO</b> se solucione!</string>
     <string name="failed_to_parse_lyric">Error al analizar la letra</string>
     <string name="audio_not_initialized">El sistema de reproducción de audio no está inicializado. ¡Intenta reproducir algo!</string>
@@ -416,11 +399,9 @@
     <string name="do_not_enter_email_enter_msg">Escriba un mensaje, no una dirección de correo electrónico</string>
     <string name="audio_signal_chain">Cadena de audio</string>
     <string name="settings_replaygain">ReplayGain</string>
-    <string name="duration_queue">%s restante, %s total</string>
-    <string name="edit_playlist_failed">Error al editar la lista de reproducción: %s</string>
     <string name="refresh_did_you_know">Gramophone solicita una lista de canciones actualizada cada vez que se inicia la aplicación y, mientras está en ejecución, también detectará automáticamente el nuevo contenido multimedia. Este botón de \"Actualizar\" no recarga los archivos dentro de Gramophone; en su lugar, solicita al sistema que vuelva a escanear todos los archivos de todos los dispositivos de almacenamiento permanente conectados (por eso tarda un poco). Esto significa que, a menos que el sistema u otras aplicaciones fallen, nunca necesitarás usar esta función.\n\n¿Faltan algunas canciones? Asegúrate de revisar Ajustes &gt; Comportamiento para verificar el filtro de duración mínima y la lista negra de carpetas, y confirma que estos parámetros tengan los valores esperados. Para conocer otros motivos posibles, consulta nuestras Preguntas Frecuentes (FAQ).</string>
     <string name="settings_replaygain_mode_desc">El modo \"Inteligente\" preserva automáticamente la dinámica del álbum solo cuando las canciones se reproducen de forma consecutiva.</string>
-    <string name="settings_replaygain_boost_desc">"\"Boost\" emitirá tanto el contenido con ReplayGain como el resto de la música a un volumen superior al configurado en tu dispositivo. (Si el volumen del dispositivo está cerca del 100%, Boost no aumentará el sonido). Con Boost, puedes disfrutar de la música con una intensidad similar a la de otras aplicaciones, como los juegos. Ten en cuenta que esta función es experimental y podría interferir con ecualizadores externos. Boost no funciona con auriculares Bluetooth. En caso de presentar problemas con el volumen, desactiva Boost configurándolo en 0dB. "</string>
+    <string name="settings_replaygain_boost_desc" formatted="false">"\"Boost\" emitirá tanto el contenido con ReplayGain como el resto de la música a un volumen superior al configurado en tu dispositivo. (Si el volumen del dispositivo está cerca del 100%, Boost no aumentará el sonido). Con Boost, puedes disfrutar de la música con una intensidad similar a la de otras aplicaciones, como los juegos. Ten en cuenta que esta función es experimental y podría interferir con ecualizadores externos. Boost no funciona con auriculares Bluetooth. En caso de presentar problemas con el volumen, desactiva Boost configurándolo en 0dB. "</string>
     <string name="settings_replaygain_no_rg_amp_desc">Reducir el volumen de canciones con sonido alto que no tengan etiquetas ReplayGain</string>
     <string name="settings_replaygain_preamp_desc">Aumenta o disminuye el volumen de las canciones con etiquetas ReplayGain. Valores más altos pueden causar una pérdida de dinámica debido a la prevención de saturación (clipping).</string>
     <string name="settings_translation_auto_word">Animar traducciones automáticamente</string>
@@ -439,7 +420,6 @@
     <string name="spk_encoding_dsd">Flujo Directo Digital (DSD)</string>
     <string name="spk_encoding_ape">Monkey\'s Audio</string>
     <string name="spk_encoding_aptx_adaptive">aptX Adaptive</string>
-    <string name="clear_queue">Purgar cola</string>
     <string name="sort_by_artist_year"><![CDATA[Artista -&gt; año]]></string>
     <string name="actions_query_shuffle_everything">mezclar todo</string>
     <string name="spk_encoding_aptx_adaptive_r4">aptX Adaptativo R4</string>
@@ -461,31 +441,17 @@
     <string name="actions_query_play_random_songs">reproduce canciones aleatorias</string>
     <string name="actions_query_start_random_music">inicia música aleatoria</string>
     <string name="actions_query_start_random_songs">inicia canciones aleatorias</string>
-    <string name="favorite_failed_text">Pulse aquí para aplicar los cambios, concediendo permiso para el archivo del listado de reproducción favorito</string>
     <string name="error_in_bg">Ocurrieron errores en el fondo</string>
     <string name="settings_whitelist">Listado blanco</string>
     <string name="whitelist_and_blacklist">Si no está seleccionado ninguna de las carpetas en el listados blanco, se permitirán todas las carpetas.\n\nEl listado blanco y el listado negro se aplican juntos, con listado blanco toma prioridad. Por ejemplo, puede conceder una carpeta en el listado blanco mientras excluya una de sus subcarpetas en el listado negro.</string>
-    <string name="discard_changes_title">¿Descartar cambios?</string>
     <string name="save">Guardar</string>
-    <string name="discard">Descartar</string>
-    <string name="discard_changes_msg">¿Realmente desea descartar sus cambios al listado de reproducción «%s»?</string>
-    <string name="apply">Aplicar</string>
-    <string name="restore_edits">¿Restaurar cambios?</string>
-    <string name="restore_edits_msg">Hay cambios no guardados para el listado de reproducción «%s». ¿Desea restaurar estos cambios, o descartarlos y comenzar con una versión fresca del listado de reproducción?</string>
-    <string name="restore">Restaurar</string>
-    <string name="mount_storage">Inserte la tarjeta SD para utilizar este característica</string>
-    <string name="failed_to_restore">Ha fallado al restaurar los cambios: %s</string>
-    <string name="playlist_empty">El listado de reproducción está vacío</string>
     <string name="search_desc">Artistas, álbumes y pistas</string>
     <string name="search_hint">Buscar canciones y artistas</string>
     <string name="picker_activity">Elija la pista musical</string>
-    <string name="playlist_picker_activity">Elija el listado de reproducción</string>
     <string name="settings_preference_category_folders_filesystem"><![CDATA[Lengüetas de carpeta y sistema de archivos]]></string>
     <string name="show_file_names">Mostrar nombres de archivo</string>
     <string name="show_file_names_summary">Muestra los nombres del archivo en el lugar de nombres de canciones en la carpeta y lengüetas del sistema de archivos</string>
-    <string name="another_with_name">El nombre ya está en uso</string>
     <string name="settings_font_size">Tamaño de tipografía</string>
-    <string name="set">Ajustar</string>
     <string name="timer_eos">Esperar a que la canción finalice</string>
     <string name="timer_end_of_this_song">Final de esta canción</string>
     <string name="other">Personalizar</string>
@@ -496,19 +462,14 @@
         <item quantity="many">%d minutos</item>
         <item quantity="other">%d minutos</item>
     </plurals>
-    <string name="settings_mq_enabled">Múltiples consulas</string>
-    <string name="mq_unpin_queue">Liberar cola</string>
-    <string name="mq_pin_queue">Fijar cola</string>
     <string name="shuffled">%s (aleatorio)</string>
     <string name="spk_encoding_amr_wb">AMR‐WB</string>
-    <string name="edit_favorites_failed">Edición incorrecta de favoritas: %s</string>
     <string name="contributors_saladnoober">Garantía de Calidad</string>
     <string name="actions_query_shuffle_all_songs">baraja todas las canciones</string>
     <string name="actions_query_play_random_stuff">reproduce material aleatorio</string>
     <string name="actions_query_play_randomly">reproduce aleatoriamente</string>
     <string name="actions_query_shuffle_specific">baraja $item_name</string>
     <string name="favorite">Favorito</string>
-    <string name="favorite_failed_title">No se pudo cambiar el estado favorito de la canción</string>
     <string name="spk_encoding_aptx_adaptive_qlea">aptX Adaptativo sobre Sonido LE</string>
     <string name="spk_encoding_mpegh_sub_bl_l3">MPEG-H Baseline Profile L3</string>
     <string name="spk_encoding_mpegh_sub_bl_l4">MPEG-H Baseline Profile L4</string>
@@ -516,12 +477,8 @@
     <string name="spk_encoding_mpegh_sub_lc_l4">MPEG-H Low Complexity L4</string>
     <string name="spk_encoding_pcm_16bit_offload">16‐bit PCM Offload</string>
     <string name="spk_encoding_pcm_24bit_offload">24‐bit (8.24) PCM offload</string>
-    <string name="spk_encoding_pcm_20bit">20-bit PCM</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20-bit PCM (big endian)</string>
     <string name="spk_encoding_dts_hd_ma">DTS-HD Master Audio</string>
     <string name="settings_replaygain_boost">Boost</string>
     <string name="d_db">%d dB</string>
     <string name="contributors_banksio">Android Auto</string>
-    <string name="loading_playlists">Cargando listas de reproducción...</string>
-    <string name="edit_mode">Entrar en modo de edición</string>
 </resources>

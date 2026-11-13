@@ -17,7 +17,6 @@
 
 package org.akanework.gramophone.logic.queue
 
-import kotlin.random.Random
 
 /** What pressing a play control should do. */
 sealed interface QueuePlaybackAction {
@@ -67,15 +66,6 @@ object QueuePlaybackRules {
     }
 
     /**
-     * The player play button resumes the active (or last active) queue at its last timestamp. It
-     * pauses while playing, and an ended queue restarts from the first row.
-     */
-    fun playerPlayButton(activeQueue: QueuePlaybackState?): QueuePlaybackAction {
-        if (activeQueue == null) return QueuePlaybackAction.Disabled
-        return queuePlayButton(activeQueue.copy(isActive = true))
-    }
-
-    /**
      * Switching queues saves the outgoing queue's bookmark before the incoming queue starts. There
      * is no saved bookmark when there is no outgoing queue or it has no rows.
      */
@@ -119,26 +109,8 @@ object QueuePlaybackRules {
     }
 
     /**
-     * A library play creates a queue from the complete source and starts at the first row, or at
-     * the tapped row for a song tap. Null means there is nothing to play.
-     */
-    fun libraryPlayStartRow(rowCount: Int, tappedRow: Int? = null): Int? {
-        if (rowCount <= 0) return null
-        return (tappedRow ?: 0).coerceIn(0, rowCount - 1)
-    }
-
-    /**
      * A library song menu offers Play next only while a queue is loaded to anchor the insert.
      * With no active queue the action is hidden rather than implying a destination.
      */
     fun libraryPlayNextAvailable(activeQueue: Queue?): Boolean = activeQueue != null
-
-    /**
-     * Library shuffle-all reorders the complete source as a full random permutation and plays
-     * from its first row. Unlike queue shuffle it has no anchor row.
-     */
-    fun libraryShuffleAllOrder(rowCount: Int, random: Random = Random.Default): List<Int> {
-        if (rowCount <= 0) return emptyList()
-        return QueueShuffle.randomPermutation(rowCount, random)
-    }
 }

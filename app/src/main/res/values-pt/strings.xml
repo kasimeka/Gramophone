@@ -6,7 +6,6 @@
     <string name="category_genres">Gêneros</string>
     <string name="shuffle">Baralhar</string>
     <string name="repeat_mode">Modo repetição</string>
-    <string name="unknown_playlist">Playlist desconhecida</string>
     <string name="unknown_version">Versão desconhecida</string>
     <string name="settings_version">Versão</string>
     <string name="unknown_album">Álbum desconhecido</string>
@@ -29,12 +28,9 @@
     <string name="settings_lyrics_configuration_summary">Configurar a aparência das letras</string>
     <string name="settings_lyrics_bold">Letras em negrito</string>
     <string name="settings_lyrics_center_summary">Fazer com que as letras sejam exibidas no centro</string>
-    <string name="settings_play_on_launch">Reproduzir ao iniciar</string>
-    <string name="settings_play_on_launch_summary">Reproduzir música ao iniciar (se houver alguma na playlist)</string>
     <string name="home_menu_search">Pesquisar</string>
     <string name="home_menu_settings">Configurações</string>
     <string name="home_menu_refresh">Atualizar</string>
-    <string name="category_playlists">Playlists</string>
     <string name="unknown_artist">Artista desconhecido</string>
     <string name="category_dates">Datas</string>
     <plurals name="songs">
@@ -128,9 +124,7 @@
     <string name="settings_blacklist">Ignorar</string>
     <string name="settings_blacklist_folder_summary">Filtre músicas de determinadas pastas (requer nova busca)</string>
     <string name="settings_blacklist_folder">Pastas ignoradas</string>
-    <string name="dialog_edit_metadata">Editar</string>
     <string name="dialog_lyrics">Letras</string>
-    <string name="fgs_failed_channel">A reprodução não foi retomada</string>
     <string name="album_cover">Capa do álbum</string>
     <string name="sort_by_release_date">Data de lançamento</string>
     <string name="album_covers_enhance">Carregamento aprimorado da capa do álbum</string>
@@ -161,11 +155,9 @@
     <string name="home_menu_shuffle">Reproduzir no modo aleatório</string>
     <string name="scroll_to_albums">Role para álbuns</string>
     <string name="scroll_to_songs">Role para as músicas</string>
-    <string name="remove">Remover</string>
     <string name="expand_less">Fechar</string>
     <string name="settings_status_bar_lyrics_summary">Ativar o método MeiZu para mostrar letras na barra de estado (disponível apenas em alguns dispositivos)</string>
     <string name="lyric_widget_description">Widget que mostra as letras da média que é reproduzida</string>
-    <string name="no">Não</string>
     <string name="spk_channel_out_7point1_surround">Surround (7.1)</string>
     <string name="spk_channel_out_6point1">6.1</string>
     <string name="spk_channel_out_7point1point2">7.1.2</string>
@@ -309,7 +301,6 @@
         <item quantity="many">%d Pastas</item>
         <item quantity="other">%d Pastas</item>
     </plurals>
-    <string name="delete_failed_playlist">Falha ao apagar playlist: %s</string>
     <string name="tempo_pitch_value">%s: %.2fx</string>
     <string name="reset">Reiniciar</string>
     <string name="timer_expiry_eos">Temporizador de sono irá pausar quando a música a reproduzir em %s acabar</string>
@@ -400,18 +391,11 @@
     <string name="do_not_enter_email_enter_msg">Digite uma mensagem, não um endereço de e-mail</string>
     <string name="log_will_auto_send">Os registos serão enviados automaticamente, em vez disso explique o problema</string>
     <string name="log_attachment">Os registos serão enviados como anexo automaticamente</string>
-    <string name="create_playlist">Criar playlist…</string>
     <string name="rename">Renomear</string>
     <string name="refreshing_wait">A recarregar, por favor aguarde…</string>
     <string name="still_refreshing">A recarregar, passo %1$d/%2$d: %3$s</string>
     <string name="did_you_know">Sabia…</string>
     <string name="refresh_did_you_know">Gramophone pede por uma lista atualizadas de músicas toda vez que inicia a app, enquanto Gramophone estiver em execução ele irá detetar novas médias automaticamente. Este botão \"Refresh\" não irá recarregar a média no Gramophone, invés disso vai perguntar ao seu sistema para re-escanear todos os ficheiros fixados do sistema (por este motivo demora um tempo). Isto significa que, a menos que o seu sistema ou outras apps não estejam a funcionar corretamente, nunca precisará usar este recurso.\n\nFaltam algumas músicas? Tenha certeza de verificar Configurações &gt; Comportamento para o filtro de duração mínimo e a lista negra de pastas e confirme que esta opção está configurada para o valor esperado. Para outras possíveis razões, por favor confira nosso FAQ.</string>
-    <string name="rename_failed_playlist">Falha em renomear playlist: %s</string>
-    <string name="playlist_name">Nome da playlist</string>
-    <string name="create_failed_playlist">Falha ao criar playlist: %s</string>
-    <string name="rename_playlist">Renomear playlist</string>
-    <string name="edit_playlist_failed">Edição de playlist falhou: %s</string>
-    <string name="add_to_playlist">Adicione a playlist</string>
     <string name="no_app_found">Nenhuma app encontrada pode fazer isto</string>
     <string name="contributors_nift4">Mantedor/ Programador Líder</string>
     <string name="contributors_123duo3">Líder de Design</string>
@@ -430,8 +414,6 @@
     <string name="offload_enabled_if_gapless">Ativado se a reprodução sem espaços for possível</string>
     <string name="settings_audio_offload">Audio offload (conserva pilha)</string>
     <string name="settings_telegram">Telegram</string>
-    <string name="spk_encoding_pcm_20bit">20-bit PCM</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20-bit PCM (big endian)</string>
     <string name="settings_cookie_summary">Capa do álbum em formato de cookie</string>
     <string name="settings_cookie_info">Capa de cookie</string>
     <string name="settings_pure_dark_summary">Um tema onde todas as superfícies na app são preto puro (pode causar falhas em ecrãs OLED)</string>
@@ -439,7 +421,6 @@
     <string name="settings_stop_on_dismiss_summary">Pare a reprodução quando a app for dispensada das recentes</string>
     <string name="compact_grid">Grade (compacta)</string>
     <string name="sort_by_album_year">Ano do álbum</string>
-    <string name="forbidden_symbol_error">Caractere inválido no nome</string>
     <string name="translators">Tradutores</string>
     <string name="settings_replaygain">Ganho de repetição</string>
     <string name="settings_replaygain_mode">Modo</string>
@@ -447,7 +428,6 @@
     <string name="settings_replaygain_drc">Ativar DRC</string>
     <string name="smart">Inteligente</string>
     <string name="d_db">%d dB</string>
-    <string name="clear_queue">Limpar fila</string>
     <string name="favorite">Favorito</string>
     <string name="settings_whitelist">Lista branca</string>
 </resources>

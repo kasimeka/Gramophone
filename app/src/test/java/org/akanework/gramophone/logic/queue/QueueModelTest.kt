@@ -115,7 +115,7 @@ class QueueModelTest {
             repeatMode = QueueRepeatMode.ALL,
         )
 
-        val appended = queue.withAppendedRow("c")
+        val appended = queue.withAppendedRows(listOf("c"))
 
         assertEquals(queue.id, appended.id)
         assertEquals(listOf("a", "b", "c"), appended.rows)

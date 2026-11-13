@@ -250,10 +250,9 @@ private class FakeQueueOrderTarget(
 
     override fun applyDisplayedOrder(order: List<Int>) {
         require(order.size == mediaItems.size && order.toSet().size == order.size)
-        val moves = QueueOrderEditor.planInPlaceMoves(order)
-        for ((from, to) in moves) {
-            mediaItems.add(to, mediaItems.removeAt(from))
-        }
+        val reordered = order.map { mediaItems[it] }
+        mediaItems.clear()
+        mediaItems.addAll(reordered)
     }
 
     override fun removeDisplayedRow(position: Int) {

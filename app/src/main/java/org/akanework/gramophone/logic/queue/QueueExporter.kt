@@ -104,7 +104,7 @@ class QueueExporter(
                         is PendingExport.Write -> entry.queue.id
                         is PendingExport.Remove -> entry.id
                     }
-                    synchronized(pending) { pending.putIfAbsent(id, entry) }
+                    synchronized(pending) { if (id !in pending) pending[id] = entry }
                 }
             }
         }

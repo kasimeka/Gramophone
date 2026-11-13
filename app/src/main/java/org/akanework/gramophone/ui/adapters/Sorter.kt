@@ -85,9 +85,6 @@ class Sorter<T>(
 
         fun canGetModifiedDate(): Boolean = typesSupported.contains(Type.ByModifiedDateAscending)
                 || typesSupported.contains(Type.ByModifiedDateDescending)
-
-        fun canGetDuration(): Boolean = typesSupported.contains(Type.ByDurationAscending)
-                || typesSupported.contains(Type.ByDurationDescending)
     }
 
     fun interface NaturalOrderHelper<T> {

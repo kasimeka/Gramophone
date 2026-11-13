@@ -184,11 +184,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         private const val TAG = "GramoPlaybackService"
         const val NOTIFY_CHANNEL_ID = "serviceFgsError"
         const val NOTIFY_ID = 1
-        private const val FAVE_ID = 2
         private const val PENDING_INTENT_SESSION_ID = 0
         const val PENDING_INTENT_NOTIFY_ID = 1
         const val PENDING_INTENT_WIDGET_ID = 2
-        const val PENDING_INTENT_FAVE_ID = 3
 
         const val SERVICE_SET_TIMER = "set_timer"
         const val SERVICE_QUERY_TIMER = "query_timer"
@@ -738,7 +736,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
         rating: Rating
     ): ListenableFuture<SessionResult> {
         if (rating !is HeartRating) {
-            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
+            return Futures.immediateFuture(SessionResult(SessionError.ERROR_BAD_VALUE))
         }
         gramophoneApplication.favoritesStore.setFavorite(listOf(mediaId), rating.isHeart)
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
@@ -1818,9 +1816,9 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
             val startIndex = customCommand.customExtras.getInt("startIndex")
             val loadFuture = scope.future {
                 val queue = durableQueueForCommand(customCommand)
-                    ?: return@future SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
+                    ?: return@future SessionResult(SessionError.ERROR_BAD_VALUE)
                 val player = endedWorkaroundPlayer
-                    ?: return@future SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
+                    ?: return@future SessionResult(SessionError.ERROR_BAD_VALUE)
 
                 if (queue.id != activeQueuePersistence.activeQueueId()) {
                     // The outgoing queue is durable before the next one loads.
@@ -2106,7 +2104,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                             durableQueueForLong(queueId)?.let(::toBoardQueue)
                         }
                         if (queue == null) {
-                            SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
+                            SessionResult(SessionError.ERROR_BAD_VALUE)
                         } else {
                             SessionResult(SessionResult.RESULT_SUCCESS).also { res ->
                                 res.extras.putBinder(
@@ -2116,7 +2114,7 @@ class GramophonePlaybackService : MediaLibraryService(), MediaSessionService.Lis
                             }
                         }
                     } catch (e: IllegalStateException) {
-                        SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE)
+                        SessionResult(SessionError.ERROR_BAD_VALUE)
                     }
                 }
 

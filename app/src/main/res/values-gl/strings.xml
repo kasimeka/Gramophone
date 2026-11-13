@@ -7,7 +7,6 @@
     <string name="category_albums">Álbums</string>
     <string name="category_artists">Artistas</string>
     <string name="category_genres">Xéneros</string>
-    <string name="category_playlists">Listas</string>
     <string name="unknown_artist">Artista descoñecido</string>
     <string name="category_dates">Datas</string>
     <plurals name="songs">
@@ -48,7 +47,6 @@
     <string name="details">Detalles</string>
     <string name="shuffle">Barallar</string>
     <string name="repeat_mode">Modo de repetición</string>
-    <string name="unknown_playlist">Lista descoñecida</string>
     <string name="settings_category_appearance">Aparencia</string>
     <string name="album_artist">Artista do álbum</string>
     <string name="unknown_version">Versión descoñecida</string>
@@ -127,8 +125,6 @@
     <string name="settings_lyrics_bold_summary">Usar un tipo de letra máis groso</string>
     <string name="settings_lyrics_center">Aliñar ao centro</string>
     <string name="settings_lyrics_center_summary">Usar aliñamento no centro para letras</string>
-    <string name="settings_play_on_launch">Reproducir ao inicio</string>
-    <string name="settings_play_on_launch_summary">Reproducir a música ao iniciar</string>
     <string name="settings_blacklist">Omisións</string>
     <string name="settings_blacklist_folder_summary">Filtrar as cancións de certos cartafoles</string>
     <string name="settings_blacklist_folder">Omitir cartafoles</string>
@@ -140,7 +136,6 @@
     <string name="settings_crash_application">Fallo na aplicación</string>
     <string name="settings_crash_application_summary">Crash-O-Matic 3000</string>
     <string name="album_cover">Portado do álbum</string>
-    <string name="dialog_edit_metadata">Editar</string>
     <string name="dialog_lyrics">Letras</string>
     <string name="delete_failed">Fallou o borrado da canción: %s</string>
     <string name="album_covers_enhance">Carga de portada mellorada</string>
@@ -154,7 +149,6 @@
     <string name="fgs_failed_title">Fallo ao retomar a reprodución</string>
     <string name="settings_trim_lyrics">Eliminar espazos arredor da letra</string>
     <string name="fgs_failed_text">Preme aquí para abrir a app e seguir reproducindo</string>
-    <string name="fgs_failed_channel">Fallou retomar a reprodución</string>
     <string name="sort_by_release_date">Data de publicación</string>
     <string name="timer_expiry">O temporizador deterá a música ás %s</string>
     <string name="settings_preference_category_home">Inicio</string>
@@ -170,7 +164,6 @@
     <string name="scroll_to_songs">Desprazar ata cancións</string>
     <string name="play">Reproducir</string>
     <string name="more">Máis</string>
-    <string name="remove">Eliminar</string>
     <string name="skip_next">Ir á seguinte</string>
     <string name="expand_less">Pechar</string>
     <string name="skip_previous">Ir á anterior</string>
@@ -182,7 +175,6 @@
     <string name="settings_status_bar_lyrics_summary">Activar o método MeiZu para mostrar a letra na barra de estado (dispoñible só nalgúns dispositivos)</string>
     <string name="delete_really">Tes certeza de eliminar \"%s\"? Esta acción non se pode desfacer.</string>
     <string name="yes">Si</string>
-    <string name="no">Non</string>
     <string name="sort_by_file_path">Ruta ao ficheiro</string>
     <string name="spk_channel_out_mono">Mono</string>
     <string name="spk_channel_out_stereo">Estéreo</string>
@@ -390,16 +382,8 @@
     <string name="log_attachment">O rexistros vanse enviar automaticamente como un anexo</string>
     <string name="log_will_auto_send">O rexistros vanse enviar automaticamente, só tes que explicar o problema</string>
     <string name="rename">Cambiar nome</string>
-    <string name="delete_failed_playlist">Fallou a eliminación da lista: %s</string>
-    <string name="create_playlist">Crear lista…</string>
     <string name="did_you_know">Sabías que…</string>
-    <string name="rename_failed_playlist">Fallou o cambio de nome da lista: %s</string>
-    <string name="playlist_name">Nome da lista</string>
-    <string name="edit_playlist_failed">Fallou a edición da lista: %s</string>
-    <string name="add_to_playlist">Engadir á lista</string>
     <string name="still_refreshing">Actualizando, paso %1$d/%2$d: %3$s</string>
-    <string name="rename_playlist">Cambiar nome da lista</string>
-    <string name="create_failed_playlist">Fallou a creación da lista: %s</string>
     <string name="refreshing_wait">Actualizando, agarda…</string>
     <string name="refresh_did_you_know">Gramophone mira se hai actualizacións nas listas cada vez que se inicia, e mentras está a funcionar, tamén detectará se hai novas cancións. Este botón «Actualizar» non volve a cargar o multimedia en Gramophone, se non que lle pide ao sistema volver a escanear todos os ficheiros das almacenaxes permanentes (por iso lle leva un pouco de tempo). Isto significa que, a non ser que o sistema ou outras apps non estean a funcionar correctamente, non precisarás usar nunca esta característica.\n\nFaltan algunhas cancións? Comproba o filtro de lonxitude mínima e os cartafoles ignorados en Axustes &gt; Comportamento, e confirma que teñen os valores agardados. Para outras posibles razóns mira as nósas PMF.</string>
     <string name="no_app_found">Non atopamos unha app para iso</string>
@@ -421,8 +405,6 @@
     <string name="offload_enabled_if_gapless">Activado se é posible reproducir sen pausas</string>
     <string name="settings_telegram">Telegram</string>
     <string name="settings_audio_offload">Audio offload (para aforrar batería)</string>
-    <string name="spk_encoding_pcm_20bit">20-bit PCM</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20-bit PCM (big endian)</string>
     <string name="timer_expiry_eos">O temporizador deterá a música cando finalice a canción en reprodución en %s</string>
     <string name="timer_expiry_end_of_this_song">O temporizador deterá a música cando finalice esta canción</string>
     <plurals name="folders_plural">
@@ -438,7 +420,6 @@
     <string name="compact_grid">Grella (compacta)</string>
     <string name="sort_by_album_year">Ano do álbum</string>
     <string name="sort_by_album_artist_year"><![CDATA[Artista do album -&gt; ano]]></string>
-    <string name="forbidden_symbol_error">Carácter non válido no nome</string>
     <string name="translators">Traducións</string>
     <string name="settings_replaygain">ReplayGain</string>
     <string name="settings_replaygain_mode">Modo</string>
@@ -449,8 +430,6 @@
     <string name="track_gain">Todas as cancións co mesmo volume</string>
     <string name="album_gain">Manter a dinámica do álbum</string>
     <string name="smart">Intelixente</string>
-    <string name="scroll_to_playing">Desprazarse á canción en reprodución</string>
-    <string name="duration_queue">quedan %s, de %s en total</string>
     <string name="playback_speed">Velocidade de reprodución</string>
     <string name="tempo">Tempo</string>
     <string name="pitch">Tono</string>
@@ -459,12 +438,11 @@
     <string name="reset">Restablecer</string>
     <string name="settings_replaygain_boost">Aumentar</string>
     <string name="d_db">%d dB</string>
-    <string name="settings_replaygain_boost_desc">"«Aumentar» fará que a saída de ReplayGain e outra música teña máis volume do establecido no teu dispositivo. (Se o volume no dispositivo está preto do 100%, Aumentar non aumentará o volume). Con Aumentar podes desfrutar de música que ten un volume parecido noutras apps, como os xogos. Ten enconta que esta é unha ferramenta experimental e podería interferir con aplicacións de equalización. Aumentar non funciona para os auriculares Bluetooth. En caso de problemas relacionados co volume, desactiva Aumentar establecendo o valor a 0 dB. "</string>
+    <string name="settings_replaygain_boost_desc" formatted="false">"«Aumentar» fará que a saída de ReplayGain e outra música teña máis volume do establecido no teu dispositivo. (Se o volume no dispositivo está preto do 100%, Aumentar non aumentará o volume). Con Aumentar podes desfrutar de música que ten un volume parecido noutras apps, como os xogos. Ten enconta que esta é unha ferramenta experimental e podería interferir con aplicacións de equalización. Aumentar non funciona para os auriculares Bluetooth. En caso de problemas relacionados co volume, desactiva Aumentar establecendo o valor a 0 dB. "</string>
     <string name="settings_replaygain_no_rg_amp_desc">Reducir o volume para cancións que soan moi alto e que non teñen etiquetas ReplayGain</string>
     <string name="settings_replaygain_preamp_desc">Aumentar ou diminuír o volume das cancións con etiquetas ReplayGain. Os valores máis altos poderían causar perdas no rango dináminco para evitar solapamentos.</string>
     <string name="settings_replaygain_mode_desc">«Intelixente» conserva automáticamente a dinámica do álbum so cando se reproducen cancións de xeito consecutivo dun álbum.</string>
     <string name="sort_by_artist_year"><![CDATA[Artist -&gt; ano]]></string>
-    <string name="clear_queue">Limpar cola</string>
     <string name="contributors_saladnoober">Control da calidade</string>
     <string name="actions_query_shuffle_all_songs">barallar todas as cancións</string>
     <string name="actions_query_shuffle_everything">barallar todo</string>
@@ -475,35 +453,19 @@
     <string name="actions_query_start_random_songs">comezar con cancións ao chou</string>
     <string name="actions_query_shuffle_specific">barallar $item_name</string>
     <string name="favorite">Favorecer</string>
-    <string name="favorite_failed_title">Fallou o cambio do estado de canción favorita</string>
-    <string name="favorite_failed_text">Preme aquí para aplicar os cambios, concedendo o permiso ao ficheiro da lista de cancións favoritas</string>
     <string name="error_in_bg">Houbo erros nos procesos en segundo plano</string>
     <string name="settings_whitelist">Lista de permitidos</string>
     <string name="whitelist_and_blacklist">Se non hai cartafoles seleccionados para a lista de permitidos, entón permítense todos.\n\nAs listas de permitidos e non permitidos aplícanse ao mesmo tempo, tendo prioridade a de non permitidos. Exemplo: podes permitir un cartafol na lista de permitidos e excluír un dos seus subcartafoles na de non permitidos.</string>
-    <string name="discard_changes_title">Desbotar cambios?</string>
     <string name="save">Gardar</string>
-    <string name="discard">Desbotar</string>
-    <string name="discard_changes_msg">Queres desbotar os cambios realizados á lista «%s»?</string>
-    <string name="apply">Aplicar</string>
-    <string name="restore_edits">Restablecer cambios?</string>
-    <string name="restore_edits_msg">Hai cambios sen gardar para a lista «%s». Queres restablecer estes cambios, ou desbotalos e volver a comezar unha nova versión da lista de reprodución?</string>
-    <string name="restore">Restablecer</string>
-    <string name="mount_storage">Inserta unha tarxeta SD para usar esta característica</string>
-    <string name="failed_to_restore">Fallou o restablecemento: %s</string>
-    <string name="playlist_empty">Lista de reprodución baleira</string>
-    <string name="edit_favorites_failed">Fallou a edición das favoritas: %s</string>
     <string name="delete_really_artist">Queres eliminar todas as cancións de «%s»? Esta acción non é reversible.</string>
     <string name="search_desc">Artistas, álbums e cancións</string>
     <string name="search_hint">Buscar cancións e artistas</string>
     <string name="picker_activity">Escolle a pista de música</string>
-    <string name="playlist_picker_activity">Escolle a lista de reprodución</string>
     <string name="settings_preference_category_folders_filesystem"><![CDATA[Pestanas de ficheiros e cartafoles]]></string>
     <string name="show_file_names">Mostrar nome dos ficheiros</string>
     <string name="show_file_names_summary">Motrar nomes dos ficheiros no lugar dos nomes das cancións nas pestanas do cartafol e sistema de ficheiros</string>
-    <string name="another_with_name">O nome xa se está a utilizar</string>
     <string name="settings_font_size">Tamaño da letra</string>
     <string name="search_query">Buscar: %s</string>
-    <string name="set">Establecer</string>
     <string name="timer_eos">Agardar que finalice a canción</string>
     <string name="timer_end_of_this_song">Ao finalizar esta canción</string>
     <string name="other">Personalizado</string>
@@ -513,14 +475,9 @@
         <item quantity="one">%d minuto</item>
         <item quantity="other">%d minutos</item>
     </plurals>
-    <string name="settings_mq_enabled">Varias colas</string>
-    <string name="mq_unpin_queue">Non fixar a cola</string>
-    <string name="mq_pin_queue">Fixar a cola</string>
     <string name="shuffled">%s (barallado)</string>
-    <string name="loading_playlists">Cargando as listas…</string>
     <string name="contributors_banksio">Android Auto</string>
     <string name="unfavorite">Retirar favorita</string>
-    <string name="edit_mode">Entrar no modo edición</string>
     <string name="reverse_order">Orde inversa</string>
     <string name="settings_notification_lyrics_title">Notificación sobre as letras</string>
     <string name="settings_notification_lyrics_summary">Mostra as letras como título da notificación e artista - título como subtítulo</string>

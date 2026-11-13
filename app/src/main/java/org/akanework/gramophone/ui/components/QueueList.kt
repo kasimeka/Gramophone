@@ -59,10 +59,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -354,8 +354,7 @@ private fun PinnedCollectionRow(
     item: PinnedQueueCollection,
     modifier: Modifier = Modifier,
 ) {
-    val songCount = LocalContext.current.resources
-        .getQuantityString(R.plurals.songs, item.songCount, item.songCount)
+    val songCount = pluralStringResource(R.plurals.songs, item.songCount, item.songCount)
     val canPlay = item.songCount > 0
     val disabledTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
 
@@ -432,8 +431,7 @@ private fun QueueListRow(
     onShuffle: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val songCount = LocalContext.current.resources
-        .getQuantityString(R.plurals.songs, row.songCount, row.songCount)
+    val songCount = pluralStringResource(R.plurals.songs, row.songCount, row.songCount)
     val stateLabel = when (row.state) {
         // "paused", "playing", "empty" labels removed from rows; playing is shown via indicator.
         QueueRowState.PLAYING, QueueRowState.PAUSED, QueueRowState.EMPTY -> null

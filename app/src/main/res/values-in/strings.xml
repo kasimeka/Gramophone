@@ -3,17 +3,14 @@
     <string name="settings_category_links">Tautan</string>
     <string name="compact_list">Daftar (ringkas)</string>
     <string name="settings_customization_summary">Kelola opsi kustomisasi</string>
-    <string name="settings_play_on_launch_summary">Putar musik saat diluncurkan</string>
     <string name="refreshed_songs">Disegarkan %1$d lagu</string>
     <string name="home_menu_settings">Pengaturan</string>
-    <string name="unknown_playlist">Daftar putar tidak diketahui</string>
     <string name="settings_version">Versi</string>
     <string name="category_dates">Tanggal</string>
     <plurals name="songs">
         <item quantity="other">%d Lagu</item>
     </plurals>
     <string name="category_genres">Genre</string>
-    <string name="category_playlists">Daftar putar</string>
     <string name="home_menu_refresh">Segarkan</string>
     <string name="home_menu_search">Cari</string>
     <string name="category_songs">Lagu</string>
@@ -104,7 +101,6 @@
     <string name="settings_lyrics_center_summary">Gunakan perataan tengah untuk lirik</string>
     <string name="settings_lyrics_bold_summary">Gunakan ketebalan font yang lebih besar untuk lirik</string>
     <string name="sort_by_modified_date">Tanggal diubah</string>
-    <string name="settings_play_on_launch">Putar saat diluncurkan</string>
     <string name="settings_blacklist">Daftar hitam</string>
     <string name="settings_blacklist_folder">Folder daftar hitam</string>
     <string name="settings_blacklist_folder_summary">Saring lagu dari folder tertentu</string>
@@ -134,7 +130,6 @@
     <string name="current_playlist">Daftar putar saat ini</string>
     <string name="fgs_failed_title">Gagal melanjutkan pemutaran musik</string>
     <string name="fgs_failed_text">Klik di sini untuk membuka aplikasi dan melanjutkan pemutaran</string>
-    <string name="fgs_failed_channel">Pemutaran gagal dilanjutkan</string>
     <string name="settings_crash_application">Hentikan paksa aplikasi</string>
     <string name="delete_failed">Penghapusan lagu gagal: %s</string>
     <string name="crash_clipboard">Log kerusakan disalin ke papan klip</string>
@@ -144,7 +139,6 @@
     <string name="grant_audio"><![CDATA[Harap berikan izin \"Musik dan audio\"]]></string>
     <string name="settings_crash_application_summary">Crash-O-Matic 3000</string>
     <string name="album_cover">Sampul album</string>
-    <string name="dialog_edit_metadata">Ubah</string>
     <string name="dialog_lyrics">Lirik</string>
     <string name="settings_preference_category_home">Layar beranda</string>
     <string name="tab_order">Atur urutan tab</string>
@@ -159,7 +153,6 @@
     <string name="scroll_to_songs">Gulir ke lagu</string>
     <string name="play">Putar</string>
     <string name="more">Lainnya</string>
-    <string name="remove">Hapus</string>
     <string name="skip_next">Lewati ke berikutnya</string>
     <string name="expand_less">Tutup</string>
     <string name="skip_previous">Lewati ke sebelumnya</string>
@@ -172,7 +165,6 @@
     <string name="home_menu_shuffle">Acak semua</string>
     <string name="yes">Ya</string>
     <string name="delete">Hapus</string>
-    <string name="no">Tidak</string>
     <string name="sort_by_album_artist">Artis album -&gt; judul</string>
     <string name="sort_by_file_path">Jalur berkas</string>
     <string name="spk_channel_out_stereo">Stereo</string>
@@ -278,7 +270,6 @@
     <string name="settings_lyrics_no_animation_summary">Nonaktifkan semua animasi transisi baris lirik</string>
     <string name="package_type_explainer">APK Gramophone dapat dibuat oleh siapa saja, karena Gramophone bersumber terbuka. Untuk membantu mengingat asal suatu APK, Gramophone menyediakan tipe paket.\n\nTipe yang paling umum adalah Rilis, yang diperoleh dari F-Droid, Google Play, GitHub, atau IzzyOnDroid.\nTipe paket CI mengacu pada build otomatis yang dibuat untuk setiap commit di GitHub. Build ini mungkin tidak stabil.\nUntuk tipe paket lainnya, namanya seharusnya memberikan petunjuk yang wajar tentang asal APK tersebut.</string>
     <string name="settings_open_source_licenses">Lisensi sumber terbuka</string>
-    <string name="delete_failed_playlist">Penghapusan daftar putar gagal: %s</string>
     <plurals name="folders_plural">
         <item quantity="other">%d Folder</item>
     </plurals>
@@ -398,18 +389,11 @@
     <string name="do_not_enter_email_enter_msg">Masukkan pesan, bukan alamat email</string>
     <string name="log_will_auto_send">Log akan dikirim secara otomatis, jelaskan masalahnya</string>
     <string name="log_attachment">Log akan dikirim sebagai lampiran secara otomatis</string>
-    <string name="create_playlist">Buat daftar putar…</string>
     <string name="rename">Ganti nama</string>
     <string name="refreshing_wait">Menyegarkan, harap tunggu…</string>
     <string name="still_refreshing">Menyegarkan, langkah %1$d/%2$d: %3$s</string>
     <string name="did_you_know">Tahukah Anda…</string>
     <string name="refresh_did_you_know">Gramophone meminta daftar lagu yang diperbarui setiap kali aplikasi dimulai, dan selama Gramophone berjalan, aplikasi ini juga akan mendeteksi media baru secara otomatis. Tombol \"Segarkan\" ini tidak akan memuat ulang media di Gramophone, melainkan akan meminta sistem Anda untuk memindai ulang semua berkas dari semua perangkat penyimpanan permanen yang terpasang (inilah mengapa prosesnya membutuhkan beberapa waktu). Artinya, kecuali sistem atau aplikasi lain Anda mengalami gangguan, Anda tidak perlu menggunakan fitur ini.\n\nAda lagu yang tidak muncul? Pastikan untuk memeriksa Pengaturan &gt; Perilaku untuk filter panjang minimum dan daftar hitam folder, serta konfirmasikan bahwa pengaturan ini sudah sesuai. Untuk kemungkinan alasan lainnya, silakan periksa FAQ kami.</string>
-    <string name="rename_failed_playlist">Gagal mengganti nama daftar putar: %s</string>
-    <string name="playlist_name">Nama daftar putar</string>
-    <string name="create_failed_playlist">Gagal membuat daftar putar: %s</string>
-    <string name="rename_playlist">Ganti nama daftar putar</string>
-    <string name="edit_playlist_failed">Pengeditan daftar putar gagal: %s</string>
-    <string name="add_to_playlist">Tambahkan ke daftar putar</string>
     <string name="no_app_found">Tidak ada aplikasi yang dapat melakukan ini</string>
     <string name="contributors_nift4">Pemelihara / Pengembang Utama</string>
     <string name="contributors_123duo3">Desainer Utama</string>
@@ -429,8 +413,6 @@
     <string name="offload_enabled_if_gapless">Diaktifkan jika pemutaran tanpa jeda memungkinkan</string>
     <string name="settings_audio_offload">Offload audio (menghemat baterai)</string>
     <string name="settings_telegram">Telegram</string>
-    <string name="spk_encoding_pcm_20bit">PCM 20-bit</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">PCM 20-bit (big endian)</string>
     <string name="settings_cookie_summary">Jadikan sampul album berbentuk kue</string>
     <string name="settings_cookie_info">Sampul kue</string>
     <string name="settings_pure_dark">Hitam pekat pada tema gelap</string>
@@ -440,7 +422,6 @@
     <string name="compact_grid">Kisi (ringkas)</string>
     <string name="sort_by_album_year">Tahun album</string>
     <string name="sort_by_album_artist_year"><![CDATA[Artis album -&gt; tahun]]></string>
-    <string name="forbidden_symbol_error">Karakter tidak valid dalam nama</string>
     <string name="translators">Penerjemah</string>
     <string name="settings_replaygain">ReplayGain</string>
     <string name="settings_replaygain_mode">Mode</string>
@@ -452,15 +433,12 @@
     <string name="track_gain">Semua trek dengan kenyaringan yang sama</string>
     <string name="album_gain">Pertahankan dinamika album</string>
     <string name="smart">Cerdas</string>
-    <string name="scroll_to_playing">Gulir ke lagu yang sedang diputar</string>
-    <string name="duration_queue">%s tersisa, %s total</string>
     <string name="d_db">%d dB</string>
     <string name="settings_replaygain_boost_desc" formatted="false">"\"Perkuat\" akan mengeluarkan audio ReplayGain maupun musik lainnya pada volume yang lebih tinggi dari yang diatur di perangkat Anda. (Jika volume perangkat Anda sudah mendekati 100%, Perkuat tidak akan meningkatkan volume). Dengan Perkuat, Anda dapat menikmati musik dengan kenyaringan yang serupa dengan aplikasi lain, seperti game. Harap diperhatikan bahwa fitur ini bersifat eksperimental dan dapat mengganggu aplikasi ekualizer eksternal. Perkuat tidak berfungsi dengan headphone Bluetooth. Jika terjadi masalah terkait volume, harap nonaktifkan Perkuat dengan mengaturnya ke 0 dB. "</string>
     <string name="settings_replaygain_no_rg_amp_desc">Kurangi volume untuk lagu keras yang tidak memiliki tag ReplayGain</string>
     <string name="settings_replaygain_preamp_desc">Tingkatkan atau kurangi volume lagu yang memiliki tag ReplayGain. Nilai yang lebih tinggi dapat menyebabkan hilangnya dinamika akibat pencegahan clipping.</string>
     <string name="settings_replaygain_mode_desc">\"Cerdas\" secara otomatis mempertahankan dinamika album hanya saat memutar lagu dari sebuah album secara berurutan.</string>
     <string name="sort_by_artist_year"><![CDATA[Artis -&gt; tahun]]></string>
-    <string name="clear_queue">Kosongkan antrean</string>
     <string name="actions_query_shuffle_all_songs">acak semua lagu</string>
     <string name="actions_query_shuffle_everything">acak semua</string>
     <string name="actions_query_play_random_songs">putar lagu secara acak</string>
@@ -471,34 +449,18 @@
     <string name="actions_query_shuffle_specific">acak $item_name</string>
     <string name="search_query">Cari: %s</string>
     <string name="delete_really_artist">Apakah Anda benar-benar ingin menghapus semua lagu oleh \"%s\"? Tindakan ini tidak dapat dibatalkan.</string>
-    <string name="edit_favorites_failed">Gagal mengedit favorit: %s</string>
     <string name="favorite">Favorit</string>
-    <string name="favorite_failed_title">Gagal mengubah status favorit lagu</string>
-    <string name="favorite_failed_text">Silakan klik di sini untuk menerapkan perubahan, dengan memberikan izin ke file playlist favorit</string>
     <string name="error_in_bg">Kesalahan yang terjadi di latar belakang</string>
     <string name="settings_whitelist">Daftar putih</string>
     <string name="whitelist_and_blacklist">Jika tidak ada folder yang dipilih dalam Daftar putih, semua folder akan diizinkan.\n\nDaftar putih dan Daftar hitam diterapkan bersamaan, dengan Daftar hitam memiliki prioritas. Misalnya, Anda dapat mengizinkan sebuah folder dalam Daftar putih sambil mengecualikan salah satu subfoldernya dalam Daftar hitam.</string>
-    <string name="discard_changes_title">Buang perubahan?</string>
     <string name="save">Simpan</string>
-    <string name="discard">Buang</string>
-    <string name="discard_changes_msg">Apakah Anda benar-benar ingin membuang perubahan pada playlist \"%s\"?</string>
-    <string name="apply">Terapkan</string>
-    <string name="restore_edits">Pulihkan perubahan?</string>
-    <string name="restore_edits_msg">Ada perubahan yang belum disimpan untuk playlist \"%s\". Apakah Anda ingin memulihkan perubahan ini, atau membuangnya dan memulai lagi dengan versi playlist yang baru?</string>
-    <string name="restore">Pulihkan</string>
-    <string name="mount_storage">Silakan masukkan kartu SD untuk menggunakan fitur ini</string>
-    <string name="failed_to_restore">Gagal memulihkan perubahan: %s</string>
-    <string name="playlist_empty">Playlist kosong</string>
     <string name="search_desc">Artis, album, dan trek</string>
     <string name="search_hint">Cari lagu dan artis</string>
     <string name="picker_activity">Pilih trek musik</string>
-    <string name="playlist_picker_activity">Pilih playlist</string>
     <string name="settings_preference_category_folders_filesystem"><![CDATA[Tab folder &amp; sistem file]]></string>
     <string name="show_file_names">Tampilkan nama file</string>
     <string name="show_file_names_summary">Tampilkan nama file sebagai pengganti nama lagu pada tab folder dan sistem file</string>
-    <string name="another_with_name">Nama sudah digunakan</string>
     <string name="settings_font_size">Ukuran font</string>
-    <string name="set">Atur</string>
     <string name="timer_eos">Tunggu sampai lagu berakhir</string>
     <string name="timer_end_of_this_song">Akhir lagu ini</string>
     <string name="other">Kustom</string>
@@ -507,10 +469,7 @@
     <plurals name="minutes">
         <item quantity="other">%d menit</item>
     </plurals>
-    <string name="settings_mq_enabled">Beberapa antrean</string>
-    <string name="mq_pin_queue">Sematkan antrean</string>
     <string name="shuffled">%s (diacak)</string>
-    <string name="mq_unpin_queue">Lepaskan penandaan antrian ini dan izinkan agar antrian tersebut dihapus setelah jangka waktu tertentu</string>
     <string name="reverse_order">Urutan terbalik</string>
     <string name="settings_notification_lyrics_title">Lirik notifikasi</string>
     <string name="settings_notification_lyrics_summary">Tampilkan lirik sebagai judul notifikasi dan artis - judul sebagai subjudul</string>
@@ -518,6 +477,4 @@
     <string name="settings_always_skip_previous_summary">Langsung pindah ke lagu sebelumnya saat menekan tombol sebelumnya, alih-alih kembali ke awal lagu</string>
     <string name="contributors_banksio">Android Auto</string>
     <string name="unfavorite">Hapus dari favorit</string>
-    <string name="loading_playlists">Memuat playlist...</string>
-    <string name="edit_mode">Masuk ke mode edit</string>
 </resources>

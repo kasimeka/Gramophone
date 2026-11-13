@@ -133,30 +133,6 @@ object QueueOrderEditor {
     }
 
     /**
-     * Compute a sequence of in-place single-row moves (`from` to `to`) that transforms the current
-     * natural order `0 until order.size` into [order].
-     *
-     * Executing these moves in sequence using `moveMediaItem(from, to)` modifies the player's
-     * timeline in-place without tearing down media sources, rebuffering, or causing playback
-     * stutter.
-     */
-    fun planInPlaceMoves(order: List<Int>): List<Pair<Int, Int>> {
-        require(order.size == order.toSet().size) { "order contains duplicate rows" }
-        require(order.all { it in 0 until order.size }) { "order contains invalid row index" }
-        val current = (0 until order.size).toMutableList()
-        val moves = mutableListOf<Pair<Int, Int>>()
-        for (targetIndex in 0 until order.size - 1) {
-            val originalIndex = order[targetIndex]
-            val currentIndex = current.indexOf(originalIndex)
-            if (currentIndex != targetIndex) {
-                moves.add(currentIndex to targetIndex)
-                current.add(targetIndex, current.removeAt(currentIndex))
-            }
-        }
-        return moves
-    }
-
-    /**
      * Move the row at [from] to [to] in the displayed order, as a drag-reorder does. The current
      * row keeps its identity, so playback and the bookmark follow it.
      */

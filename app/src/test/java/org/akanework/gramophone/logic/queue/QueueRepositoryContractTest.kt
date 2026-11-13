@@ -239,7 +239,7 @@ abstract class QueueRepositoryContractTest {
         repository.setActiveQueue(active.id)
         val target = repository.create(source = null, rows = listOf("x"), now = 2L)
 
-        val appended = repository.mutate(target.id, now = 3L) { it.withAppendedRow("y") }
+        val appended = repository.mutate(target.id, now = 3L) { it.withAppendedRows(listOf("y")) }
         val createdWithSong = repository.create(source = null, rows = listOf("z"), now = 4L)
 
         assertEquals(active.id, repository.lastActiveQueue.value?.id)

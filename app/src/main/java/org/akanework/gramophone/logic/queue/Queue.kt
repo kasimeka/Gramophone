@@ -163,9 +163,6 @@ data class Queue(
     /** Add serialized rows at the end without changing the bookmark or the queue's identity. */
     fun withAppendedRows(newRows: List<String>): Queue = copy(rows = rows + newRows, isModified = true)
 
-    /** Add a serialized row at the end without changing the bookmark or the queue's identity. */
-    fun withAppendedRow(row: String): Queue = copy(rows = rows + row, isModified = true)
-
     /** Remove the row at [position], clamping the bookmark to a surviving row. */
     fun withoutRow(position: Int, now: Long = System.currentTimeMillis()): Queue {
         if (position !in rows.indices) return this

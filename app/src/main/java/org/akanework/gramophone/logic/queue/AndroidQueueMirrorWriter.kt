@@ -183,7 +183,11 @@ class AndroidQueueMirrorWriter(private val context: Context) : QueueMirrorWriter
     }
 
     private fun collection(): Uri =
-        MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Files.getContentUri("external")
+        }
 
     private fun suffix(id: UUID): String = "_$id.m3u8"
 

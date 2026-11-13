@@ -5,7 +5,6 @@
     <string name="spk_encoding_lhdc_ll">LLAC (LHDC-LL)</string>
     <string name="spk_encoding_sbc">SBC</string>
     <string name="category_dates">วันที่</string>
-    <string name="category_playlists">เพลย์ลิสต์</string>
     <string name="unknown_artist">ศิลปินที่ไม่รู้จัก</string>
     <string name="home_menu_shuffle">สุ่มเพลงทั้งหมด</string>
     <string name="follow_system">ตามระบบ</string>
@@ -53,16 +52,13 @@
     <string name="settings_category_filters">ฟิลเตอร์</string>
     <string name="settings_preference_category_application">แอปพลิเคชัน</string>
     <string name="dialog_lyrics">เนื้อเพลง</string>
-    <string name="dialog_edit_metadata">แก้ไข</string>
     <string name="settings_preference_category_home">หน้าแรก</string>
     <string name="back">กลับ</string>
-    <string name="remove">ลบ</string>
     <string name="play">เล่น</string>
     <string name="play_all">เล่นทั้งหมด</string>
     <string name="expand_less">ปิด</string>
     <string name="delete">ลบ</string>
     <string name="spk_channel_out_mono">โมโน</string>
-    <string name="no">ไม่</string>
     <string name="spk_channel_out_front_left">หน้าซ้าย</string>
     <string name="spk_channel_out_front_center">หน้ากลาง</string>
     <string name="spk_channel_invalid">ไม่ถูกต้อง</string>
@@ -194,7 +190,6 @@
     </plurals>
     <string name="unknown_genre">ไม่ทราบแนวเพลง</string>
     <string name="sort_by_album_artist">ศิลปินอัลบั้ม -&gt; ชื่อเพลง</string>
-    <string name="unknown_playlist">เพลย์ลิสต์ที่ไม่รู้จัก</string>
     <string name="album_artist">ศิลปินอัลบั้ม</string>
     <string name="settings_category_behavior">พฤติกรรม</string>
     <string name="settings_repository">ที่เก็บข้อมูล</string>
@@ -243,8 +238,6 @@
     <string name="settings_lyrics_bold_summary">ให้ตัวอักษรเนื้อเพลงเป็นตัวหนา</string>
     <string name="settings_lyrics_center">จัดเรียงอยู่ตรงกลาง</string>
     <string name="settings_lyrics_center_summary">ให้จัดเรียงเนื้อเพลงอยู่ตรงกลาง</string>
-    <string name="settings_play_on_launch">เล่นเมื่อเปิดแอป</string>
-    <string name="settings_play_on_launch_summary">ให้เริ่มเล่นเพลงทันทีเมื่อเปิดแอป</string>
     <string name="settings_blacklist">บัญชีดำ</string>
     <string name="settings_blacklist_folder_summary">กำหนดเพลงในแฟ้มที่ไม่ให้แสดง</string>
     <string name="settings_blacklist_folder">บัญชีดำ</string>
@@ -252,7 +245,6 @@
     <string name="settings_category_full_player">เครื่องเล่นเพลงแบบเต็มจอ</string>
     <string name="album_cover">ปกอัลบั้ม</string>
     <string name="delete_failed">ไม่สามารถลบเพลงได้ : %s</string>
-    <string name="delete_failed_playlist">ไม่สามารถลบเพลย์ลิสต์ได้: %s</string>
     <string name="album_covers_enhance">กำลังโหลดปกอัลบั้มแบบปรับปรุง</string>
     <string name="album_covers_enhance_desc">แสดงปกอัลบั้มคุณภาพสูง และอนุญาตให้ปกอัลบั้มและเพลงต่างกันได้ (จำเป็นต้องอนุญาตให้เข้าถึงรูปภาพในเครื่อง)</string>
     <string name="settings_trim_lyrics">ลบช่องว่างระหว่างเนื้อเพลง</string>
@@ -260,7 +252,6 @@
     <string name="current_playlist">เพลย์ลิสต์ปัจจุบัน</string>
     <string name="fgs_failed_title">ไม่สามารถเริ่มเล่นเพลงต่อได้</string>
     <string name="fgs_failed_text">กดที่นี่เพื่อเปิดแอปและเริ่มเล่นเพลงต่อ</string>
-    <string name="fgs_failed_channel">ไม่สามารถเริ่มเล่นเพลงต่อได้</string>
     <string name="sort_by_release_date">วันปล่อยเพลง</string>
     <string name="timer_expiry">เพลงจะหยุดเล่นในเวลา %s</string>
     <string name="timer_expiry_eos">เพลงจะหยุดเล่นเมื่อ %s จบ</string>

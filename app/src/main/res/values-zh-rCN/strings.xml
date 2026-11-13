@@ -7,7 +7,6 @@
     <string name="category_albums">专辑</string>
     <string name="category_artists">音乐人</string>
     <string name="category_genres">流派</string>
-    <string name="category_playlists">播放列表</string>
     <string name="unknown_artist">未知音乐人</string>
     <string name="category_dates">发行日期</string>
     <string name="follow_system">跟随系统</string>
@@ -30,7 +29,6 @@
     <string name="details">详情</string>
     <string name="shuffle">随机播放</string>
     <string name="repeat_mode">循环模式</string>
-    <string name="unknown_playlist">未知播放列表</string>
     <string name="settings_category_appearance">外观</string>
     <string name="album_artist">专辑音乐人</string>
     <string name="unknown_version">未知版本</string>
@@ -115,8 +113,6 @@
     <string name="settings_lyrics_bold_summary">为歌词使用更粗的字体</string>
     <string name="settings_lyrics_center">居中对齐</string>
     <string name="settings_lyrics_center_summary">为歌词使用居中对齐</string>
-    <string name="settings_play_on_launch">启动时播放</string>
-    <string name="settings_play_on_launch_summary">在启动时播放歌曲</string>
     <string name="settings_blacklist_folder">黑名单文件夹</string>
     <string name="settings_blacklist">黑名单</string>
     <string name="settings_category_misc">其他</string>
@@ -128,7 +124,6 @@
     <string name="settings_crash_application">崩溃测试</string>
     <string name="settings_crash_application_summary">Crash-O-Matic 3000</string>
     <string name="dialog_lyrics">歌词</string>
-    <string name="dialog_edit_metadata">编辑</string>
     <string name="album_cover">专辑封面</string>
     <string name="delete_failed">删除歌曲失败：%s</string>
     <string name="grant_images"><![CDATA[请授予“照片和视频”权限]]></string>
@@ -139,13 +134,11 @@
     <string name="current_playlist">当前播放列表</string>
     <string name="fgs_failed_text">点击此处以打开应用并继续播放</string>
     <string name="fgs_failed_title">无法恢复音乐播放</string>
-    <string name="fgs_failed_channel">播放无法恢复</string>
     <string name="album_covers_enhance_desc">展示高品质歌曲封面，并允许专辑和歌曲封面有所不同（需要照片访问权限）</string>
     <string name="album_covers_enhance">增强型专辑封面加载</string>
     <string name="share">分享</string>
     <string name="sort_by_release_date">发布日期</string>
     <string name="timer_expiry">睡眠定时器将在 %s 暂停音乐</string>
-    <string name="remove">移除</string>
     <string name="more">更多</string>
     <string name="play">播放</string>
     <string name="sort">排序</string>
@@ -172,7 +165,6 @@
     <string name="grant_audio"><![CDATA[请授予“音乐和音频”权限]]></string>
     <string name="delete">删除</string>
     <string name="yes">是</string>
-    <string name="no">否</string>
     <string name="sort_by_file_path">文件路径</string>
     <string name="sort_by_album_artist">专辑音乐人 -&gt; 标题</string>
     <string name="delete_really">确定要删除“%s”吗？此操作无法撤销。</string>
@@ -231,7 +223,6 @@
     <string name="gramophone_crashed_explainer2">Gramophone 崩溃了 :(\n\n请给我们发送错误报告以便解决导致此崩溃的问题！\n\n每个情况因音乐而异，没有您的帮助这几乎永远<b>无法</b>修复！</string>
     <string name="email_clipboard">已复制邮件地址以及文本到剪贴板</string>
     <string name="audio_signal_chain">音频信号链</string>
-    <string name="delete_failed_playlist">删除播放列表失败：%s</string>
     <string name="settings_trim_lyrics_summary">歌词行首或行尾的空格可能具有艺术效果，若不需要可开启此开关自动移除。</string>
     <string name="failed_to_parse_lyric">无法解析歌词</string>
     <string name="audio_not_initialized">音频播放系统尚未初始化。试着播放些什么吧！</string>
@@ -251,8 +242,6 @@
     <string name="send_email">发送邮件</string>
     <string name="send_email_manually">找不到邮件应用，请将日志发送到 nift4@posteo.net</string>
     <string name="did_you_know">您知道吗…</string>
-    <string name="create_failed_playlist">无法创建播放列表：%s</string>
-    <string name="rename_failed_playlist">无法重命名播放列表：%s</string>
     <string name="device_type_wired_headset">有线耳麦</string>
     <string name="device_type_wired_headphones">有线耳机</string>
     <string name="device_type_unknown">未知设备</string>
@@ -320,7 +309,6 @@
     <string name="mix_port_flag_compress_offload">压缩分流</string>
     <string name="mix_port_flag_deep_buffer">深度缓冲区</string>
     <string name="refreshing_wait">正在刷新，请稍候…</string>
-    <string name="create_playlist">创建播放列表…</string>
     <string name="log_attachment">日志将会自动作为附件发送</string>
     <string name="log_will_auto_send">日志将自动发送，请说明问题</string>
     <string name="do_not_enter_email_enter_msg">输入消息，而不是电子邮件地址</string>
@@ -334,10 +322,6 @@
     <string name="spk_encoding_unknown">未知格式 %s</string>
     <string name="spk_encoding_unknown_d">未知格式 %d</string>
     <string name="crash_report">崩溃报告</string>
-    <string name="playlist_name">播放列表名称</string>
-    <string name="rename_playlist">重命名播放列表</string>
-    <string name="edit_playlist_failed">编辑播放列表失败：%s</string>
-    <string name="add_to_playlist">添加到播放列表</string>
     <string name="still_refreshing">正在刷新，第 %1$d 步，共 %2$d 步：%3$s</string>
     <string name="home_menu_quick_refresh">快速刷新</string>
     <string name="add_to_queue">添加到队列</string>
@@ -367,8 +351,6 @@
     <string name="spk_encoding_amr_nb">AMR-NB</string>
     <string name="spk_encoding_dsd">DSD</string>
     <string name="spk_encoding_alac">ALAC</string>
-    <string name="duration_queue">还剩 %s，总计 %s</string>
-    <string name="scroll_to_playing">滚动到正在播放的歌曲</string>
     <plurals name="folders_plural">
         <item quantity="other">%d 个文件夹</item>
     </plurals>
@@ -429,8 +411,6 @@
     <string name="spk_encoding_mpegh_sub_lc_l3">MPEG-H Low Complexity L3</string>
     <string name="spk_encoding_mpegh_sub_lc_l4">MPEG-H Low Complexity L4</string>
     <string name="spk_encoding_pcm_16bit_offload">16-bit PCM Offload</string>
-    <string name="spk_encoding_pcm_20bit">20-bit PCM</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20-bit PCM (big endian)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="translators">译者</string>
     <string name="settings_cookie_summary">将专辑封面设为饼干形状</string>
@@ -442,7 +422,6 @@
     <string name="compact_grid">网格（紧凑）</string>
     <string name="sort_by_album_year">专辑年份</string>
     <string name="sort_by_album_artist_year"><![CDATA[专辑音乐人 -&gt; 年份]]></string>
-    <string name="forbidden_symbol_error">名称中包含无效字符</string>
     <string name="settings_replaygain">回放增益</string>
     <string name="settings_replaygain_mode">模式</string>
     <string name="settings_replaygain_preamp">前置放大</string>
@@ -454,12 +433,11 @@
     <string name="smart">智能</string>
     <string name="settings_replaygain_boost">增强</string>
     <string name="d_db">%d dB</string>
-    <string name="settings_replaygain_boost_desc">"启用“增强”后，无论音乐是否带有回放增益，输出音量都会高于您设备当前设置的音量。（如果您的设备音量设置接近 100%，此功能不会增加音量）。通过此功能，您可以让音乐与游戏等其他应用的音量保持一致。请注意，此功能尚处于实验阶段，可能与外部均衡器应用冲突，且不支持蓝牙耳机。如果出现任何音量相关问题，请将“增强”设置为 0 dB 以禁用此功能。 "</string>
+    <string name="settings_replaygain_boost_desc" formatted="false">"启用“增强”后，无论音乐是否带有回放增益，输出音量都会高于您设备当前设置的音量。（如果您的设备音量设置接近 100%，此功能不会增加音量）。通过此功能，您可以让音乐与游戏等其他应用的音量保持一致。请注意，此功能尚处于实验阶段，可能与外部均衡器应用冲突，且不支持蓝牙耳机。如果出现任何音量相关问题，请将“增强”设置为 0 dB 以禁用此功能。 "</string>
     <string name="settings_replaygain_no_rg_amp_desc">对无回放增益标签的过响歌曲自动降低音量</string>
     <string name="settings_replaygain_preamp_desc">带有回放增益标签的歌曲自动增大或减小音量。较高的值可能会因削波预防而导致动态范围损失。</string>
     <string name="settings_replaygain_mode_desc">“智能”仅在连续播放同一专辑中的歌曲时才会自动保留专辑动态范围。</string>
     <string name="sort_by_artist_year"><![CDATA[音乐人 -&gt; 年份]]></string>
-    <string name="clear_queue">清除队列</string>
     <string name="contributors_saladnoober">质量保证</string>
     <string name="actions_query_shuffle_all_songs">随机播放所有歌曲</string>
     <string name="actions_query_shuffle_everything">随机播放所有内容</string>
@@ -469,35 +447,19 @@
     <string name="actions_query_start_random_music">开始随机播放音乐</string>
     <string name="actions_query_start_random_songs">开始随机播放歌曲</string>
     <string name="actions_query_shuffle_specific">随机播放 $item_name</string>
-    <string name="edit_favorites_failed">编辑收藏失败：%s</string>
     <string name="favorite">收藏</string>
-    <string name="favorite_failed_title">无法更改歌曲的收藏状态</string>
-    <string name="favorite_failed_text">请点击此处应用更改，授予对收藏播放列表文件的权限</string>
     <string name="error_in_bg">后台发生错误</string>
     <string name="settings_whitelist">白名单</string>
     <string name="whitelist_and_blacklist">如果白名单中未选择任何文件夹，则所有文件夹均被允许。\n\n白名单和黑名单同时生效，且黑名单具有优先级。例如，您可以在白名单中允许某个文件夹，同时在黑名单中排除其某个子文件夹。</string>
-    <string name="discard_changes_title">舍弃更改？</string>
     <string name="save">保存</string>
-    <string name="discard">舍弃</string>
-    <string name="discard_changes_msg">确定要舍弃对播放列表“%s”所做的更改吗？</string>
-    <string name="apply">应用</string>
-    <string name="restore_edits">恢复更改？</string>
-    <string name="restore_edits_msg">播放列表“%s”存在未保存的更改。您要恢复这些更改，还是舍弃更改并使用播放列表的全新版本重新开始？</string>
-    <string name="restore">恢复</string>
-    <string name="mount_storage">请插入 SD 卡以使用此功能</string>
-    <string name="failed_to_restore">无法恢复更改：%s</string>
-    <string name="playlist_empty">播放列表为空</string>
     <string name="delete_really_artist">确定要删除“%s”的所有歌曲吗？此操作无法撤销。</string>
     <string name="search_desc">音乐人、专辑和曲目</string>
     <string name="search_hint">搜索歌曲和音乐人</string>
     <string name="picker_activity">选择音乐曲目</string>
-    <string name="playlist_picker_activity">选择播放列表</string>
     <string name="settings_preference_category_folders_filesystem"><![CDATA[文件夹和文件系统标签页]]></string>
     <string name="show_file_names">显示文件名称</string>
     <string name="show_file_names_summary">在文件夹和文件系统标签页中，用文件名称代替歌曲名称</string>
-    <string name="another_with_name">名称已被使用</string>
     <string name="settings_font_size">字体大小</string>
-    <string name="set">设置</string>
     <string name="timer_eos">等待歌曲结束</string>
     <string name="timer_end_of_this_song">这首歌曲结束</string>
     <string name="other">自定义</string>
@@ -507,14 +469,9 @@
         <item quantity="other">%d 分钟</item>
     </plurals>
     <string name="search_query">搜索：%s</string>
-    <string name="settings_mq_enabled">多个队列</string>
-    <string name="mq_unpin_queue">取消固定队列</string>
-    <string name="mq_pin_queue">固定队列</string>
     <string name="shuffled">%s（随机）</string>
-    <string name="loading_playlists">正在加载播放列表…</string>
     <string name="contributors_banksio">Android Auto</string>
     <string name="unfavorite">取消收藏</string>
-    <string name="edit_mode">进入编辑模式</string>
     <string name="settings_notification_lyrics_title">通知歌词</string>
     <string name="settings_notification_lyrics_summary">将歌词显示为通知标题，并将“音乐人 - 标题”显示为副标题</string>
     <string name="settings_always_skip_previous">总是跳至上一曲</string>

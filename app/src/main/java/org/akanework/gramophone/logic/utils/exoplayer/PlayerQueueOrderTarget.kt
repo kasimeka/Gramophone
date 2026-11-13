@@ -72,48 +72,6 @@ class PlayerQueueOrderTarget(
     fun snapshotMediaItems(): List<MediaItem> =
         (0 until exoPlayer.mediaItemCount).map { exoPlayer.getMediaItemAt(it) }
 
-    /**
-     * Apply a precomputed reorder, preserving the current item and playback position/state without
-     * reloading the media pipeline. [currentItems] must be the timeline snapshot the reorder was derived
-     * from, in the same order.
-     */
-    fun applyReorderedItems(currentItems: List<MediaItem>, reordered: List<MediaItem>) {
-        require(reordered.size == currentItems.size) {
-            "reordered item count ${reordered.size} does not match media item count ${currentItems.size}"
-        }
-        if (reordered.indices.all { reordered[it] === currentItems[it] }) return
-
-        val remaining = currentItems.indices.toMutableList()
-        val order = reordered.map { item ->
-            val idx = remaining.indexOfFirst { currentItems[it] === item }
-                .takeIf { it != -1 }
-                ?: remaining.indexOfFirst { currentItems[it] == item }
-            if (idx != -1) remaining.removeAt(idx) else -1
-        }
-        if (order.all { it != -1 } && order.toSet().size == order.size && order.size == size) {
-            applyDisplayedOrder(order)
-            return
-        }
-
-        val currentIndex = exoPlayer.currentMediaItemIndex
-        val currentPosition = exoPlayer.currentPosition.coerceAtLeast(0L)
-        val playWhenReady = exoPlayer.playWhenReady
-        val playbackState = exoPlayer.playbackState
-        val newIndex = if (currentIndex in currentItems.indices) {
-            reordered.indexOf(currentItems[currentIndex]).takeIf { it >= 0 } ?: 0
-        } else {
-            0
-        }
-
-        exoPlayer.setMediaItems(reordered, newIndex, currentPosition)
-        exoPlayer.playWhenReady = playWhenReady
-        // Re-preparing an already prepared player during a bulk reorder can cause an audible
-        // stutter/reset; only prepare when the player is idle.
-        if (playbackState == androidx.media3.common.Player.STATE_IDLE) {
-            exoPlayer.prepare()
-        }
-    }
-
     override fun removeDisplayedRow(position: Int) {
         require(position in 0..<size) { "position $position is outside displayed order" }
         exoPlayer.removeMediaItem(position)

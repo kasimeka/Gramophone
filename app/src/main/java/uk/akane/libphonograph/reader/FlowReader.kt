@@ -59,7 +59,7 @@ import uk.akane.libphonograph.items.Genre
 import uk.akane.libphonograph.items.Item
 
 /**
- * SimpleReader reimplementation using flows with focus on efficiency.
+ * Flow-based reader with focus on efficiency.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FlowReader(
@@ -187,8 +187,6 @@ class FlowReader(
     val dynamicItemsFlow: Flow<List<Item>> = combine(favoriteFlow, recentlyAddedFlow) { fav, recent ->
         listOfNotNull(recent, fav)
     }
-    @Deprecated("Playlists removed; use dynamicItemsFlow")
-    val playlistListFlow: Flow<List<Item>> = dynamicItemsFlow
     val albumListFlow: Flow<List<Album>> = readerFlow.map { it.albumList!! }
     val albumArtistListFlow: Flow<List<Artist>> = readerFlow.map { it.albumArtistList!! }
     val artistListFlow: Flow<List<Artist>> = readerFlow.map { it.artistList!! }

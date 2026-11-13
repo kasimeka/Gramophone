@@ -15,7 +15,6 @@
     </plurals>
     <string name="follow_system">Rendszer követése</string>
     <string name="category_genres">Műfajok</string>
-    <string name="category_playlists">Lejátszási listák</string>
     <string name="category_songs">Dalok</string>
     <string name="unknown_artist">Ismeretlen előadó</string>
     <string name="light">Világos</string>
@@ -58,7 +57,6 @@
     <string name="settings_blacklist_folder">Fekete listás mappák</string>
     <string name="settings_category_filters">Szűrők</string>
     <string name="settings_crash_application_summary">Össze-o-moltató 3000</string>
-    <string name="dialog_edit_metadata">Szerkesztés</string>
     <string name="dialog_lyrics">Dalszövegek</string>
     <string name="settings_about_app">Névjegy</string>
     <string name="settings_about_gramophone">Alkalmazás névjegye</string>
@@ -118,8 +116,6 @@
     <string name="dialog_path">Elérési útvonal</string>
     <string name="repeat_mode">Ismétlés mód</string>
     <string name="settings_player_ui">Lejátszó UI</string>
-    <string name="settings_play_on_launch_summary">Zene elindítása megnyitáskor</string>
-    <string name="settings_play_on_launch">Lejátszás indításkor</string>
     <string name="deny_images"><![CDATA[Ne adjon \"Fotó és videó\" engedélyt]]></string>
     <string name="grant_images"><![CDATA[Adjon \"Fotó és videó\" engedélyt]]></string>
     <string name="home_menu_refresh">Frissítés</string>
@@ -131,7 +127,6 @@
     <string name="shuffle">Véletlen-sorrend</string>
     <string name="unknown_album">Ismeretlen album</string>
     <string name="unknown_genre">Ismeretlen műfaj</string>
-    <string name="unknown_playlist">Ismeretlen lejátszási lista</string>
     <string name="unknown_version">Ismeretlen verzió</string>
     <string name="unknown_year">Ismeretlen év</string>
     <string name="settings_lyrics_bold_summary">Vastagabb betűtípus használása dalszövegekhez</string>
@@ -235,7 +230,6 @@
     <string name="bitrate_unknown">Ismeretlen bitráta</string>
     <string name="dialog_bitrate">Bitráta</string>
     <string name="yes">Igen</string>
-    <string name="no">Nem</string>
     <string name="delete_really">Biztosan ki akarja törölni a \"%s\"-t? Ez a művelet nem visszafordítható.</string>
     <string name="spk_channel_out_stereo">Sztereó</string>
     <string name="spk_channel_out_quad">Quad</string>
@@ -288,7 +282,6 @@
     <string name="skip_next">Ugrás a következőre</string>
     <string name="skip_previous">Ugrás az előzőre</string>
     <string name="position_slider">Csúszka áthelyezése</string>
-    <string name="remove">Eltávolítás</string>
     <string name="expand_less">Bezár</string>
     <string name="settings_lyrics_ui">Új dalszöveg felület bekapcsolása</string>
     <string name="delete">Törlés</string>
@@ -305,7 +298,6 @@
     <string name="device_type_hdmi_earc">HDMI Enhanced Audio Return Channel</string>
     <string name="device_type_unknown">Ismeretlen</string>
     <string name="device_type_dock_analog">Analóg dokkoló</string>
-    <string name="fgs_failed_channel">Lejátszás nem folytatódott</string>
     <string name="timer_expiry">Az elalvás időzítő megállítja a zenét %s-kor</string>
     <string name="back">Vissza</string>
     <string name="scroll_to_albums">Görgetés albumhoz</string>

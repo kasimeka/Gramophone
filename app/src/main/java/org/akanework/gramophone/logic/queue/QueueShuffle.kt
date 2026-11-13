@@ -39,12 +39,6 @@ object QueueShuffle {
         return (fromFirst + before).toList()
     }
 
-    /** A full random permutation with no anchor row, used by library shuffle-all. */
-    fun randomPermutation(size: Int, random: Random = Random.Default): List<Int> {
-        require(size >= 0) { "size must not be negative" }
-        return permutation(size, random).toList()
-    }
-
     private fun permutation(size: Int, random: Random): IntArray {
         val shuffled = IntArray(size)
         for (i in shuffled.indices) {

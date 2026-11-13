@@ -5,7 +5,6 @@
 
     <string name="default_time" translatable="false">0:00</string>
     <string name="upper_folder" translatable="false">..</string>
-    <string name="artist_time" translatable="false">%s • %s</string>
 
     <!-- Translatable -->
     <eat-comment />
@@ -30,18 +29,10 @@
     <string name="category_genres">Genres</string>
     <!-- Tab on home screen showing the durable queue collection -->
     <string name="category_queues">Queues</string>
-    <!-- Queue list row: the active queue is currently playing -->
-    <string name="queue_state_playing">Playing</string>
-    <!-- Queue list row: the queue has a saved position and is not playing -->
-    <string name="queue_state_paused">Paused</string>
     <!-- Queue list row: the queue has never been played -->
     <string name="queue_state_never_played">Never played</string>
     <!-- Queue list row: the queue reached its end -->
     <string name="queue_state_ended">Ended</string>
-    <!-- Queue list row: the queue has no songs -->
-    <string name="queue_state_empty">Empty</string>
-    <!-- Queue list row: bookmark row and playback offset, e.g. "Song 3 · 1:23" -->
-    <string name="queue_row_bookmark">Song %1$d · %2$s</string>
     <!-- Queue list row: bookmarked song row without a playback timestamp -->
     <string name="queue_row_bookmark_song">Song %1$d</string>
     <!-- Empty state of the Queues tab -->
@@ -296,10 +287,6 @@
     <string name="settings_lyrics_center">Center alignment</string>
     <!-- Toggle in lyrics settings to make all lyrics display in center instead of left. Subtitle -->
     <string name="settings_lyrics_center_summary">Use center alignment for lyrics</string>
-    <!-- Toggle in behavior settings to make app start playing music when opening it. Title -->
-    <string name="settings_play_on_launch">Play on launch</string>
-    <!-- Toggle in behavior settings to make app start playing music when opening it. Subtitle -->
-    <string name="settings_play_on_launch_summary">Play music on launch</string>
     <!-- Window title of submenu in behavior settings to exclude songs that are in specific folders -->
     <string name="settings_blacklist">Blacklist</string>
     <!-- Toggle in behavior settings to exclude songs that are in specific folders. Subtext -->
@@ -322,8 +309,6 @@
     <string name="settings_crash_application_summary">Crash-O-Matic 3000</string>
     <!-- Shown next to song's album cover in detail UI -->
     <string name="album_cover">Album cover</string>
-    <!-- Context menu item to edit song metadata (currently disabled) -->
-    <string name="dialog_edit_metadata">Edit</string>
     <!-- Accessibility tooltip for lyrics button in full player -->
     <string name="dialog_lyrics">Lyrics</string>
     <!-- Error message when deleting song upon user request failed unexpectedly -->
@@ -363,8 +348,6 @@
     <string name="fgs_failed_title">Failed to resume music playback</string>
     <!-- Error notification when app is closed but user wants to play music and system denied it. Subtext -->
     <string name="fgs_failed_text">Click here to open the app and continue playback</string>
-    <!-- Notification channel name for error notifications -->
-    <string name="fgs_failed_channel">Playback failed to resume</string>
     <!-- Sort songs/albums/etc by release date -->
     <string name="sort_by_release_date">Release date</string>
     <!-- Ex: "Sleep timer will pause music at 10:00 PM", shown to user in dialog and as tooltip -->
@@ -419,8 +402,6 @@
     <string name="queue_shuffled">Queue shuffled</string>
     <!-- Snackbar action reversing the last queue edit -->
     <string name="undo">Undo</string>
-    <!-- Tooltip for x button removing song from queue/playlist -->
-    <string name="remove">Remove</string>
     <!-- Tooltip for skip to next button in full player -->
     <string name="skip_next">Skip to next</string>
     <!-- Tooltip for button to close full player and return to song list -->
@@ -455,8 +436,6 @@
     <string name="delete_really_artist">Do you really want to delete all songs by \"%s\"? This action cannot be undone.</string>
     <!-- Used in dialog as positive action -->
     <string name="yes">Yes</string>
-    <!-- Used in dialog as negative action -->
-    <string name="no">No</string>
     <!-- Sort songs/albums/etc by file path (used when user added numbering to file names) -->
     <string name="sort_by_file_path">File path</string>
     <string name="sort_by_duration">Duration</string>
@@ -1095,8 +1074,6 @@
     <string name="did_you_know">Did you know…</string>
     <!-- Explainer used for dialog explaining when to use refresh feature and when to use quick refresh -->
     <string name="refresh_did_you_know">Gramophone asks for an updated song list on every app start, and while Gramophone is running, it will detect new media automatically as well. This \"Refresh\" button will not reload the media in Gramophone, instead, it will ask your system to re-scan all files from all attached permanent storage devices (this is why it takes some time). This means, unless your system or other apps are malfunctioning, you will never need to use this feature.\n\nMissing some songs? Make sure to check "Settings > Behaviour" for the minimum length filter and folder blacklist, and confirm these settings are set to an expected value. For more possible reasons, please check our FAQ.</string>
-    <!-- Error message when changing Favourites upon user request failed unexpectedly -->
-    <string name="edit_favorites_failed">Editing favorites failed: %s</string>
     <!-- Error if no internet browser is installed but user clicks a link -->
     <string name="no_app_found">No app found that can do this</string>
     <!-- Shown below the lead developer's nickname in about screen -->
@@ -1140,10 +1117,8 @@
     <string name="settings_telegram">Telegram</string>
     <!-- This is one of the possible audio formats supported by Android. It's used to display
     supported output formats by device and playback path of active playback. -->
-    <string name="spk_encoding_pcm_20bit">20-bit PCM</string>
     <!-- This is one of the possible audio formats supported by Android. It's used to display
     supported output formats by device and playback path of active playback. -->
-    <string name="spk_encoding_pcm_20bit_big_endian">20-bit PCM (big endian)</string>
     <!-- Player UI toggle to enable animated shape similar to a cookie for album cover. Subtext -->
     <string name="settings_cookie_summary">Make album cover cookie shaped</string>
     <!-- Player UI toggle to enable animated shape similar to a cookie for album cover. Title -->
@@ -1190,11 +1165,8 @@
     <string name="album_gain">Preserve album dynamics</string>
     <!-- One of the possible ReplayGain modes -->
     <string name="smart">Smart</string>
-    <!-- Tooltip of button in queue menu which will automatically scroll to playing song -->
-    <string name="scroll_to_playing">Scroll to playing song</string>
     <!-- Text in queue which shows how much time is remaning. Ex "01:20:00 remaining, 02:00:00 total"
     for a two-hour-long queue after 40 minutes already passed. -->
-    <string name="duration_queue">%s remaining, %s total</string>
     <!-- Unit decibels for loudness, used in audio and ReplayGain settings -->
     <string name="d_db">%d dB</string>
     <!-- Detailed explanation for Boost feature in Audio settings -->
@@ -1207,8 +1179,6 @@
     <string name="settings_replaygain_mode_desc">\"Smart\" automatically preserves album dynamics only when playing songs from an album consecutively.</string>
     <!-- Sort songs by the artist, and then the song's release year -->
     <string name="sort_by_artist_year"><![CDATA[Artist -> year]]></string>
-    <!-- Empty the queue and stop playing music. Next to trash can swipe icon -->
-    <string name="clear_queue">Clear queue</string>
     <!-- Google Assistant / voice assistant phrase. There are different ways to express actions,
      and we want to catch all common ways, so there are different wordings for the same action. -->
     <string name="actions_query_shuffle_all_songs">shuffle all songs</string>
@@ -1238,10 +1208,8 @@
     <string name="unfavorite">Unfavorite</string>
     <!-- Error notification when user tries to change favourite status of song while the app is in
     background but we must ask for permission to write the special playlist file. Title -->
-    <string name="favorite_failed_title">Failed to change favourite state of song</string>
     <!-- Error notification when user tries to change favourite status of song while the app is in
     background but we must ask for permission to write the special playlist file. Subtext -->
-    <string name="favorite_failed_text">Please click here to apply changes, by granting permission to the favourite playlist file</string>
     <!-- Notification channel for errors while the app is closed -->
     <string name="error_in_bg">Errors occurring in the background</string>
     <!-- Tab in blacklist menu in behavior settings for configuring whitelist -->
@@ -1250,31 +1218,18 @@
     <string name="whitelist_and_blacklist">If no folders are selected in the Whitelist, all folders will be allowed.\n\nWhitelist and Blacklist are applied together, with Blacklist taking priority. For example, you can allow a folder in the Whitelist while excluding one of its subfolders in the Blacklist.</string>
     <!-- Ask the user if they really want to delete the changes they made in the playlist editor and
     restore playlist to state before they started editing. Dialog title -->
-    <string name="discard_changes_title">Discard changes?</string>
     <!-- Dialog action if changes are NOT discarded, but saved -->
     <string name="save">Save</string>
-    <!-- Dialog action if changes are discarded, and NOT saved -->
-    <string name="discard">Discard</string>
     <!-- Ask the user if they really want to delete the changes they made in the playlist editor and
     restore playlist to state before they started editing. Dialog text -->
-    <string name="discard_changes_msg">Do you really want to discard your changes to playlist \"%s\"?</string>
-    <!-- Tooltip for apply/save button in playlist editor -->
-    <string name="apply">Apply</string>
     <!-- Ask the user if they want to restore the changes they made in the playlist editor but
     didn't quit properly (maybe the app crashed, phone battery died, etc). If not restoring, the
     editor will contain current state of playlist. Dialog title -->
-    <string name="restore_edits">Restore changes?</string>
     <!-- Ask the user if they want to restore the changes they made in the playlist editor but
     didn't quit properly (maybe the app crashed, phone battery died, etc). If not restoring, the
     editor will contain current state of playlist. Dialog text -->
-    <string name="restore_edits_msg">There are unsaved changes for the playlist \"%s\". Do you wish to restore these changes, or discard them and start over with a fresh version of the playlist?</string>
-    <!-- Dialog action if changes are restored in playlist editor -->
-    <string name="restore">Restore</string>
     <!-- On old Android devices that don't have internal storage, it may happen that there is no
     storage at all. Storage is required to edit playlists, so ask user to insert SD card. -->
-    <string name="mount_storage">Please insert SD card to use this feature</string>
-    <!-- Error message when changes unexpectedly failed to restore -->
-    <string name="failed_to_restore">Failed to restore changes: %s</string>
     <!-- Dialog title when user opens playlist editor but playlist is empty, because playlist editor
     isn't used to add new songs but only to move or delete them. Hint user at proper way. -->
     <!-- Dialog text when user opens playlist editor but playlist is empty, because playlist editor
@@ -1299,8 +1254,6 @@ supporting local search. This string is displayed in the search bar when using G
 
     <!-- Slider in lyric settings to change font size for lyrics -->
     <string name="settings_font_size">Font size</string>
-    <!-- Positive dialog action in sleep timer dialog to store the settings -->
-    <string name="set">Set</string>
     <!-- Check box in sleep timer dialog to only pause at end of song -->
     <string name="timer_eos">Wait for song to end</string>
     <!-- Option in sleep timer dialog to pause music when current song ends -->
@@ -1320,12 +1273,5 @@ supporting local search. This string is displayed in the search bar when using G
     </plurals>
     <!-- Settings toggle in experimental to enable advanced workflow across the app, allowing to
     have multiple queues -->
-    <string name="settings_mq_enabled">Multiple queues</string>
-    <!-- Unpin this queue and allow it to be removed after some period of time -->
-    <string name="mq_unpin_queue">Unpin queue</string>
-    <!-- Pin this queue so it does not get automatically removed after some period of time -->
-    <string name="mq_pin_queue">Pin queue</string>
     <string name="shuffled">%s (shuffled)</string>
-    <!-- Option to enable reordering mode for items in a list -->
-    <string name="edit_mode">Enter edit mode</string>
 </resources>

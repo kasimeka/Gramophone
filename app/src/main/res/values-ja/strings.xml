@@ -8,14 +8,12 @@
     <string name="category_albums">アルバム</string>
     <string name="category_artists">アーティスト</string>
     <string name="category_genres">ジャンル</string>
-    <string name="category_playlists">プレイリスト</string>
     <string name="category_dates">日付</string>
     <string name="unknown_artist">不明なアーティスト</string>
     <string name="unknown_album">不明なアルバム</string>
     <string name="unknown_genre">不明なジャンル</string>
     <string name="unknown_year">不明な年</string>
     <string name="unknown_version">不明なバージョン</string>
-    <string name="unknown_playlist">不明なプレイリスト</string>
     <string name="equalizer_not_found">イコライザーがありません！</string>
     <plurals name="songs">
         <item quantity="other">%d 個の曲</item>
@@ -114,8 +112,6 @@
     <string name="settings_lyrics_center">歌詞を中央揃えにする</string>
     <string name="settings_lyrics_configuration_summary">歌詞の外観を設定します</string>
     <string name="settings_lyrics_bold_summary">歌詞に太字を使用します</string>
-    <string name="settings_play_on_launch_summary">アプリの起動時に音楽を再生します</string>
-    <string name="settings_play_on_launch">アプリの起動時に再生</string>
     <string name="settings_blacklist">ブラックリスト</string>
     <string name="settings_blacklist_folder">フォルダのブラックリスト</string>
     <string name="settings_blacklist_folder_summary">特定のフォルダ内の曲を除外します</string>
@@ -128,7 +124,6 @@
     <string name="settings_crash_application_summary">Crash-O-Matic 3000</string>
     <string name="settings_crash_application">アプリをクラッシュさせる</string>
     <string name="album_cover">アルバムカバー</string>
-    <string name="dialog_edit_metadata">編集</string>
     <string name="dialog_lyrics">歌詞</string>
     <string name="deny_images"><![CDATA[「写真と動画」の権限を拒否してください]]></string>
     <string name="grant_images"><![CDATA[「写真と動画」の権限を許可してください]]></string>
@@ -138,7 +133,6 @@
     <string name="timer">スリープタイマー</string>
     <string name="fgs_failed_title">音楽の再生を再開できませんでした</string>
     <string name="fgs_failed_text">アプリを開いて再生を続行するにはここをタップしてください</string>
-    <string name="fgs_failed_channel">再生を再開できませんでした</string>
     <string name="album_covers_enhance">強化されたアルバムカバーの読み込み</string>
     <string name="share">共有</string>
     <string name="album_covers_enhance_desc">高画質の曲のカバーを表示してアルバムと曲のカバーを区別できるようにします (写真へのアクセスが必要です)</string>
@@ -156,7 +150,6 @@
     <string name="scroll_to_albums">アルバムへスクロール</string>
     <string name="play">再生</string>
     <string name="more">詳細</string>
-    <string name="remove">削除</string>
     <string name="skip_next">次へスキップ</string>
     <string name="expand_less">閉じる</string>
     <string name="skip_previous">前へスキップ</string>
@@ -169,7 +162,6 @@
     <string name="settings_status_bar_lyrics_summary">MeiZu 方式のステータスバーの歌詞表示を有効化します (一部のデバイスでのみ対応)</string>
     <string name="lyric_widget_description">現在再生中の音楽の歌詞を表示するウィジェットです</string>
     <string name="home_menu_shuffle">すべてシャッフル</string>
-    <string name="no">いいえ</string>
     <string name="delete">削除</string>
     <string name="yes">はい</string>
     <string name="sort_by_album_artist">アルバムアーティスト -&gt; タイトル</string>
@@ -380,21 +372,13 @@
     <string name="settings_translation_auto_word">翻訳を自動的にアニメーション</string>
     <string name="settings_translation_auto_word_summary">単語の同期がされた歌詞の再生時に翻訳のメタデータがない場合は、翻訳行に直線的なグラデーションを適用します</string>
     <string name="log_attachment">ログは添付ファイルとして自動送信されます</string>
-    <string name="delete_failed_playlist">プレイリストの削除に失敗しました: %s</string>
     <string name="do_not_enter_email_enter_msg">メールアドレスではなくメッセージを入力してください</string>
-    <string name="create_playlist">プレイリストを作成…</string>
     <string name="rename">名前を変更</string>
     <string name="enter_msg_for_dev_here">ここに開発者へのメッセージを入力してください</string>
     <string name="log_will_auto_send">ログは自動送信されます、問題の説明をお願いします</string>
     <string name="did_you_know">ご存じですか…</string>
-    <string name="playlist_name">プレイリスト名</string>
-    <string name="edit_playlist_failed">プレイリストの編集に失敗しました: %s</string>
     <string name="still_refreshing">更新中、ステップ %1$d/%2$d: %3$s</string>
     <string name="refreshing_wait">更新中、お待ちください…</string>
-    <string name="rename_failed_playlist">プレイリスト名の変更に失敗しました: %s</string>
-    <string name="create_failed_playlist">プレイリストの作成に失敗しました: %s</string>
-    <string name="rename_playlist">プレイリスト名を変更</string>
-    <string name="add_to_playlist">プレイリストに追加</string>
     <string name="refresh_did_you_know">Gramophone はアプリを起動するたびに曲の一覧を要求して起動中に新しいメディアを自動的に検出します。この「更新」ボタンは Gramophone 内のメディアを再読み込みするのではなく、すべてのメディアストレージデバイスからすべてのファイルを再スキャンするようシステムに要求します (そのため、多少時間を要します)。つまり、システムや他のアプリに不具合がない限り、この機能を使用する必要はありません。\n\n曲が不足している場合は「設定」→「動作」から「曲の最小の長さ」と「フォルダのブラックリスト」を確認し、これらの設定が適切な値に設定されているか確認してください。その他の考えられる原因については FAQ をご確認ください。</string>
     <string name="no_app_found">実行できるアプリが見つかりません</string>
     <string name="contributors_nift4">メンテナー / リードデベロッパー</string>
@@ -417,8 +401,6 @@
     <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">スリープタイマーは %s で再生中の曲が終了すると音楽を一時停止します</string>
     <string name="timer_expiry_end_of_this_song">スリープタイマーは、この曲の再生を終了後に音楽を一時停止します</string>
-    <string name="spk_encoding_pcm_20bit">20 ビット PCM</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20 ビット PCM (ビッグエンディアン)</string>
     <plurals name="folders_plural">
         <item quantity="other">%d 個のフォルダ</item>
     </plurals>
@@ -430,7 +412,6 @@
     <string name="compact_grid">グリッド (コンパクト)</string>
     <string name="sort_by_album_year">アルバムの年</string>
     <string name="sort_by_album_artist_year"><![CDATA[アルバムアーティスト -&gt; 年]]></string>
-    <string name="forbidden_symbol_error">名前に無効な文字が含まれています</string>
     <string name="translators">翻訳者</string>
     <string name="settings_replaygain">リプレイゲイン</string>
     <string name="settings_replaygain_mode">モード</string>
@@ -441,8 +422,6 @@
     <string name="track_gain">すべてのトラックでラウドネス等化</string>
     <string name="album_gain">アルバムのダイナミクスを維持</string>
     <string name="smart">スマート</string>
-    <string name="scroll_to_playing">再生中の曲までスクロール</string>
-    <string name="duration_queue">残り %s、合計 %s</string>
     <string name="playback_speed">再生速度</string>
     <string name="tempo">テンポ</string>
     <string name="pitch">ピッチ</string>
@@ -455,9 +434,8 @@
     <string name="settings_replaygain_no_rg_amp_desc">リプレイゲインタグのない大音量な曲の音量を下げます</string>
     <string name="settings_replaygain_mode_desc">「スマート」は、アルバムの曲を連続して再生する場合にのみ、アルバムのダイナミクスを自動的に維持します。</string>
     <string name="sort_by_artist_year"><![CDATA[アーティスト -&gt; 年]]></string>
-    <string name="clear_queue">キューを消去</string>
     <string name="settings_replaygain_preamp_desc">リプレイゲインタグ付きの曲の音量を上下できます。値を大きくすると、クリッピング防止のためダイナミクスが失われる可能性があります。</string>
-    <string name="settings_replaygain_boost_desc">"「ブースト」は、リプレイゲインとその他の音楽の両方をデバイスで設定されている音量よりも高い音量で出力します (デバイスの音量が 100% に近い場合、ブーストは音量を上げません) 。ブーストを使用すると、ゲームなどの他のアプリと同程度の音量で音楽をお楽しみいただけます。この機能は試験的なものであり、外部のイコライザーアプリと干渉する可能性がありますのでご注意ください。ブーストは Bluetooth ヘッドホンでは動作しません。音量に関する問題が発生した場合は、ブーストを 0dB に設定して無効にしてください。 "</string>
+    <string name="settings_replaygain_boost_desc" formatted="false">"「ブースト」は、リプレイゲインとその他の音楽の両方をデバイスで設定されている音量よりも高い音量で出力します (デバイスの音量が 100% に近い場合、ブーストは音量を上げません) 。ブーストを使用すると、ゲームなどの他のアプリと同程度の音量で音楽をお楽しみいただけます。この機能は試験的なものであり、外部のイコライザーアプリと干渉する可能性がありますのでご注意ください。ブーストは Bluetooth ヘッドホンでは動作しません。音量に関する問題が発生した場合は、ブーストを 0dB に設定して無効にしてください。 "</string>
     <string name="actions_query_shuffle_all_songs">すべての曲をシャッフル</string>
     <string name="actions_query_shuffle_everything">すべてシャッフル</string>
     <string name="actions_query_play_random_songs">ランダムで曲を再生</string>

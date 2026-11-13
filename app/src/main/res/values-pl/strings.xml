@@ -34,7 +34,6 @@
         <item quantity="many">%d elementów</item>
         <item quantity="other">%d elementów</item>
     </plurals>
-    <string name="settings_play_on_launch_summary">Odtwarzaj muzykę po uruchomieniu odtwarzacza</string>
     <string name="category_genres">Gatunki</string>
     <string name="settings_about_app">O Gramophone</string>
     <string name="natural_order">Domyślny</string>
@@ -54,14 +53,12 @@
         <item quantity="many">%d wykonawców</item>
         <item quantity="other">%d wykonawców</item>
     </plurals>
-    <string name="settings_play_on_launch">Odtwarzanie przy uruchomieniu</string>
     <plurals name="albums">
         <item quantity="one">%d album</item>
         <item quantity="few">%d albumy</item>
         <item quantity="many">%d albumów</item>
         <item quantity="other">%d albumów</item>
     </plurals>
-    <string name="unknown_playlist">Nieznana playlista</string>
     <string name="dialog_mime">Typ MIME</string>
     <string name="dialog_year">Rok</string>
     <string name="dialog_artist">Wykonawca</string>
@@ -95,7 +92,6 @@
     <string name="dialog_duration">Długość</string>
     <string name="shuffle">Odtwarzaj losowo</string>
     <string name="dialog_disc_number">Numer płyty</string>
-    <string name="category_playlists">Playlisty</string>
     <string name="follow_system">Zgodny z systemem</string>
     <string name="settings_lyrics_configuration_summary">Dostosuj wygląd napisów</string>
     <string name="list">Lista</string>
@@ -143,11 +139,9 @@
     <string name="fgs_failed_text">Dotknij tutaj, aby otworzyć aplikację i kontynuować odtwarzanie</string>
     <string name="current_playlist">Bieżąca lista odtwarzania</string>
     <string name="fgs_failed_title">Nie udało się wznowić odtwarzania muzyki</string>
-    <string name="fgs_failed_channel">Nie udało się wznowić odtwarzania</string>
     <string name="timer">Wyłącznik czasowy</string>
     <string name="album_cover">Okładka</string>
     <string name="dialog_lyrics">Teksty</string>
-    <string name="dialog_edit_metadata">Edytuj</string>
     <string name="settings_category_filters">Filtry</string>
     <string name="settings_category_misc">Różne</string>
     <string name="delete_failed">Usunięcie utworu nie powiodło się: %s</string>
@@ -167,7 +161,6 @@
     <string name="scroll_to_albums">Przewiń do albumów</string>
     <string name="play">Odtwórz</string>
     <string name="more">Wiecej</string>
-    <string name="remove">Usuń</string>
     <string name="skip_next">Przejdź do następnego</string>
     <string name="expand_less">Zamknij</string>
     <string name="skip_previous">Przejdź do poprzedniego</string>
@@ -184,7 +177,6 @@
     <string name="home_menu_shuffle">Przetasuj wszystko</string>
     <string name="delete">Usuń</string>
     <string name="yes">Tak</string>
-    <string name="no">Nie</string>
     <string name="sort_by_album_artist">Wykonawca albumu -&gt; tytuł</string>
     <string name="sort_by_file_path">Ścieżka do pliku</string>
     <string name="spk_channel_out_5point1">5.1</string>
@@ -398,18 +390,10 @@
     <string name="log_will_auto_send">Dzienniki zostaną wysłane automatycznie, zamiast tego wyjaśnij problem</string>
     <string name="log_attachment">Dzienniki zostaną automatycznie wysłane jako załącznik</string>
     <string name="rename">Zmień nazwę</string>
-    <string name="delete_failed_playlist">Usunięcie listy odtwarzania nie powiodło się: %s</string>
-    <string name="create_playlist">Utwórz listę odtwarzania…</string>
     <string name="refreshing_wait">Odświeżanie, proszę czekać…</string>
     <string name="still_refreshing">Odświeżanie, krok %1$d/%2$d: %3$s</string>
     <string name="did_you_know">Czy wiesz, że…</string>
-    <string name="edit_playlist_failed">Edycja listy odtwarzania nie powiodła się: %s</string>
-    <string name="rename_failed_playlist">Nie udało się zmienić nazwy listy odtwarzania: %s</string>
-    <string name="create_failed_playlist">Nie udało się utworzyć listy odtwarzania: %s</string>
-    <string name="playlist_name">Nazwa listy odtwarzania</string>
     <string name="refresh_did_you_know">Gramophone prosi o zaktualizowanie listy utworów przy każdym uruchomieniu aplikacji, a gdy Gramophone jest uruchomiony, automatycznie wykrywa również nowe nośniki. Przycisk „Odśwież” nie spowoduje ponownego załadowania multimediów w Gramophone, zamiast tego poprosi system o ponowne przeskanowanie wszystkich plików ze wszystkich podłączonych urządzeń pamięci masowej (dlatego zajmuje to trochę czasu). Oznacza to, że jeśli system lub inne aplikacje nie działają nieprawidłowo, nigdy nie będziesz musieć korzystać z tej funkcji.\n\nBrakuje niektórych utworów? Sprawdź Ustawienia &gt; Zachowanie dla filtra minimalnej długości i czarnej listy folderów i potwierdź, że te ustawienia są ustawione na oczekiwaną wartość. Więcej możliwych przyczyn można znaleźć w naszym FAQ.</string>
-    <string name="rename_playlist">Zmień nazwę listy odtwarzania</string>
-    <string name="add_to_playlist">Dodaj do listy odtwarzania</string>
     <string name="no_app_found">Nie znaleziono aplikacji, która mogłaby to wykonać</string>
     <string name="contributors_nift4">Opiekun / Główny programista</string>
     <string name="contributors_123duo3">Główny projektant</string>
@@ -431,8 +415,6 @@
     <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">Czasomierz snu wstrzyma odtwarzanie muzyki po zakończeniu utworu w %s</string>
     <string name="timer_expiry_end_of_this_song">Czasomierz snu wstrzyma odtwarzanie muzyki po zakończeniu tego utworu</string>
-    <string name="spk_encoding_pcm_20bit">20-bit PCM</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20-bit PCM (big endian)</string>
     <plurals name="folders_plural">
         <item quantity="one">%d Folder</item>
         <item quantity="few">%d Foldery</item>
@@ -448,7 +430,6 @@
     <string name="compact_grid">Siatka (kompaktowa)</string>
     <string name="sort_by_album_year">Rok albumu</string>
     <string name="sort_by_album_artist_year"><![CDATA[Album artist -&gt; year]]></string>
-    <string name="forbidden_symbol_error">Nieprawidłowy znak w nazwie</string>
     <string name="translators">Tłumacze</string>
     <string name="settings_replaygain_mode">Tryb</string>
     <string name="settings_replaygain_preamp">Przedwzmacniacz</string>
@@ -459,8 +440,6 @@
     <string name="track_gain">Wszystkie utwory mają taką samą głośność</string>
     <string name="album_gain">Zachowaj dynamikę albumu</string>
     <string name="smart">Inteligentny</string>
-    <string name="scroll_to_playing">Przewiń do odtwarzanego utworu</string>
-    <string name="duration_queue">%s pozostało, %s ogółem</string>
     <string name="playback_speed">Prędkość odtwarzania</string>
     <string name="tempo">Tempo</string>
     <string name="pitch">Ton</string>
@@ -469,12 +448,11 @@
     <string name="reset">Zresetuj</string>
     <string name="settings_replaygain_boost">Wzmocnienie</string>
     <string name="d_db">%d dB</string>
-    <string name="settings_replaygain_boost_desc">"Funkcja „Wzmocnienie” zwiększa głośność zarówno ReplayGain, jak i innych utworów muzycznych powyżej poziomu ustawionego w urządzeniu. (Jeśli głośność urządzenia jest ustawiona na poziomie bliskim 100%, funkcja Wzmocnienie nie zwiększy głośności). Dzięki funkcji Wzmocnienie można cieszyć się muzyką o podobnej głośności jak w innych aplikacjach, np. grach. Należy pamiętać, że ta funkcja jest eksperymentalna i może kolidować z zewnętrznymi aplikacjami korektora dźwięku. Funkcja Wzmocnienie nie działa ze słuchawkami Bluetooth. W przypadku jakichkolwiek problemów związanych z głośnością należy wyłączyć funkcję Wzmocnienie, ustawiając ją na 0 dB. "</string>
+    <string name="settings_replaygain_boost_desc" formatted="false">"Funkcja „Wzmocnienie” zwiększa głośność zarówno ReplayGain, jak i innych utworów muzycznych powyżej poziomu ustawionego w urządzeniu. (Jeśli głośność urządzenia jest ustawiona na poziomie bliskim 100%, funkcja Wzmocnienie nie zwiększy głośności). Dzięki funkcji Wzmocnienie można cieszyć się muzyką o podobnej głośności jak w innych aplikacjach, np. grach. Należy pamiętać, że ta funkcja jest eksperymentalna i może kolidować z zewnętrznymi aplikacjami korektora dźwięku. Funkcja Wzmocnienie nie działa ze słuchawkami Bluetooth. W przypadku jakichkolwiek problemów związanych z głośnością należy wyłączyć funkcję Wzmocnienie, ustawiając ją na 0 dB. "</string>
     <string name="settings_replaygain_no_rg_amp_desc">Zmniejsz głośność głośnych utworów, które nie mają znaczników ReplayGain</string>
     <string name="settings_replaygain_preamp_desc">Zwiększ lub zmniejsz głośność utworów ze znacznikami ReplayGain. Wyższe wartości mogą powodować utratę dynamiki z powodu zapobiegania przesterowaniu.</string>
     <string name="settings_replaygain_mode_desc">Funkcja „Inteligentny” automatycznie zachowuje dynamikę albumu tylko podczas odtwarzania utworów z albumu jeden po drugim.</string>
     <string name="sort_by_artist_year"><![CDATA[Artist -&gt; rok]]></string>
-    <string name="clear_queue">Wyczyść kolejkę</string>
     <string name="contributors_saladnoober">Kontrola jakości</string>
     <string name="actions_query_shuffle_all_songs">mieszaj wszystkie piosenki</string>
     <string name="actions_query_shuffle_everything">mieszaj wszystko</string>
@@ -484,35 +462,19 @@
     <string name="actions_query_start_random_music">uruchom losową muzykę</string>
     <string name="actions_query_start_random_songs">uruchom losowe piosenki</string>
     <string name="actions_query_shuffle_specific">mieszaj $item_name</string>
-    <string name="edit_favorites_failed">Edytowanie ulubionych nie powiodło się: %s</string>
     <string name="favorite">Ulubiony</string>
-    <string name="favorite_failed_title">Nie udało się zmienić statusu utworu jako ulubionego</string>
-    <string name="favorite_failed_text">Kliknij tutaj, aby zastosować zmiany, udzielając uprawnień do pliku ulubionej playlisty</string>
     <string name="error_in_bg">Błędy występujące w tle</string>
     <string name="settings_whitelist">Biała lista</string>
     <string name="whitelist_and_blacklist">Jeśli na białej liście nie wybrano żadnych folderów, dostęp będą miały wszystkie foldery.\n\nBiała lista i czarna lista są stosowane łącznie, przy czym czarna lista ma pierwszeństwo. Na przykład można zezwolić na dostęp do folderu umieszczonego na białej liście, jednocześnie wykluczając jeden z jego podfolderów na czarnej liście.</string>
     <string name="delete_really_artist">Czy na pewno chcesz usunąć wszystkie utwory wykonawcy „%s”? Tego działania nie można cofnąć.</string>
-    <string name="discard_changes_title">Anulować zmiany?</string>
     <string name="save">Zapisz</string>
-    <string name="discard">Anuluj</string>
-    <string name="discard_changes_msg">Czy na pewno chcesz anulować zmiany wprowadzone w playliście „%s”?</string>
-    <string name="apply">Zastosuj</string>
-    <string name="restore_edits">Przywrócić zmiany?</string>
-    <string name="restore_edits_msg">W playliście „%s” znajdują się niezapisane zmiany. Czy chcesz przywrócić te zmiany, czy też je odrzucić i zacząć od nowa z czystą wersją playlisty?</string>
-    <string name="restore">Przywróć</string>
-    <string name="mount_storage">Aby skorzystać z tej funkcji, należy włożyć kartę SD</string>
-    <string name="failed_to_restore">Nie udało się przywrócić zmian: %s</string>
-    <string name="playlist_empty">Playlista jest pusta</string>
     <string name="search_desc">Wykonawcy, albumy, utwory</string>
     <string name="search_hint">Wyszukaj piosenkę i wykonawcę</string>
     <string name="picker_activity">Wybierz utwór muzyczny</string>
-    <string name="playlist_picker_activity">Wybierz playlistę</string>
     <string name="settings_preference_category_folders_filesystem"><![CDATA[Zakładki folder i system plików]]></string>
     <string name="show_file_names">Pokazuj nazwy plików</string>
     <string name="show_file_names_summary">Wyświetlaj nazwy plików zamiast tytułów utworów w zakładkach „folder” i „system plików”</string>
-    <string name="another_with_name">Nazwa jest już w użyciu</string>
     <string name="settings_font_size">Rozmiar czcionki</string>
-    <string name="set">Ustaw</string>
     <string name="timer_eos">Czekaj na zakończenie piosenki</string>
     <string name="timer_end_of_this_song">Koniec tej piosenki</string>
     <string name="other">Własne</string>
@@ -525,14 +487,9 @@
         <item quantity="other">%d minut</item>
     </plurals>
     <string name="search_query">Szukaj: %s</string>
-    <string name="settings_mq_enabled">Wiele kolejek</string>
-    <string name="mq_unpin_queue">Odpiąć kolejkę</string>
-    <string name="mq_pin_queue">Przypiąć kolejkę</string>
     <string name="shuffled">%s (przetasowano)</string>
-    <string name="loading_playlists">Wczytywanie playlisty...</string>
     <string name="contributors_banksio">Android Auto</string>
     <string name="unfavorite">Usuń z ulubionych</string>
-    <string name="edit_mode">Wejdź w tryb edycji</string>
     <string name="settings_notification_lyrics_title">Powiadomienie jako tekst piosenki</string>
     <string name="settings_notification_lyrics_summary">Wyświetlaj tekst piosenki jako tytuł powiadomienia i artystę – tytuł jako tekst</string>
     <string name="settings_always_skip_previous">Zawsze przechodź do poprzedniego utworu</string>

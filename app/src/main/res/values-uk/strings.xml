@@ -41,7 +41,6 @@
         <item quantity="many">%d альбомів</item>
         <item quantity="other">%d альбомів</item>
     </plurals>
-    <string name="unknown_playlist">Невідомий плейлист</string>
     <string name="dialog_mime">MIME-тип</string>
     <string name="dialog_year">Рік</string>
     <string name="dialog_artist">Виконавець</string>
@@ -67,7 +66,6 @@
     <string name="dialog_duration">Тривалість</string>
     <string name="shuffle">Перемішати</string>
     <string name="dialog_disc_number">Номер диска</string>
-    <string name="category_playlists">Плейлисти</string>
     <string name="follow_system">Системна</string>
     <string name="list">Список</string>
     <string name="search">Пошук</string>
@@ -119,7 +117,6 @@
     <string name="settings_preference_category_application">Застосунок</string>
     <string name="settings_crash_application">Збій застосунка</string>
     <string name="delete_failed">Не вдалося видалити пісню: %s</string>
-    <string name="dialog_edit_metadata">Редагувати</string>
     <string name="settings_category_filters">Фільтри</string>
     <string name="settings_crash_application_summary">Crash O Matic 3000</string>
     <string name="settings_blacklist">Чорний список</string>
@@ -136,8 +133,6 @@
     <string name="dialog_lyrics">Текст пісні</string>
     <string name="settings_blacklist_folder_summary">Фільтрувати пісні з певних папок</string>
     <string name="settings_lyrics_bold_summary">Використовуйте більший шрифт для текстів</string>
-    <string name="settings_play_on_launch_summary">Відтворення музики під час запуску</string>
-    <string name="settings_play_on_launch">Грати при запуску</string>
     <string name="settings_experimental_settings_summary">Тестування функцій, інше</string>
     <string name="deny_images"><![CDATA[Будь ласка, забороніть дозвіл \"Фотографії та відео\"]]></string>
     <string name="grant_images"><![CDATA[Надайте дозвіл \"Фото та відео\"]]></string>
@@ -154,7 +149,6 @@
     <string name="album_covers_enhance_desc">Відображати високоякісні обкладинки пісень та дозволяти різницю між обкладинками альбомів та пісень (потрібен доступ до фотографій)</string>
     <string name="fgs_failed_text">Натисніть тут, щоб відкрити застосунок та продовжити відтворення</string>
     <string name="fgs_failed_title">Не вдалося відновити відтворення музики</string>
-    <string name="fgs_failed_channel">Не вдалося відновити відтворення</string>
     <string name="sort_by_release_date">Дата виходу</string>
     <string name="timer_expiry">Таймер сну призупинить музику на %s</string>
     <string name="settings_preference_category_home">Головний екран</string>
@@ -165,7 +159,6 @@
     <string name="tab_order_summary">Програма відобразить першу вкладку під час запуску. Вкладки після роздільника будуть приховані.</string>
     <string name="scroll_to_songs">Перейдіть до пісень</string>
     <string name="back">Назад</string>
-    <string name="remove">Вилучити</string>
     <string name="lyric_widget_description">Віджет, який показує тексти медіафайлів, які зараз відтворюються</string>
     <string name="skip_next">Перейти до наступного</string>
     <string name="skip_previous">Перейти до попереднього</string>
@@ -183,7 +176,6 @@
     <string name="settings_status_bar_lyrics_title">Тексти пісень у рядку стану</string>
     <string name="delete">Видалити</string>
     <string name="yes">Так</string>
-    <string name="no">Ні</string>
     <string name="sort_by_album_artist">Виконавець альбому -&gt; назва</string>
     <string name="sort_by_file_path">Шлях до файлу</string>
     <string name="spk_channel_out_surround">Об\'ємне звучання (4.0)</string>
@@ -395,16 +387,8 @@
     <string name="log_will_auto_send">Журнали будуть надіслані автоматично, поясніть проблему</string>
     <string name="log_attachment">Журнали будуть автоматично надіслані як вкладення</string>
     <string name="enter_msg_for_dev_here">Введіть тут повідомлення для розробника</string>
-    <string name="delete_failed_playlist">Не вдалося видалити список відтворення: %s</string>
-    <string name="create_playlist">Створити список відтворення…</string>
     <string name="rename">Перейменувати</string>
     <string name="did_you_know">Чи знаєте ви…</string>
-    <string name="rename_failed_playlist">Не вдалося перейменувати список відтворення: %s</string>
-    <string name="playlist_name">Назва списку відтворення</string>
-    <string name="create_failed_playlist">Не вдалося створити список відтворення: %s</string>
-    <string name="rename_playlist">Перейменувати список відтворення</string>
-    <string name="edit_playlist_failed">Не вдалося редагувати список відтворення: %s</string>
-    <string name="add_to_playlist">Додати до списку відтворення</string>
     <string name="refreshing_wait">Оновлення, зачекайте…</string>
     <string name="still_refreshing">Освіжаючий, крок %1$d/%2$d: %3$s</string>
     <string name="refresh_did_you_know">Gramophone запитує оновлений список пісень під час кожного запуску програми, і поки Gramophone працює, він також автоматично виявляє нові медіафайли. Кнопка \"Оновити\" не перезавантажить медіафайли у Gramophone, натомість вона попросить вашу систему повторно відсканувати всі файли з усіх під\'єднаних постійних накопичувачів (саме тому це займе деякий час). Це означає, що якщо ваша система або інші програми не працюють несправно, вам ніколи не доведеться користуватися цією функцією.\n\nНе вистачає деяких пісень? Переконайтеся, що в Налаштуваннях &gt; Поведінка ввімкнено фільтр мінімальної довжини та чорний список папок, і переконайтеся, що ці параметри встановлено на очікувані значення. Щоб дізнатися більше про можливі причини, перегляньте наш список поширених запитань.</string>
@@ -427,8 +411,6 @@
     <string name="offload_enabled_if_gapless">Увімкнено, якщо можливе відтворення без пауз</string>
     <string name="settings_audio_offload">Розвантаження аудіо (економія заряду батареї)</string>
     <string name="settings_telegram">Telegram</string>
-    <string name="spk_encoding_pcm_20bit">20-бітна ІКМ</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20-бітна PCM (від великого до великого байта)</string>
     <string name="timer_expiry_eos">Таймер сну призупинить музику, коли відтворення пісні о %s закінчиться</string>
     <string name="timer_expiry_end_of_this_song">Таймер сну призупинить музику в кінці цієї пісні</string>
     <plurals name="folders_plural">
@@ -445,7 +427,6 @@
     <string name="compact_grid">Сітка (компактна)</string>
     <string name="sort_by_album_year">Рік випуску альбому</string>
     <string name="sort_by_album_artist_year"><![CDATA[Album artist -&gt; рік]]></string>
-    <string name="forbidden_symbol_error">Недійсний символ в імені</string>
     <string name="translators">Перекладачі</string>
     <string name="settings_replaygain">ReplayGain</string>
     <string name="settings_replaygain_mode">Режим</string>
@@ -456,8 +437,6 @@
     <string name="track_gain">Усі треки однакової гучності</string>
     <string name="album_gain">Збереження динаміки альбому</string>
     <string name="smart">Смарт</string>
-    <string name="scroll_to_playing">Прокрутіть до відтворення пісні</string>
-    <string name="duration_queue">Залишилося %s, всього %s</string>
     <string name="playback_speed">Швидкість відтворення</string>
     <string name="tempo">Темп</string>
     <string name="pitch">Крок</string>
@@ -466,12 +445,11 @@
     <string name="reset">Скинути</string>
     <string name="settings_replaygain_boost">Підвищення</string>
     <string name="d_db">%d dB</string>
-    <string name="settings_replaygain_boost_desc">"Функція «Boost» відтворюватиме ReplayGain та іншу музику з гучністю, вищою за ту, що встановлена на вашому пристрої. (Якщо гучність вашого пристрою близька до 100%, Boost не збільшить гучність). За допомогою Boost ви можете насолоджуватися музикою, гучність якої подібна до гучності інших програм, таких як ігри. Зверніть увагу, що ця функція є експериментальною та може перешкоджати роботі зовнішніх програм еквалайзера. Boost не працює з навушниками Bluetooth. У разі виникнення проблем, пов’язаних із гучністю, вимкніть Boost, встановивши значення 0 дБ. "</string>
+    <string name="settings_replaygain_boost_desc" formatted="false">"Функція «Boost» відтворюватиме ReplayGain та іншу музику з гучністю, вищою за ту, що встановлена на вашому пристрої. (Якщо гучність вашого пристрою близька до 100%, Boost не збільшить гучність). За допомогою Boost ви можете насолоджуватися музикою, гучність якої подібна до гучності інших програм, таких як ігри. Зверніть увагу, що ця функція є експериментальною та може перешкоджати роботі зовнішніх програм еквалайзера. Boost не працює з навушниками Bluetooth. У разі виникнення проблем, пов’язаних із гучністю, вимкніть Boost, встановивши значення 0 дБ. "</string>
     <string name="settings_replaygain_no_rg_amp_desc">Зменште гучність гучних пісень, які не мають тегів ReplayGain</string>
     <string name="settings_replaygain_preamp_desc">Збільшуйте або зменшуйте гучність пісень за допомогою тегів ReplayGain. Вищі значення можуть призвести до втрати динаміки через запобігання обрізанню.</string>
     <string name="settings_replaygain_mode_desc">«Smart» автоматично зберігає динаміку альбому лише під час послідовного відтворення пісень з альбому.</string>
     <string name="sort_by_artist_year"><![CDATA[Виконавець -&gt; рік]]></string>
-    <string name="clear_queue">Очистити чергу</string>
     <string name="contributors_saladnoober">Гарантія якості</string>
     <string name="actions_query_shuffle_all_songs">перемішати всі пісні</string>
     <string name="actions_query_shuffle_everything">перетасувати все</string>

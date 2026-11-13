@@ -50,7 +50,6 @@
         <item quantity="many">%d álbuns</item>
         <item quantity="other">%d álbuns</item>
     </plurals>
-    <string name="unknown_playlist">Playlist desconhecida</string>
     <string name="dialog_mime">Tipo de mídia digital (MIME type)</string>
     <string name="dialog_year">Ano</string>
     <string name="dialog_artist">Artista</string>
@@ -81,7 +80,6 @@
     <string name="dialog_duration">Duração</string>
     <string name="shuffle">Aleatória</string>
     <string name="dialog_disc_number">Número do disco</string>
-    <string name="category_playlists">Playlists</string>
     <string name="follow_system">Seguir o sistema</string>
     <string name="list">Lista</string>
     <string name="search">Pesquisar</string>
@@ -122,8 +120,6 @@
     <string name="settings_lyrics_center">Alinhadas no centro</string>
     <string name="settings_lyrics_configuration_summary">Configurar a aparência das letras</string>
     <string name="settings_lyrics_bold_summary">Fazer as letras usarem uma fonte mais grossa</string>
-    <string name="settings_play_on_launch_summary">Reproduzir música ao iniciar (se houver alguma na playlist)</string>
-    <string name="settings_play_on_launch">Reproduzir ao iniciar</string>
     <string name="settings_blacklist">Ignorar</string>
     <string name="settings_blacklist_folder">Pastas ignoradas</string>
     <string name="settings_blacklist_folder_summary">Filtre músicas de determinadas pastas (requer nova busca)</string>
@@ -138,12 +134,10 @@
     <string name="settings_crash_application_summary">Crash-O-Matic 3000</string>
     <string name="crash_clipboard">Log de erros copiado para a área de transferência</string>
     <string name="delete_failed">Falha ao excluir a música: %s</string>
-    <string name="dialog_edit_metadata">Editar</string>
     <string name="settings_trim_lyrics">Remova espaços ao redor das letras</string>
     <string name="current_playlist">Playlist atual</string>
     <string name="timer">Temporizador de sono</string>
     <string name="fgs_failed_title">Falha ao retomar a reprodução da música</string>
-    <string name="fgs_failed_channel">A reprodução não foi retomada</string>
     <string name="fgs_failed_text">Clique aqui para abrir o aplicativo e continuar a reprodução</string>
     <string name="album_covers_enhance">Carregamento aprimorado da capa do álbum</string>
     <string name="share">Compartilhar</string>
@@ -168,7 +162,6 @@
     <string name="scroll_to_songs">Role para as músicas</string>
     <string name="play">Reproduzir</string>
     <string name="more">Mais</string>
-    <string name="remove">Remover</string>
     <string name="skip_next">Pular para o próximo</string>
     <string name="tab_order">Configurar ordem das abas</string>
     <string name="tab_order_summary">O aplicativo mostrará a primeira guia na inicialização. As guias após o divisor ficarão ocultas.</string>
@@ -176,7 +169,6 @@
     <string name="home_menu_shuffle">Reproduzir no modo aleatório</string>
     <string name="delete">Excluir</string>
     <string name="yes">Sim</string>
-    <string name="no">Não</string>
     <string name="grant_audio"><![CDATA[Conceda permissão para \"Música & Áudio\"]]></string>
     <string name="spk_channel_out_mono">Mono</string>
     <string name="spk_channel_out_stereo">Estéreo</string>
@@ -324,7 +316,6 @@
         <item quantity="many">%d Pastas</item>
         <item quantity="other">%d Pastas</item>
     </plurals>
-    <string name="delete_failed_playlist">Falha ao deletar playlist: %s</string>
     <string name="timer_expiry_eos">Temporizador de sono irá pausar quando a música tocando em %s acabar</string>
     <string name="timer_expiry_end_of_this_song">Temporizador de sono irá pausar a música no final desta canção</string>
     <string name="spk_encoding_amr_nb">AMR-NB</string>
@@ -398,18 +389,11 @@
     <string name="do_not_enter_email_enter_msg">Digite uma mensagem, não um endereço de e-mail</string>
     <string name="log_will_auto_send">Os registros serão enviados automaticamente, em vez disso explique o problema</string>
     <string name="log_attachment">Os registros serão enviados como anexo automaticamente</string>
-    <string name="create_playlist">Criar playlist…</string>
     <string name="rename">Renomear</string>
     <string name="refreshing_wait">Recarregando, por favor aguarde…</string>
     <string name="still_refreshing">Recarregando, passo %1$d/%2$d: %3$s</string>
     <string name="did_you_know">Você sabia…</string>
     <string name="refresh_did_you_know">Gramophone pede por uma lista atualizadas de músicas toda vez que inicia o app, enquanto Gramophone estiver em execução ele irá detectar novas mídias automaticamente. Esse botão \"Refresh\" não irá recarregar a mídia no Gramophone, invés disso vai perguntar ao seu sistema para re-escanear todos os arquivos fixados do sistema (por esse motivo demora um tempo). Isso significa que, a menos que seu sistema ou outros aplicativos não estejam funcionando corretamente, você nunca precisará usar esse recurso.\n\nFaltando algumas músicas? Tenha certeza de checar Configurações &gt; Comportamento para o filtro de duração mínimo e a lista negra de pastas e confirme que essa opção está configurada para o valor esperado. Para outras possíveis razões, por favor confira nosso FAQ.</string>
-    <string name="rename_failed_playlist">Falha em renomear playlist: %s</string>
-    <string name="playlist_name">Nome da playlist</string>
-    <string name="create_failed_playlist">Falha ao criar playlist: %s</string>
-    <string name="rename_playlist">Renomear playlist</string>
-    <string name="edit_playlist_failed">Edição de playlist falhou: %s</string>
-    <string name="add_to_playlist">Adicione a playlist</string>
     <string name="no_app_found">Nenhum aplicativo encontrado pode fazer isso</string>
     <string name="contributors_nift4">Mantedor/ Desenvolvedor Líder</string>
     <string name="contributors_123duo3">Líder de Design</string>
@@ -427,8 +411,6 @@
     <string name="offload_enabled_if_gapless">Ativado se a reprodução sem espaços for possível</string>
     <string name="settings_audio_offload">Audio offload (conserva bateria)</string>
     <string name="settings_telegram">Telegram</string>
-    <string name="spk_encoding_pcm_20bit">20-bit PCM</string>
-    <string name="spk_encoding_pcm_20bit_big_endian">20-bit PCM (big endian)</string>
     <string name="settings_cookie_summary">Capa do álbum em formato de cookie</string>
     <string name="settings_cookie_info">Capa de cookie</string>
     <string name="settings_pure_dark_summary">Um tema onde todas as superfícies no app são puro preto (pode causar falhas em telas OLED)</string>
@@ -437,5 +419,4 @@
     <string name="compact_grid">Grade (compacta)</string>
     <string name="sort_by_album_year">Ano do álbum</string>
     <string name="sort_by_album_artist_year"><![CDATA[Album artist -&gt;year]]></string>
-    <string name="forbidden_symbol_error">Caractere inválido no nome</string>
 </resources>
