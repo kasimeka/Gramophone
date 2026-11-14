@@ -123,7 +123,7 @@
 
     <style name="CollapsingToolbarLarge" parent="Widget.Material3.CollapsingToolbar.Large">
         <item name="titleCollapseMode">scale</item>
-        <item name="contentScrim">?attr/colorSurfaceContainer</item>
+        <item name="contentScrim">@android:color/transparent</item>
     </style>
 
     <style name="MediaPlayer.ProgressBar" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">

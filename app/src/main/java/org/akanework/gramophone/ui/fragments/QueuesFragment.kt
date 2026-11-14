@@ -79,6 +79,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
@@ -113,6 +114,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
@@ -993,6 +995,10 @@ private fun QueueDetailScreen(
                                 }
                             }
                         },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent,
+                        ),
                         scrollBehavior = scrollBehavior,
                         navigationIcon = {
                             IconButton(onClick = { activity.supportFragmentManager.popBackStack() }) {
@@ -1219,12 +1225,11 @@ private fun QueueDetailScreen(
                 LazyColumn(
                     state = listState,
                     contentPadding = PaddingValues(
-                        top = padding.calculateTopPadding(),
                         start = padding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                         end = padding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                         bottom = padding.calculateBottomPadding() + 88.dp,
                     ),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()),
                 ) {
                     item(key = "queue_decor_panel") {
                         QueueDetailDecorPanel(

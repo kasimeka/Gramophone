@@ -59,7 +59,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -165,8 +167,10 @@ class ContributorsSettingsActivity : BaseComposeActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ContributorsSettingsScreen() {
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(snapAnimationSpec = null)
         val appBarHeight = expandedAppBarHeight()
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 LargeTopAppBar(
                     expandedHeight = appBarHeight,
@@ -180,9 +184,10 @@ class ContributorsSettingsActivity : BaseComposeActivity() {
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent,
                     ),
+                    scrollBehavior = scrollBehavior,
                     windowInsets = WindowInsets.safeDrawing.only(
                         sides = WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                     )
@@ -192,7 +197,13 @@ class ContributorsSettingsActivity : BaseComposeActivity() {
             contentWindowInsets = WindowInsets.safeDrawing
         ) { paddingValues ->
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp) + paddingValues
+                modifier = Modifier.padding(top = paddingValues.calculateTopPadding()),
+                contentPadding = PaddingValues(
+                    start = 16.dp + paddingValues.calculateLeftPadding(Ltr),
+                    top = 2.dp,
+                    end = 16.dp + paddingValues.calculateRightPadding(Ltr),
+                    bottom = 2.dp + paddingValues.calculateBottomPadding(),
+                ),
             ) {
                 itemsIndexed(Contributors.LIST) { i, contributor ->
                     val top = if (i == 0) CornerSize(16.dp) else CornerSize(8.dp)
