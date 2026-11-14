@@ -1261,6 +1261,7 @@ private fun QueueDetailScreen(
                             item = decoded,
                             isDragging = isDragging,
                             dragTranslation = if (isDragging) dragState.dragOffset else 0f,
+                            modifier = if (isDragging) Modifier else Modifier.animateItem(),
                             isCurrent = isActive && currentPlayingKey == row.key,
                             isPlaying = isActive && playerState.isPlaying,
                             canPlayNext = QueueOrderEditor.canPlayNext(displayRows.size, anchor, index),

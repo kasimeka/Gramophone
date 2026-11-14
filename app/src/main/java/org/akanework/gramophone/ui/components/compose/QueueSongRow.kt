@@ -109,6 +109,7 @@ fun QueueSongRow(
     onDragCancel: () -> Unit,
     highlighted: Boolean = false,
     onHighlightEnd: () -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -117,6 +118,7 @@ fun QueueSongRow(
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
     val currentOnDragCancel by rememberUpdatedState(onDragCancel)
     val currentOnHighlightEnd by rememberUpdatedState(onHighlightEnd)
+    val currentOnRemoveFromQueue by rememberUpdatedState(onRemoveFromQueue)
     val highlightAlpha = remember { Animatable(0f) }
     LaunchedEffect(highlighted) {
         if (!highlighted) return@LaunchedEffect
@@ -126,19 +128,19 @@ fun QueueSongRow(
         currentOnHighlightEnd()
     }
     val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onRemoveFromQueue()
-            }
-            false
-        },
+        confirmValueChange = { value -> value == SwipeToDismissBoxValue.EndToStart },
     )
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            currentOnRemoveFromQueue()
+        }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = !isDragging,
-        modifier = Modifier
+        modifier = modifier
             .zIndex(if (isDragging) 1f else 0f)
             .graphicsLayer { translationY = dragTranslation },
         backgroundContent = {
