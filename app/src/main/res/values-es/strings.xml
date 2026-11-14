@@ -57,7 +57,6 @@
     <string name="refreshed_songs">%1$d canciones actualizadas</string>
     <string name="dark">Oscuro</string>
     <string name="sort_by_name">Nombre</string>
-    <string name="check_for_updates">¡Consulte nuestro canal para estar al día!</string>
     <string name="shuffle">Aleatorio</string>
     <string name="dialog_disc_number">Número de disco</string>
     <string name="follow_system">Sistema</string>
@@ -369,7 +368,6 @@
     <string name="pitch">Tono</string>
     <string name="lock_tempo_pitch">bloquear el tempo y el tono</string>
     <string name="reset">Restablecer</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="translators">Traductores</string>
     <string name="settings_replaygain_mode">Modo</string>
     <string name="settings_replaygain_no_rg_amp">Atenuación (no RG)</string>

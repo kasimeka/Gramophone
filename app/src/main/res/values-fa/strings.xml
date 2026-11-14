@@ -109,7 +109,6 @@
     <string name="dialog_artist">هنرمند</string>
     <string name="settings_blacklist">فهرست سیاه</string>
     <string name="settings_blacklist_folder">شاخه‌های فهرست سیاه</string>
-    <string name="check_for_updates">کانال ما را برای به‌روز رسانی‌ها بررسی کنید!</string>
     <string name="settings_crash_application_summary">Crash-O-Matic ۳۰۰۰</string>
     <string name="settings_customization">شخصی‌سازی</string>
     <string name="dark">تیره</string>
@@ -386,7 +385,6 @@
     <string name="add_to_queue">افزودن به صف</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">غیرفعال</string>
-    <string name="settings_telegram">تلگرام</string>
     <plurals name="folders_plural">
         <item quantity="one">%d پوشه</item>
         <item quantity="other">%d پوشه</item>

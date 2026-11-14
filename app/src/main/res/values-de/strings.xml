@@ -62,7 +62,6 @@
     <string name="home_menu_equalizer">Equalizer</string>
     <string name="dialog_path">Pfad</string>
     <string name="dark">Dunkel</string>
-    <string name="check_for_updates">Überprüfen Sie unseren Kanal für Neuigkeiten!</string>
     <string name="follow_system">Systemeinstellung befolgen</string>
     <string name="list">Liste</string>
     <string name="grid">Raster</string>
@@ -378,7 +377,6 @@
     <string name="home_menu_quick_refresh">Schnelles Aktualisieren</string>
     <string name="add_to_queue">Zur Warteschlange hinzufügen</string>
     <string name="disabled">deaktiviert</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="mix_port_flag_deep_buffer">Tiefpuffer</string>
     <string name="refreshing_wait">Aktualisierung, bitte warten…</string>
     <string name="still_refreshing">Aktualisierung, Schritt %1$d/%2$d: %3$s</string>

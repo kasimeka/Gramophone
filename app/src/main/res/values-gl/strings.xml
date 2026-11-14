@@ -72,7 +72,6 @@
     <string name="home_menu_equalizer">Ecualizador</string>
     <string name="equalizer_not_found">Non hai ecualizador!</string>
     <string name="compact_list">Lista (compacta)</string>
-    <string name="check_for_updates">Accede á nosa canle de actualizacións!</string>
     <string name="settings_default_progress_bar">Barra de progreso predeterminada</string>
     <string name="settings_default_progress_bar_summary">Activar a barra de progreso co estilo de Material</string>
     <string name="opensource_info">Código Aberto baixo a GPL-3.0\nDereitos %s</string>
@@ -386,7 +385,6 @@
     <string name="add_to_queue">Engadir á cola</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">Desactivado</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">O temporizador deterá a música cando finalice a canción en reprodución en %s</string>
     <string name="timer_expiry_end_of_this_song">O temporizador deterá a música cando finalice esta canción</string>
     <plurals name="folders_plural">

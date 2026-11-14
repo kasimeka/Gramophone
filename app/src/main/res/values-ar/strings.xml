@@ -92,7 +92,6 @@
     <string name="dark">داكن</string>
     <string name="settings_appearance_summary">مظهر التّطبيق وأوضاع السِّمات</string>
     <string name="sort_by_name">الاسم</string>
-    <string name="check_for_updates">تابِع قناتنا للتَّحديثات!</string>
     <string name="dialog_duration">المُدَّة</string>
     <string name="shuffle">خلط</string>
     <string name="dialog_disc_number">رقم القُرص</string>
@@ -261,7 +260,6 @@
     <string name="settings_replaygain_boost">التعزيز</string>
     <string name="sort_by_album_year">سنة الألبوم</string>
     <string name="settings_replaygain_boost_desc" formatted="false">"سيؤدي \"التعزيز\" إلى إخراج كل من ReplayGain والموسيقى الأخرى بمستوى صوت أعلى مما هو محدد في جهازك. (إذا تم ضبط مستوى صوت جهازك بالقرب من ١٠٠٪، فلن يؤدي تعزيز الصوت إلى زيادة مستوى الصوت). مع التعزيز، يمكنك الاستمتاع بالموسيقى التي تتمتع بصوت عالٍ مماثل للتطبيقات الأخرى، مثل الألعاب. يرجى ملاحظة أن هذه الميزة تجريبية وقد تتداخل مع تطبيقات المعادل الخارجية. لا يعمل التعزيز مع سماعات الرأس التي تعمل بالبلوتوث. في حالة وجود أي مشاكل متعلقة بحجم الصوت، يرجى تعطيل التعزيز عن طريق تعيينها إلى ٠ dB. "</string>
-    <string name="settings_telegram">تيليجرام</string>
     <string name="disabled">معطل</string>
     <string name="contributors_developer">مطور</string>
     <string name="contributors_akanetan">المنشئ الأصلي، المطور متقاعد</string>

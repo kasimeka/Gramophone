@@ -9,6 +9,7 @@ import org.akanework.gramophone.R
 object Contributors {
     private fun decode(text: String?) = text?.let { Uri.decode(it) }
     val LIST = listOf(
+        GitHubUser(login = "kasimeka", link = true, name = decode("%D9%88%D8%B1%D8%AF"), avatar = R.drawable.contributor_kasimeka, contributed = R.string.contributors_kasimeka),
         GitHubUser(login = "nift4", link = true, name = decode("Nick"), avatar = R.drawable.contributor_nift4, contributed = R.string.contributors_nift4),
         GitHubUser(login = "123Duo3", link = true, name = decode("123Duo3"), avatar = R.drawable.contributor_123duo3, contributed = R.string.contributors_123duo3),
         GitHubUser(login = "AkaneTan", link = true, name = decode("%E3%81%82%E3%81%8B%E3%81%AD"), avatar = R.drawable.contributor_akanetan, contributed = R.string.contributors_akanetan),

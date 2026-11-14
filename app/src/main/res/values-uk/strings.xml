@@ -62,7 +62,6 @@
     <string name="refreshed_songs">Оновлено %1$d треки</string>
     <string name="dark">Темна</string>
     <string name="sort_by_name">За імьям</string>
-    <string name="check_for_updates">Слідкуйте за оновленнями в нашому каналі!</string>
     <string name="dialog_duration">Тривалість</string>
     <string name="shuffle">Перемішати</string>
     <string name="dialog_disc_number">Номер диска</string>
@@ -393,7 +392,6 @@
     <string name="add_to_queue">Додати до черги</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">Відключено</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">Таймер сну призупинить музику, коли відтворення пісні о %s закінчиться</string>
     <string name="timer_expiry_end_of_this_song">Таймер сну призупинить музику в кінці цієї пісні</string>
     <plurals name="folders_plural">

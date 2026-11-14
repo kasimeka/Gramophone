@@ -67,7 +67,6 @@
     <string name="grid">グリッド</string>
     <string name="list">リスト</string>
     <string name="compact_list">リスト (コンパクト)</string>
-    <string name="check_for_updates">アップデートはチャンネルをチェックしてください！</string>
     <string name="settings_default_progress_bar">プログレスバー</string>
     <string name="opensource_info">Open-sourced under GPL-3.0 \nCopyright %s</string>
     <string name="settings_default_progress_bar_summary">マテリアルスタイルのプログレスバーを有効化します</string>
@@ -381,7 +380,6 @@
     <string name="add_to_queue">キューに追加</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">無効</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">スリープタイマーは %s で再生中の曲が終了すると音楽を一時停止します</string>
     <string name="timer_expiry_end_of_this_song">スリープタイマーは、この曲の再生を終了後に音楽を一時停止します</string>
     <plurals name="folders_plural">

@@ -13,7 +13,6 @@
     <string name="home_menu_equalizer">Equalizador</string>
     <string name="equalizer_not_found">Equalizador não encontrado!</string>
     <string name="compact_list">Lista (compacta)</string>
-    <string name="check_for_updates">Confira o nosso canal para atualizações!</string>
     <string name="settings_default_progress_bar_summary">Ativar barra de progresso com material design</string>
     <string name="now_playing">A reproduzir</string>
     <string name="settings_content_based_color_summary">Ativar esquema de cores baseado na arte do álbum</string>
@@ -396,7 +395,6 @@
     <string name="home_menu_quick_refresh">Atualização rápida</string>
     <string name="add_to_queue">Adicionar à fila</string>
     <string name="disabled">Desativado</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">Capa do álbum em formato de cookie</string>
     <string name="settings_cookie_info">Capa de cookie</string>
     <string name="settings_pure_dark_summary">Um tema onde todas as superfícies na app são preto puro (pode causar falhas em ecrãs OLED)</string>

@@ -84,7 +84,6 @@
     <string name="home_menu_equalizer">Ekvilajzer</string>
     <string name="equalizer_not_found">Ekvilajzer nije pronađen!</string>
     <string name="compact_list">Popis (kompaktno)</string>
-    <string name="check_for_updates">Prati naš kanal za nove verzije!</string>
     <string name="settings_default_progress_bar">Zadana traka napretka</string>
     <string name="settings_default_progress_bar_summary">Uključi traku napretka u „material“ stilu</string>
     <string name="opensource_info">Aplikacija otvorenog koda, licenca GPL-3.0\nAutorska prava %s</string>
@@ -400,7 +399,6 @@
     <string name="home_menu_quick_refresh">Brzo osvježavanje</string>
     <string name="add_to_queue">Dodaj u red čekanja</string>
     <string name="disabled">Isključeno</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">Stvori omot albuma u obliku kolačića</string>
     <string name="settings_cookie_info">Omot kao kolačić</string>
     <string name="settings_pure_dark">Potpuno crna u tamnoj temi</string>

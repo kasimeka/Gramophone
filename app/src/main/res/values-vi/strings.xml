@@ -26,7 +26,6 @@
     <string name="category_albums">Albums</string>
     <string name="refreshed_songs">Đã làm mới %1$d bài hát</string>
     <string name="sort_by_name">Tên</string>
-    <string name="check_for_updates">Theo dõi cập nhật trên kênh của chúng tôi!</string>
     <string name="shuffle">Ngẫu nhiên</string>
     <string name="follow_system">Theo hệ thống</string>
     <string name="search">Tìm kiếm</string>
@@ -442,7 +441,6 @@
     <string name="spk_encoding_mpegh_sub_lc_l4">MPEG-H Low Complexity L4</string>
     <string name="spk_encoding_pcm_16bit_offload">16-bit PCM Offload</string>
     <string name="spk_encoding_pcm_24bit_offload">24-bit (8.24) PCM offload</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="settings_replaygain">ReplayGain</string>
     <string name="settings_replaygain_mode">Mode</string>
     <string name="settings_replaygain_preamp">Pre amp</string>

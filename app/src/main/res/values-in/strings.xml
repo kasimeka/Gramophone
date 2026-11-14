@@ -56,7 +56,6 @@
     <string name="unknown_album">Album tidak diketahui</string>
     <string name="dialog_year">Tahun</string>
     <string name="settings_app_theme">Tema aplikasi</string>
-    <string name="check_for_updates">Cek saluran kami untuk pembaruan!</string>
     <string name="settings_default_progress_bar">Bilah progres bawaan</string>
     <string name="layout">Tampilan</string>
     <string name="home_menu_equalizer">Ekualizer</string>
@@ -394,7 +393,6 @@
     <string name="home_menu_quick_refresh">Segarkan cepat</string>
     <string name="add_to_queue">Tambahkan ke antrean</string>
     <string name="disabled">Dinonaktifkan</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">Jadikan sampul album berbentuk kue</string>
     <string name="settings_cookie_info">Sampul kue</string>
     <string name="settings_pure_dark">Hitam pekat pada tema gelap</string>

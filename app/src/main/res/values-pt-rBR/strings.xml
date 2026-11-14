@@ -74,7 +74,6 @@
     <string name="dark">Escuro</string>
     <string name="settings_appearance_summary">Aparência do aplicativo, temas</string>
     <string name="sort_by_name">Nome</string>
-    <string name="check_for_updates">Confira nosso canal para atualizações!</string>
     <string name="dialog_duration">Duração</string>
     <string name="shuffle">Aleatória</string>
     <string name="dialog_disc_number">Número do disco</string>
@@ -393,7 +392,6 @@
     <string name="home_menu_quick_refresh">Atualização rápida</string>
     <string name="add_to_queue">Adicionar à fila</string>
     <string name="disabled">Desabilitado</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">Capa do álbum em formato de cookie</string>
     <string name="settings_cookie_info">Capa de cookie</string>
     <string name="settings_pure_dark_summary">Um tema onde todas as superfícies no app são puro preto (pode causar falhas em telas OLED)</string>

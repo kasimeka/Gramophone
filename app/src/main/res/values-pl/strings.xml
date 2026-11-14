@@ -86,7 +86,6 @@
     <string name="dark">Ciemny</string>
     <string name="settings_appearance_summary">Wygląd aplikacji, tryby motywów</string>
     <string name="sort_by_name">Nazwa</string>
-    <string name="check_for_updates">Sprawdź nasz kanał, aby otrzymywać aktualizacje!</string>
     <string name="dialog_duration">Długość</string>
     <string name="shuffle">Odtwarzaj losowo</string>
     <string name="dialog_disc_number">Numer płyty</string>
@@ -394,7 +393,6 @@
     <string name="home_menu_quick_refresh">Szybkie odświeżanie</string>
     <string name="add_to_queue">Dodaj do kolejki</string>
     <string name="disabled">Wyłączono</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">Czasomierz snu wstrzyma odtwarzanie muzyki po zakończeniu utworu w %s</string>
     <string name="timer_expiry_end_of_this_song">Czasomierz snu wstrzyma odtwarzanie muzyki po zakończeniu tego utworu</string>
     <plurals name="folders_plural">

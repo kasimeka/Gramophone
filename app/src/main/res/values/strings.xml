@@ -206,8 +206,6 @@
     <string name="equalizer_not_found">Equalizer not found!</string>
     <!-- Display style where songs/albums/etc are displayed as list, but smaller -->
     <string name="compact_list">List (compact)</string>
-    <!-- In about screen, link to our Telegram channel -->
-    <string name="check_for_updates">Check our channel for updates!</string>
     <!-- In player UI settings, change between wavy(Boombox's default) and default/modern
     (Google's default) slider. Title -->
     <string name="settings_default_progress_bar">Default progress bar</string>
@@ -1065,6 +1063,8 @@
     <string name="refresh_did_you_know">Boombox asks for an updated song list on every app start, and while Boombox is running, it will detect new media automatically as well. This \"Refresh\" button will not reload the media in Boombox, instead, it will ask your system to re-scan all files from all attached permanent storage devices (this is why it takes some time). This means, unless your system or other apps are malfunctioning, you will never need to use this feature.\n\nMissing some songs? Make sure to check "Settings > Behaviour" for the minimum length filter and folder blacklist, and confirm these settings are set to an expected value. For more possible reasons, please check our FAQ.</string>
     <!-- Error if no internet browser is installed but user clicks a link -->
     <string name="no_app_found">No app found that can do this</string>
+    <!-- Shown below the fork maintainer's nickname in about screen -->
+    <string name="contributors_kasimeka">Boombox Fork Maintainer</string>
     <!-- Shown below the lead developer's nickname in about screen -->
     <string name="contributors_nift4">Maintainer / Lead Developer</string>
     <!-- Shown below the lead designer's nickname in about screen -->
@@ -1096,8 +1096,6 @@
     <string name="add_to_queue">Add to queue</string>
     <!-- Three-state dialog toggle if a feature is disabled -->
     <string name="disabled">Disabled</string>
-    <!-- Shown above the link to our group in about screen -->
-    <string name="settings_telegram">Telegram</string>
     <!-- This is one of the possible audio formats supported by Android. It's used to display
     supported output formats by device and playback path of active playback. -->
     <!-- This is one of the possible audio formats supported by Android. It's used to display

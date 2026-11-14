@@ -43,7 +43,6 @@
     <string name="layout">Vaade</string>
     <string name="home_menu_equalizer">Ekvalaiser</string>
     <string name="compact_list">Loend (kompaktne)</string>
-    <string name="check_for_updates">Viimast teavet leiad meie kanalist!</string>
     <string name="settings_default_progress_bar">Vaikimisi edenemisriba</string>
     <string name="playlist_favourite">Lemmikud</string>
     <string name="settings_content_based_color_summary">Kasuta albumipõhist värvimustrit</string>
@@ -386,7 +385,6 @@
     <string name="add_to_queue">Lisa esitusjärjekorda</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">Pole kasutusel</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">Unetaimer peatab esituse, kui lugude esitamine lõppeb %s</string>
     <string name="timer_expiry_end_of_this_song">Unetaimer peatab esituse selle loo esitamise lõppedes</string>
     <string name="settings_cookie_summary">Näita albumite kaanepilte küpsisekujulistena</string>

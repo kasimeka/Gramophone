@@ -76,7 +76,6 @@
     <string name="settings_lyrics_bold">Félkövér dalszövegek</string>
     <string name="settings_lyrics_center">Középre igazítás</string>
     <string name="settings_title_center">Középre igazított cím</string>
-    <string name="check_for_updates">Tekintse meg csatornánkat a frissítésekért!</string>
     <string name="settings_lyrics_configuration_summary">A dalszövegek megjelenésének konfigurálása</string>
     <string name="settings_content_based_color">Tartalom alapú színek</string>
     <string name="settings_contributors">Közreműködők</string>

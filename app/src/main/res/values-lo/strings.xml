@@ -76,7 +76,6 @@
     <string name="home_menu_equalizer">ອິຄວໍໄລເຊີ</string>
     <string name="equalizer_not_found">ບໍ່ພົບ ອິຄວໍໄລເຊີ!</string>
     <string name="compact_list">ລາຍການ (ກະທັດຮັດ)</string>
-    <string name="check_for_updates">ກວດສອບຊ່ອງຂອງພວກເຮົາສຳລັບການອັບເດດ!</string>
     <string name="settings_default_progress_bar">ແຖບຄວາມຄືບໜ້າເລີ່ມຕົ້ນ</string>
     <string name="settings_default_progress_bar_summary">ເປີດໃຊ້ແຖບຄວາມຄືບໜ້າແບບ material</string>
     <string name="opensource_info">ໂອເພນຊອດພາຍໃຕ້ GPL-3.0\nສະຫງວນລິຂະສິດ %s</string>
@@ -402,7 +401,6 @@
     <string name="home_menu_quick_refresh">ຣີເຟຣຊດ່ວນ</string>
     <string name="add_to_queue">ເພີ່ມເຂົ້າໃນຄິວ</string>
     <string name="disabled">ປິດການນຳໃຊ້</string>
-    <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">ເຮັດໃຫ້ໜ້າປົກອະລະບ້ຳເປັນຮູບຊົງຄຸກກີ້</string>
     <string name="settings_cookie_info">ໜ້າປົກຮູບຄຸກກີ້</string>
     <string name="settings_pure_dark">ສີດຳສະນິດໃນຮູບແບບສີມືດ</string>
