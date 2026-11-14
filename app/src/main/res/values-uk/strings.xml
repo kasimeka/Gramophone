@@ -163,14 +163,12 @@
     <string name="position_slider">Повзунок положення</string>
     <string name="settings_status_bar_lyrics_summary">Увімкнути метод MeiZu для відображення текстів пісень у рядку стану (доступно лише на деяких пристроях)</string>
     <string name="expand_less">Закрити</string>
-    <string name="settings_lyrics_ui">Увімкнути новий інтерфейс користувача з текстами</string>
     <string name="play_all">Грайте всі</string>
     <string name="shuffle_all">Перемішайте все</string>
     <string name="sort">Сортувати</string>
     <string name="scroll_to_albums">Перейдіть до альбомів</string>
     <string name="play">Грати</string>
     <string name="more">Більше</string>
-    <string name="settings_lyrics_ui_summary">Експериментальний інтерфейс користувача для відображення слова за словом лірики з розширеними функціями</string>
     <string name="settings_status_bar_lyrics_title">Тексти пісень у рядку стану</string>
     <string name="delete">Видалити</string>
     <string name="yes">Так</string>

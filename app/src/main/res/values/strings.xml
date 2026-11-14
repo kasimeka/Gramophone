@@ -423,10 +423,6 @@
     <string name="skip_previous">Skip to previous</string>
     <!-- Accessibility label for seek bar to control song position -->
     <string name="position_slider">Position slider</string>
-    <!-- Settings toggle to enable newer lyrics rendering code. Title -->
-    <string name="settings_lyrics_ui">Enable new lyric UI</string>
-    <!-- Settings toggle to enable newer lyrics rendering code. Subtext -->
-    <string name="settings_lyrics_ui_summary">Experimental UI to display word-by-word lyric with advanced features</string>
     <!-- Settings toggle to enable showing lyrics in status bar (requires meizu phone). Title -->
     <string name="settings_status_bar_lyrics_title">Status bar lyrics</string>
     <!-- Settings toggle to enable showing lyrics in status bar (requires meizu phone). Subtext -->

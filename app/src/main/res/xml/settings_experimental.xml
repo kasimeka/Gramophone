@@ -36,15 +36,6 @@
             android:title="@string/settings_export_logs"
             app:iconSpaceReserved="false" />
 
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:key="lyric_ui_v2"
-            android:layout="@layout/preference_switch"
-            android:summary="@string/settings_lyrics_ui_summary"
-            android:title="@string/settings_lyrics_ui"
-            android:widgetLayout="@layout/preference_switch_widget"
-            app:iconSpaceReserved="false" />
-
         <ListPreference
             android:defaultValue="0"
             android:entries="@array/offload_switch"

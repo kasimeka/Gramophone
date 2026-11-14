@@ -166,8 +166,6 @@
     <string name="expand_less">Pechar</string>
     <string name="skip_previous">Ir á anterior</string>
     <string name="position_slider">Marcador de posición</string>
-    <string name="settings_lyrics_ui">Activar IU nova letra</string>
-    <string name="settings_lyrics_ui_summary">Interface experimental para mostrar a letra palabra a palabra con características avanzadas</string>
     <string name="settings_status_bar_lyrics_title">Letras na barra de estado</string>
     <string name="delete">Eliminar</string>
     <string name="settings_status_bar_lyrics_summary">Activar o método MeiZu para mostrar a letra na barra de estado (dispoñible só nalgúns dispositivos)</string>

@@ -172,8 +172,6 @@
     <string name="expand_less">ປິດ</string>
     <string name="skip_previous">ຂ້າມໄປເພງກ່ອນໜ້າ</string>
     <string name="position_slider">ແຖບເລື່ອນຕຳແໜ່ງ</string>
-    <string name="settings_lyrics_ui">ເປີດໃຊ້ UI ເນື້ອເພງໃໝ່</string>
-    <string name="settings_lyrics_ui_summary">UI ທົດລອງເພື່ອສະແດງເນື້ອເພງແບບຄຳຕໍ່ຄຳພ້ອມຟີເຈີຂັ້ນສູງ</string>
     <string name="settings_status_bar_lyrics_title">ເນື້ອເພງເທິງແຖບສະຖານະ</string>
     <string name="settings_status_bar_lyrics_summary">ເປີດໃຊ້ວິທີການຂອງ MeiZu ໃນການສະແດງເນື້ອເພງເທິງແຖບສະຖານະ (ມີສະເພາະບາງອຸປະກອນ)</string>
     <string name="settings_notification_lyrics_title">ເນື້ອເພງໃນການແຈ້ງເຕືອນ</string>

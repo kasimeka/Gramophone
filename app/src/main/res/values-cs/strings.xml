@@ -255,8 +255,6 @@
     <string name="expand_less">Zavřít</string>
     <string name="skip_previous">Předchozí</string>
     <string name="position_slider">Pozice slideru</string>
-    <string name="settings_lyrics_ui">Povolit novou UI textu skladeb</string>
-    <string name="settings_lyrics_ui_summary">Experimentální UI pro zobrazení textu slovo po slově s pokročilými funkcemi</string>
     <string name="sort_by_file_path">Cesta k souboru</string>
     <string name="shuffle_all">Zamíchat vše</string>
     <string name="play_all">Přehrát vše</string>

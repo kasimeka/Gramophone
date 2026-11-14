@@ -261,8 +261,6 @@
     <string name="more">เพิ่มเติม</string>
     <string name="skip_next">ข้ามเพลง</string>
     <string name="skip_previous">เพลงก่อนหน้า</string>
-    <string name="settings_lyrics_ui">หน้าแสดงเนื้อเพลงแบบใหม่</string>
-    <string name="settings_lyrics_ui_summary">แสดงเนื้อเพลงแบบคำต่อคำ และฟีเจอร์อื่น ๆ</string>
     <string name="settings_status_bar_lyrics_title">เนื้อเพลงในแถบสเตตัส</string>
     <string name="settings_status_bar_lyrics_summary">แสดงเนื้อเพลงในแถบสเตตัส โดยใช้วิธี MeiZu (รองรับในบางอุปกรณ์)</string>
     <string name="lyric_widget_description">วิดเจ็ทที่แสดงเนื้อเพลงที่เล่นอยู่</string>
