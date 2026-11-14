@@ -28,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import org.akanework.gramophone.logic.expandedAppBarHeight
 import org.akanework.gramophone.ui.components.compose.SearchAppBar
 import org.akanework.gramophone.ui.GramophoneTheme
@@ -98,16 +99,22 @@ class SearchFragment : BaseFragment() {
         // Build FastScroller.
         recyclerView.fastScroll(songAdapter, songAdapter.itemHeightHelper)
 
-        rootView.findViewById<ComposeView>(R.id.search_app_bar).setContent {
-            GramophoneTheme(pureDark = pureDark(requireContext())) {
-                val query by searchTextFlow.collectAsState()
-                SearchAppBar(
-                    query = query,
-                    onQueryChange = { searchTextFlow.value = it },
-                    onClose = { requireActivity().supportFragmentManager.popBackStack() },
-                    expandedHeight = expandedAppBarHeight(),
-                    onFieldReady = { editText = it },
-                )
+        rootView.findViewById<ComposeView>(R.id.search_app_bar).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                GramophoneTheme(pureDark = pureDark(requireContext())) {
+                    val query by searchTextFlow.collectAsState()
+                    SearchAppBar(
+                        query = query,
+                        onQueryChange = { searchTextFlow.value = it },
+                        onClose = {
+                            if (::editText.isInitialized) requireActivity().closeKeyboard(editText)
+                            requireActivity().supportFragmentManager.popBackStack()
+                        },
+                        expandedHeight = expandedAppBarHeight(),
+                        onFieldReady = { editText = it },
+                    )
+                }
             }
         }
 
@@ -115,7 +122,7 @@ class SearchFragment : BaseFragment() {
     }
 
     override fun onPause() {
-        if (!isHidden) {
+        if (!isHidden && ::editText.isInitialized) {
             requireActivity().closeKeyboard(editText)
         }
         super.onPause()
@@ -123,24 +130,27 @@ class SearchFragment : BaseFragment() {
 
     override fun onResume() {
         super.onResume()
-        if (!isHidden && !mainActivity.playerBottomSheet.visibleAndExpanded) {
-            requireActivity().showKeyboard(editText)
-        } else {
+        if (!isRemoving && !isHidden && !mainActivity.playerBottomSheet.visibleAndExpanded) {
+            if (::editText.isInitialized) requireActivity().showKeyboard(editText)
+        } else if (::editText.isInitialized) {
             editText.clearFocus()
         }
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
         if (hidden) {
-            requireActivity().closeKeyboard(editText)
+            if (::editText.isInitialized) requireActivity().closeKeyboard(editText)
             super.onHiddenChanged(true)
         } else {
             super.onHiddenChanged(false)
-            requireActivity().showKeyboard(editText)
+            if (!isRemoving && !mainActivity.playerBottomSheet.visibleAndExpanded && ::editText.isInitialized) {
+                requireActivity().showKeyboard(editText)
+            }
         }
     }
 
     override fun onDestroyView() {
+        if (::editText.isInitialized) requireActivity().closeKeyboard(editText)
         super.onDestroyView()
         viewLifecycleOwner.lifecycleScope.cancel() // TODO: why?
     }

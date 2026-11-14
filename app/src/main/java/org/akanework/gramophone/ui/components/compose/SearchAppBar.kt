@@ -117,7 +117,9 @@ fun SearchField(
         field.addTextChangedListener { currentOnQueryChange(it?.toString() ?: "") }
         currentOnFieldReady(field)
         field.post {
-            if (!activity.playerBottomSheet.visibleAndExpanded) activity.showKeyboard(field)
+            if (field.isAttachedToWindow && !activity.playerBottomSheet.visibleAndExpanded) {
+                activity.showKeyboard(field)
+            }
         }
         onDispose { activity.closeKeyboard(field) }
     }

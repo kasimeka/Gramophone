@@ -42,6 +42,7 @@ import android.os.Message
 import android.os.StrictMode
 import android.provider.MediaStore
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.ViewPropertyAnimator
 import android.view.WindowInsets
@@ -215,11 +216,10 @@ fun XmlPullParser.skipToEndOfTag() {
 }
 
 fun Activity.closeKeyboard(view: View) {
-    if (ViewCompat.getRootWindowInsets(window.decorView)
-            ?.isVisible(WindowInsetsCompat.Type.ime()) == true
-    ) {
-        WindowInsetsControllerCompat(window, view).hide(WindowInsetsCompat.Type.ime())
-    }
+    view.clearFocus()
+    WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.ime())
+    getSystemService(InputMethodManager::class.java)
+        ?.hideSoftInputFromWindow(window.decorView.windowToken, 0)
 }
 
 fun Activity.showKeyboard(view: View) {
