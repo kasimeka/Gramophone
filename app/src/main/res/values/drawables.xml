@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Dynamic pointers -->
-    <drawable name="album_art">@drawable/ic_album</drawable>
+    <drawable name="album_art">@drawable/ic_boombox_cover</drawable>
     <drawable name="artist_art">@drawable/ic_groups</drawable>
     <drawable name="genres_art">@drawable/ic_genres</drawable>
     <drawable name="dates_art">@drawable/ic_schedule</drawable>

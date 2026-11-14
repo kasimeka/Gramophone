@@ -174,7 +174,7 @@
     <string name="device_type_unknown">Desconhecido</string>
     <string name="device_type_dock_digital">Dock Digital</string>
     <string name="bitrate_unknown">Bitrate desconhecido</string>
-    <string name="package_type_explainer">Os APKs do Gramophone podem ser criados por qualquer pessoa, pois o Gramophone é de código aberto. Para ajudar a lembrar de onde veio um APK, o Gramophone fornece o tipo de pacote.\n\nO tipo mais comum é Release, que é obtido no F-Droid, Google Play, GitHub ou IzzyOnDroid.\nO tipo de pacote CI refere-se a compilações automatizadas feitas para cada commit no GitHub. Estas compilações podem ser instáveis.\nPara outros tipos de pacote, o nome deve dar uma dica razoável sobre a origem do APK.</string>
+    <string name="package_type_explainer">Os APKs do Boombox podem ser criados por qualquer pessoa, pois o Boombox é de código aberto. Para ajudar a lembrar de onde veio um APK, o Boombox fornece o tipo de pacote.\n\nO tipo mais comum é Release, que é obtido no F-Droid, Google Play, GitHub ou IzzyOnDroid.\nO tipo de pacote CI refere-se a compilações automatizadas feitas para cada commit no GitHub. Estas compilações podem ser instáveis.\nPara outros tipos de pacote, o nome deve dar uma dica razoável sobre a origem do APK.</string>
     <string name="mix_port_flag_spatializer">Espacializador</string>
     <string name="mix_port_flag_gapless_offload">Descarga sem intervalos</string>
     <string name="mix_port_flag_mmap_noirq">MMAP (sem irq)</string>
@@ -196,7 +196,6 @@
     <string name="spk_encoding_amr_wb_plus">AMR-WB+</string>
     <string name="spk_encoding_unknown">Formato Desconhecido %s</string>
     <string name="spk_encoding_unknown_d">Formato Desconhecido %d</string>
-    <string name="what_were_you_doing">O que fez no Gramophone quando este crash ocorreu? Adicione o máximo de pormenores possível para aumentar as chances de eu conseguir corrigir o problema.\n\nObserve que o inglês é o idioma preferencial para relatórios de bugs, mas tentarei traduzir se enviar relatórios em outro idioma.</string>
     <string name="dialog_bitrate">Bitrate</string>
     <string name="delete_really">Realmente deseja apagar “%s”? Esta ação não pode ser desfeita.</string>
     <string name="spk_channel_out_mono">Mono</string>
@@ -237,11 +236,8 @@
     <string name="device_type_usb_device">Dispositivo USB</string>
     <string name="device_type_dock_analog">Dock Analógico</string>
     <string name="device_type_aux_line">Entrada auxiliar</string>
-    <string name="open_in_gramophone">Abrir no Gramophone</string>
+    <string name="open_in_gramophone">Abrir no Boombox</string>
     <string name="settings_trim_lyrics_summary">Os espaços antes da primeira letra ou depois do fim de uma linha da letra podem ter valor artístico. Se discorda, pode ativar esta opção para remover estes espaços automaticamente.</string>
-    <string name="gramophone_crashed_explainer2">O Gramophone crashou :(\n\nEnvie-me um relatório de erro para que problemas como o que levou a este crash possam ser corrigidos!\n\nCada situação é tão única quanto música e, sem a sua ajuda, é provável que este bug <b>NÃO</b> seja corrigido!</string>
-    <string name="crash_report">Relatório de crash</string>
-    <string name="email_clipboard">E-mail e texto copiados para a área de transferência</string>
     <string name="settings_export_logs">Exportar registo da app</string>
     <string name="position_slider">Controle deslizante</string>
     <string name="play">Reproduzir</string>
@@ -277,8 +273,6 @@
     <string name="device_type_usb_headset">Headset USB</string>
     <string name="device_type_hearing_aid">Aparelho auditivo</string>
     <string name="settings_open_source_licenses">Licenças de código aberto</string>
-    <string name="oh_no">Oh não!</string>
-    <string name="send_email">Enviar email</string>
     <string name="audio_signal_chain">Cadeia de sinal</string>
     <string name="audio_not_initialized">O sistema de reprodução de áudio não foi inicializado. Tente reproduzir algo!</string>
     <string name="mix_port_flag_none">Nenhum</string>
@@ -295,7 +289,7 @@
     <string name="settings_lyrics_no_animation">Remover animações</string>
     <string name="settings_lyrics_no_animation_summary">Remover todas animações de transição de letras</string>
     <string name="bitrate_format">%1$d kbps</string>
-    <string name="app_name">Gramophone</string>
+    <string name="app_name">Boombox</string>
     <plurals name="folders_plural">
         <item quantity="one">%d Pasta</item>
         <item quantity="many">%d Pastas</item>
@@ -387,15 +381,11 @@
     <string name="settings_translation_auto_word">Animar traduções automaticamente</string>
     <string name="settings_translation_auto_word_summary">Aplicar gradiente linear para linhas de tradução em letras com sincronização por palavra se as traduções não possuem metadados com sincronização por palavras</string>
     <string name="cannot_find_file">Não foi possível encontrar este ficheiro</string>
-    <string name="enter_msg_for_dev_here">Ponha uma mensagem para o programador aqui</string>
-    <string name="do_not_enter_email_enter_msg">Digite uma mensagem, não um endereço de e-mail</string>
-    <string name="log_will_auto_send">Os registos serão enviados automaticamente, em vez disso explique o problema</string>
-    <string name="log_attachment">Os registos serão enviados como anexo automaticamente</string>
     <string name="rename">Renomear</string>
     <string name="refreshing_wait">A recarregar, por favor aguarde…</string>
     <string name="still_refreshing">A recarregar, passo %1$d/%2$d: %3$s</string>
     <string name="did_you_know">Sabia…</string>
-    <string name="refresh_did_you_know">Gramophone pede por uma lista atualizadas de músicas toda vez que inicia a app, enquanto Gramophone estiver em execução ele irá detetar novas médias automaticamente. Este botão \"Refresh\" não irá recarregar a média no Gramophone, invés disso vai perguntar ao seu sistema para re-escanear todos os ficheiros fixados do sistema (por este motivo demora um tempo). Isto significa que, a menos que o seu sistema ou outras apps não estejam a funcionar corretamente, nunca precisará usar este recurso.\n\nFaltam algumas músicas? Tenha certeza de verificar Configurações &gt; Comportamento para o filtro de duração mínimo e a lista negra de pastas e confirme que esta opção está configurada para o valor esperado. Para outras possíveis razões, por favor confira nosso FAQ.</string>
+    <string name="refresh_did_you_know">Boombox pede por uma lista atualizadas de músicas toda vez que inicia a app, enquanto Boombox estiver em execução ele irá detetar novas médias automaticamente. Este botão \"Refresh\" não irá recarregar a média no Boombox, invés disso vai perguntar ao seu sistema para re-escanear todos os ficheiros fixados do sistema (por este motivo demora um tempo). Isto significa que, a menos que o seu sistema ou outras apps não estejam a funcionar corretamente, nunca precisará usar este recurso.\n\nFaltam algumas músicas? Tenha certeza de verificar Configurações &gt; Comportamento para o filtro de duração mínimo e a lista negra de pastas e confirme que esta opção está configurada para o valor esperado. Para outras possíveis razões, por favor confira nosso FAQ.</string>
     <string name="no_app_found">Nenhuma app encontrada pode fazer isto</string>
     <string name="contributors_nift4">Mantedor/ Programador Líder</string>
     <string name="contributors_123duo3">Líder de Design</string>

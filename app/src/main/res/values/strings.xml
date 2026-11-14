@@ -9,8 +9,8 @@
     <!-- Translatable -->
     <eat-comment />
 
-    <!-- If your language uses a latin script: use "Gramophone", please do not translate. If your language uses a different script: translate "Gramophone" into your language. -->
-    <string name="app_name">Gramophone</string>
+    <!-- If your language uses a latin script: use "Boombox", please do not translate. If your language uses a different script: translate "Boombox" into your language. -->
+    <string name="app_name">Boombox</string>
     <!-- Menu item in home screen -->
     <string name="home_menu_search">Search</string>
     <!-- Menu item in home screen -->
@@ -144,7 +144,7 @@
     <!-- Fallback name when a queue has no title -->
     <string name="unknown_queue">Unknown queue</string>
     <string name="gramophone_crashed" translatable="false">Crash log</string>
-    <string name="crash_gramophone_version" translatable="false">Gramophone version</string>
+    <string name="crash_gramophone_version" translatable="false">Boombox version</string>
     <string name="crash_phone_model" translatable="false">Model</string>
     <string name="crash_phone_brand" translatable="false">Brand</string>
     <string name="crash_sdk_level" translatable="false">SDK Level</string>
@@ -208,10 +208,10 @@
     <string name="compact_list">List (compact)</string>
     <!-- In about screen, link to our Telegram channel -->
     <string name="check_for_updates">Check our channel for updates!</string>
-    <!-- In player UI settings, change between wavy(Gramophone's default) and default/modern
+    <!-- In player UI settings, change between wavy(Boombox's default) and default/modern
     (Google's default) slider. Title -->
     <string name="settings_default_progress_bar">Default progress bar</string>
-    <!-- In player UI settings, change between wavy(Gramophone's default) and default/modern
+    <!-- In player UI settings, change between wavy(Boombox's default) and default/modern
     (Google's default) slider. Subtext -->
     <string name="settings_default_progress_bar_summary">Enable material styled progress bar</string>
     <!-- Used in about screen's dialog -->
@@ -744,7 +744,7 @@
     playback path of active playback. -->
     <string name="device_type_ble_broadcast">Bluetooth LE Broadcast</string>
     <!-- Shown in audio file preview to move from preview which is a simple dialog, to full app -->
-    <string name="open_in_gramophone">Open in Gramophone</string>
+    <string name="open_in_gramophone">Open in Boombox</string>
     <!-- Settings toggle in lyrics UI to remove spaces at start and end of text. Subtext -->
     <string name="settings_trim_lyrics_summary">Spaces before the first letter or after the end of a lyric line may have artistic value. If you disagree, you can turn on this toggle to remove these spaces automatically.</string>
     <!-- Error message if file can't be played for any reason -->
@@ -760,17 +760,9 @@
     <!-- Showing the song's bit rate in detail UI if it can't be determined -->
     <string name="bitrate_unknown">Unknown bitrate</string>
     <!-- Explainer in dialog when user clicks "Package type" field in about screen -->
-    <string name="package_type_explainer">Gramophone APKs can be created by anyone, because Gramophone is open source. To help remembering where an APK came from, Gramophone provides the package type.\n\nThe most common type is Release, which is obtained from F-Droid, Google Play, GitHub or IzzyOnDroid.\nThe CI package type refers to automated builds made for every commit on GitHub. These builds may be unstable.\nFor other package types, the name should give a reasonable hint to where the APK is from.</string>
-    <!-- Row in about screen which will show open source licenses of Gramophone and other libraries when clicked -->
+    <string name="package_type_explainer">Boombox APKs can be created by anyone, because Boombox is open source. To help remembering where an APK came from, Boombox provides the package type.\n\nThe most common type is Release, which is obtained from F-Droid, Google Play, GitHub or IzzyOnDroid.\nThe CI package type refers to automated builds made for every commit on GitHub. These builds may be unstable.\nFor other package types, the name should give a reasonable hint to where the APK is from.</string>
+    <!-- Row in about screen which will show open source licenses of Boombox and other libraries when clicked -->
     <string name="settings_open_source_licenses">Open source licenses</string>
-    <!-- Title of crash report screen -->
-    <string name="oh_no">Oh no!</string>
-    <!-- Explainer of crash report screen -->
-    <string name="gramophone_crashed_explainer2">Gramophone crashed :(\n\nPlease send me a bug report so issues like what lead to this crash can be fixed!\n\nEach situation as unique as music, without your help it is likely this bug will <b>NOT</b> be fixed!</string>
-    <!-- Positive action button in crash report screen -->
-    <string name="send_email">Send email</string>
-    <!-- Error message if sending crash report failed -->
-    <string name="send_email_manually">Please send log to nift4@posteo.net - can\'t find mail app</string>
     <!-- Error message if lyrics were found but are corrupted or in unsupported format -->
     <string name="failed_to_parse_lyric">Failed to parse lyrics</string>
     <!-- Title of dialog which shows playback path (formats, sample rates, devices, changes in those). -->
@@ -1047,12 +1039,6 @@
     <!-- This is used if Android uses an audio format we don't know. It's used to display
     supported output formats by device and playback path of active playback. -->
     <string name="spk_encoding_unknown_d">Unknown format %d</string>
-    <!-- Dialog title in crash reporter screen when user pressed "Send email" and we're asking for details -->
-    <string name="crash_report">Crash report</string>
-    <!-- Dialog explainer in crash reporter screen when user pressed "Send email" and we're asking for details -->
-    <string name="what_were_you_doing">What were you doing in Gramophone when this crash happened? Please add as many details as possible to increase the chances of me being able to fix the problem.\n\nPlease note that English is preferred for bug reports, but I will try to use machine translation if you send bug reports in another language.</string>
-    <!-- Used if no email program is installed -->
-    <string name="email_clipboard">Copied e-mail address and text to clipboard</string>
     <!-- Settings item to create .txt file with app logs, used for diagnosing issues -->
     <string name="settings_export_logs">Export app logs</string>
     <!-- Toggle in player UI settings to show sample rate, bit depth, etc in full player. Title -->
@@ -1073,14 +1059,6 @@
     <string name="settings_translation_auto_word_summary">Apply linear gradient to translation lines in word-synced lyric playback if translations do not have word-sync metadata</string>
     <!-- Error message when playing a file but it doesn't exist anymore -->
     <string name="cannot_find_file">Cannot find this file</string>
-    <!-- Used in crash report screen to explain what text field is about -->
-    <string name="enter_msg_for_dev_here">Enter message for developer here</string>
-    <!-- Error text if user enters an email address into the field meant for message to developer in crash report screen -->
-    <string name="do_not_enter_email_enter_msg">Enter message, not an e-mail address</string>
-    <!-- Error text if user enters app logs into the field meant for message to developer in crash report screen -->
-    <string name="log_will_auto_send">Logs will be sent automatically, explain the issue instead</string>
-    <!-- Used in crash report screen to explain the user doesn't need to worry about sending logs -->
-    <string name="log_attachment">Logs will be sent as attachment automatically</string>
 
     <!-- Context menu item to rename a playlist -->
     <string name="rename">Rename</string>
@@ -1092,7 +1070,7 @@
     <!-- Title used for dialog explaining when to use refresh feature and when to use quick refresh -->
     <string name="did_you_know">Did you know…</string>
     <!-- Explainer used for dialog explaining when to use refresh feature and when to use quick refresh -->
-    <string name="refresh_did_you_know">Gramophone asks for an updated song list on every app start, and while Gramophone is running, it will detect new media automatically as well. This \"Refresh\" button will not reload the media in Gramophone, instead, it will ask your system to re-scan all files from all attached permanent storage devices (this is why it takes some time). This means, unless your system or other apps are malfunctioning, you will never need to use this feature.\n\nMissing some songs? Make sure to check "Settings > Behaviour" for the minimum length filter and folder blacklist, and confirm these settings are set to an expected value. For more possible reasons, please check our FAQ.</string>
+    <string name="refresh_did_you_know">Boombox asks for an updated song list on every app start, and while Boombox is running, it will detect new media automatically as well. This \"Refresh\" button will not reload the media in Boombox, instead, it will ask your system to re-scan all files from all attached permanent storage devices (this is why it takes some time). This means, unless your system or other apps are malfunctioning, you will never need to use this feature.\n\nMissing some songs? Make sure to check "Settings > Behaviour" for the minimum length filter and folder blacklist, and confirm these settings are set to an expected value. For more possible reasons, please check our FAQ.</string>
     <!-- Error if no internet browser is installed but user clicks a link -->
     <string name="no_app_found">No app found that can do this</string>
     <!-- Shown below the lead developer's nickname in about screen -->
@@ -1254,14 +1232,14 @@
     <!-- Dialog text when user opens playlist editor but playlist is empty, because playlist editor
     isn't used to add new songs but only to move or delete them. Hint user at proper way. -->
 
-    <!-- In system settings of old Android versions, you can check Gramophone in the list of apps
+    <!-- In system settings of old Android versions, you can check Boombox in the list of apps
     supporting local search. This string explains what can be searched when doing so -->
     <string name="search_desc">Artists, albums and tracks</string>
-    <!-- In system settings of old Android versions, you can check Gramophone in the list of apps
-supporting local search. This string is displayed in the search bar when using Gramophone as search -->
+    <!-- In system settings of old Android versions, you can check Boombox in the list of apps
+supporting local search. This string is displayed in the search bar when using Boombox as search -->
     <string name="search_hint">Search songs and artists</string>
     <!-- Shown in system's file upload dialog, used by browsers or similar, to allow user to choose
-     a song using the familiar Gramophone user interface. App icon is next to it -->
+     a song using the familiar Boombox user interface. App icon is next to it -->
     <string name="picker_activity">Choose music track</string>
 
     <!-- Settings category in appearance settings relating to specific tabs on home page -->

@@ -101,11 +101,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = appIdOverride ?: "org.kasimeka.gramophone"
+        applicationId = appIdOverride ?: "org.kasimeka.boombox"
         minSdk = 23
         targetSdk = 37
         versionCode = 24
-        versionName = "1.1.2"
+        versionName = "1.0"
         if (releaseType != "Release" || vnos != null) {
             // by default the git commit hash is appended for non-release builds, however overrides
             // will apply unconditionally
@@ -283,7 +283,7 @@ kotlin {
 }
 
 base {
-    archivesName = "Gramophone-${android.defaultConfig.versionName}${android.defaultConfig.versionNameSuffix ?: ""}"
+    archivesName = "Boombox-${android.defaultConfig.versionName}${android.defaultConfig.versionNameSuffix ?: ""}"
 }
 
 baselineProfile {

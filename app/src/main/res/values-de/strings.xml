@@ -227,7 +227,7 @@
     <string name="device_type_dock_analog">Analoges Dock</string>
     <string name="spk_encoding_ac3">AC-3</string>
     <string name="spk_encoding_aac_xhe">xHE-AAC</string>
-    <string name="open_in_gramophone">In Gramophone öffnen</string>
+    <string name="open_in_gramophone">In Boombox öffnen</string>
     <string name="spk_channel_out_mono">Mono</string>
     <string name="spk_channel_out_quad">Quad</string>
     <string name="spk_channel_out_front_left_of_center">Vorne Links von Center</string>
@@ -263,15 +263,13 @@
     <string name="spk_channel_out_front_wide_right">Vorne Wide Rechts</string>
     <string name="cannot_play_file">Datei kann nicht abgespielt werden</string>
     <string name="settings_open_source_licenses">Open Source Lizensen</string>
-    <string name="oh_no">Oh nein!</string>
-    <string name="send_email">E-Mail senden</string>
     <string name="spk_channel_out_top_front_right">Oben Vorne Rechts</string>
     <string name="device_type_ble_broadcast">Bluetooth LE Broadcast</string>
     <string name="spk_channel_out_bottom_front_center">Unten Vorne Center</string>
     <string name="spk_channel_out_top_front_center">Oben Vorne Mitte</string>
     <string name="settings_lyrics_no_animation_summary">Alle Zeilenübergangsanimationen deaktivieren</string>
     <string name="failed_to_parse_lyric">Analysieren des Liedtextes fehlgeschlagen</string>
-    <string name="package_type_explainer">Gramophone APKs können von jedem erstellt werden weil Gramophone open source ist. Um daran zu erinnern, woher eine APK kam gibt Gramophone den Pakettyp an.\n\nDer häufigste Typ ist Release, der bei F-Droid, Google Play, Github oder IzzyOnDroid erworben werden kann.\nDer CI Pakettyp weißt auf automatisierte APKs hin, die für jeden commit auf Github generiert werden. Diese Pakete können instabil sein.\nBei anderen Typen sollte die Bezeichnung des Pakettypen einen Hinweis darauf geben, woher die APK stammt.</string>
+    <string name="package_type_explainer">Boombox APKs können von jedem erstellt werden weil Boombox open source ist. Um daran zu erinnern, woher eine APK kam gibt Boombox den Pakettyp an.\n\nDer häufigste Typ ist Release, der bei F-Droid, Google Play, Github oder IzzyOnDroid erworben werden kann.\nDer CI Pakettyp weißt auf automatisierte APKs hin, die für jeden commit auf Github generiert werden. Diese Pakete können instabil sein.\nBei anderen Typen sollte die Bezeichnung des Pakettypen einen Hinweis darauf geben, woher die APK stammt.</string>
     <string name="mix_port_flag_bit_perfect">Bit perfect</string>
     <string name="mix_port_flag_direct_pcm">Direct PCM</string>
     <string name="mix_port_flag_sync">Sync</string>
@@ -358,11 +356,7 @@
     <string name="mix_port_flag_tts">TTS</string>
     <string name="audio_signal_chain">Weg des Audiosignals</string>
     <string name="audio_not_initialized">Das Audiowiedergabesystem ist noch nicht initialisiert. Versuch mal, etwas abzuspielen!</string>
-    <string name="crash_report">Absturzbericht</string>
-    <string name="email_clipboard">E-Mail-Adresse und Text wurden in die Zwischenablage kopiert</string>
     <string name="settings_export_logs">App-Protokolle exportieren</string>
-    <string name="gramophone_crashed_explainer2">Gramophone ist abgestürzt :(\n\nBitte sende mir einen Fehlerbericht, sodass Probleme wie das, welches diesen Absturz verursacht hat, behoben werden können!\n\nJede Situation ist so einzigartig wie Musik, ohne deine Hilfe ist es wahrscheinlich, das dieser Fehler <b>NICHT</b> behoben wird!</string>
-    <string name="what_were_you_doing">Was hast du in Gramophone gemacht, bevor dieser Absturz passiert ist? Bitte erklär es so detailliert wie möglich, um die Chance zu erhöhen, dass ich das Problem beheben kann.\n\nEnglisch ist die bevorzugte Sprache für Fehlerberichte, aber ich werde versuchen, für andere Sprachen Maschinenübersetzung zu benutzen.</string>
     <string name="settings_audio_quality_info">Audioqualität anzeigen</string>
     <string name="settings_audio_quality_info_summary">Informationen über Audioformat/-qualität im Player anzeigen</string>
     <string name="mix_port_flag_iec958_nonaudio">IEC 958 (nicht Audio)</string>
@@ -370,10 +364,6 @@
     <string name="settings_translation_auto_word">Übersetzungen automatisch animieren</string>
     <string name="settings_translation_auto_word_summary">Linearen Farbverlauf auf übersetzte Verse bei der Wiedergabe wortsynchroner Liedtexte anwenden wenn die Übersetzungen keine wortsynchronen Metadaten haben</string>
     <string name="cannot_find_file">Datei kann nicht gefunden werden</string>
-    <string name="enter_msg_for_dev_here">Nachricht an den Entwickler hier eingeben</string>
-    <string name="do_not_enter_email_enter_msg">Nachricht eingeben, keine E-Mail-Adresse</string>
-    <string name="log_will_auto_send">Protokolle werden automatisch gesendet, erkläre stattdessen das Problem</string>
-    <string name="log_attachment">Protokolle werden automatisch als Anhang gesendet</string>
     <string name="rename">Umbenennen</string>
     <string name="did_you_know">Wusstest du…</string>
     <string name="no_app_found">Keine passende App gefunden</string>
@@ -382,7 +372,7 @@
     <string name="contributors_developer">Entwickler</string>
     <string name="contributors_wstxda">Hat eine Variation des App-Icon gestaltet</string>
     <string name="contributors_pxeemo">Mithilfe &amp; Testen von neuen Liedtexten</string>
-    <string name="app_name">Gramophone</string>
+    <string name="app_name">Boombox</string>
     <string name="mix_port_flag_non_blocking">Nicht blockierend</string>
     <string name="mix_port_flag_compress_offload">Komprimierter Offload</string>
     <string name="spk_encoding_pcm_16bit_offload">16-bit PCM Offload</string>
@@ -446,7 +436,7 @@
     <string name="pitch">Tonhöhe</string>
     <string name="lock_tempo_pitch">Tempo und Tonhöhe fixieren</string>
     <string name="delete_really_artist">Willst du wirklich alle Titel von \"%s\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
-    <string name="refresh_did_you_know">Gramophone fordert bei jedem App-Start eine aktualisierte Songliste an, und während Gramophone läuft, erkennt es auch automatisch neue Medien. Diese \"Aktualisieren\"-Taste aktualisiert die Medien nicht nur in Gramophone, sondern weist das Betriebssystem an, alle Dateien von allen angeschlossenen permanenten Speichergeräten erneut zu scannen (darum braucht es einige Zeit). Somit wirst du diese Funktion niemals verwenden müssen, es sei denn, dein Betriebssystem oder andere Apps sind fehlerhaft.\n\nEs fehlen einige Titel? Überprüfe in Einstellungen &gt; Verhalten die minimale Länge eines Titels sowie die Ordner in der schwarzen Liste und stelle sicher, dass diese Einstellungen auf den erwarteten Wert gesetzt sind. Für weitere möglichen Gründen überprüfe bitte unsere FAQ.</string>
+    <string name="refresh_did_you_know">Boombox fordert bei jedem App-Start eine aktualisierte Songliste an, und während Boombox läuft, erkennt es auch automatisch neue Medien. Diese \"Aktualisieren\"-Taste aktualisiert die Medien nicht nur in Boombox, sondern weist das Betriebssystem an, alle Dateien von allen angeschlossenen permanenten Speichergeräten erneut zu scannen (darum braucht es einige Zeit). Somit wirst du diese Funktion niemals verwenden müssen, es sei denn, dein Betriebssystem oder andere Apps sind fehlerhaft.\n\nEs fehlen einige Titel? Überprüfe in Einstellungen &gt; Verhalten die minimale Länge eines Titels sowie die Ordner in der schwarzen Liste und stelle sicher, dass diese Einstellungen auf den erwarteten Wert gesetzt sind. Für weitere möglichen Gründen überprüfe bitte unsere FAQ.</string>
     <string name="settings_replaygain_preamp">Vorverstärkung</string>
     <string name="settings_replaygain_no_rg_amp">Dämpfung (kein RG)</string>
     <string name="settings_replaygain_no_rg_amp_desc">Lautstärke bei lauten Songs ohne ReplayGain-Tags reduzieren</string>

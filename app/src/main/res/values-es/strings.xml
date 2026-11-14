@@ -181,12 +181,10 @@
     <string name="mix_port_flag_unknown">Desconocido</string>
     <string name="device_type_usb_accessory">Accesorio USB</string>
     <string name="settings_lyrics_no_animation">Desactivar animaciones</string>
-    <string name="crash_report">Informe de error</string>
     <string name="settings_export_logs">Exportar registros de la app</string>
     <string name="device_type_builtin_speaker">Altavoz integrado</string>
     <string name="device_type_unknown">Desconocido</string>
     <string name="cannot_play_file">No se puede reproducir este archivo</string>
-    <string name="oh_no">¡Oh no!</string>
     <string name="spk_channel_out_7point1point4">7.1.4</string>
     <string name="spk_channel_out_back_left">Posterior Izquierdo</string>
     <string name="spk_channel_out_side_left">Lado izquierdo</string>
@@ -248,7 +246,7 @@
     <string name="spk_encoding_ac3">AC-3</string>
     <string name="spk_encoding_e_ac3_joc">E-AC-3-JOC</string>
     <string name="device_type_line_analog">Línea analógica</string>
-    <string name="open_in_gramophone">Abrir en Gramophone</string>
+    <string name="open_in_gramophone">Abrir en Boombox</string>
     <string name="settings_lyrics_no_animation_summary">Desactivar todas las animaciones de transición de línea en las letras de canciones</string>
     <string name="bitrate_format">%1$d kbps</string>
     <string name="bitrate_unknown">Tasa de bits desconocida</string>
@@ -271,7 +269,7 @@
     <string name="spk_channel_out_front_right">Frontal Derecho</string>
     <string name="spk_encoding_dts">DTS</string>
     <string name="spk_encoding_opus">Opus</string>
-    <string name="package_type_explainer">Los archivos de instalación APK de Gramophone pueden ser creados por cualquiera porque Gramophone es de código abierto. Para ayudarte a recordar de dónde viene un paquete de instalación Gramophone provee el tipo de paquete\n\nEl tipo más común es \"Release\", que puede ser obtenido de F-Droid, Google Play, GitHub o IzzyOnDroid.\nEl tipo CI se refiere a compilaciones automáticas hechas para cada versión de código en GitHub. Estas versiones pueden ser inestables.\nPara otros tipos de paquetes, el nombre debería dar una idea razonable de su origen.</string>
+    <string name="package_type_explainer">Los archivos de instalación APK de Boombox pueden ser creados por cualquiera porque Boombox es de código abierto. Para ayudarte a recordar de dónde viene un paquete de instalación Boombox provee el tipo de paquete\n\nEl tipo más común es \"Release\", que puede ser obtenido de F-Droid, Google Play, GitHub o IzzyOnDroid.\nEl tipo CI se refiere a compilaciones automáticas hechas para cada versión de código en GitHub. Estas versiones pueden ser inestables.\nPara otros tipos de paquetes, el nombre debería dar una idea razonable de su origen.</string>
     <string name="spk_encoding_aac_he_v2">HE-AAC v2</string>
     <string name="spk_encoding_ac4">AC-4</string>
     <string name="spk_channel_out_front_center">Frontal Central</string>
@@ -327,11 +325,9 @@
     <string name="spk_encoding_mat_2_1">Dolby MAT 2.1</string>
     <string name="spk_encoding_unknown">Formato desconocido %s</string>
     <string name="spk_encoding_unknown_d">Formato desconocido %d</string>
-    <string name="email_clipboard">Dirección de correo y texto copiado al portapapeles</string>
     <string name="settings_audio_quality_info">Información de la calidad de audio</string>
     <string name="settings_audio_quality_info_summary">Mostrar información de calidad de audio/formato en la pantalla del reproductor</string>
     <string name="cannot_find_file">No se puede encontrar este archivo</string>
-    <string name="log_attachment">Los registros se enviarán como anexo automáticamente</string>
     <string name="rename">Renombrar</string>
     <string name="spk_encoding_amr_wb_plus">AMR-WB+</string>
     <string name="spk_encoding_amr_nb">AMR-NB</string>
@@ -340,9 +336,8 @@
     <string name="spk_encoding_qcelp">QCELP</string>
     <string name="spk_encoding_alac">ALAC</string>
     <string name="spk_encoding_aac_adts_lc">AAC-LC en ADTS</string>
-    <string name="send_email">Enviar un correo</string>
     <string name="settings_contributors_click">%s (¡clic para más!)</string>
-    <string name="app_name">Gramophone</string>
+    <string name="app_name">Boombox</string>
     <plurals name="folders_plural">
         <item quantity="one">%d Carpeta</item>
         <item quantity="many">%d Carpetas</item>
@@ -350,7 +345,6 @@
     </plurals>
     <string name="timer_expiry_eos">El temporizador pausará la música cuando finalice la reproducción de la canción en %s</string>
     <string name="timer_expiry_end_of_this_song">El temporizador pausará la música al final de esta canción</string>
-    <string name="what_were_you_doing">¿Qué estabas haciendo en Gramophone cuando ocurrió este fallo? Agrega tantos detalles como sea posible para que sea mas fácil solucionar el problema.\n\nTenga en cuenta que se prefiere el inglés para los informes de errores, pero intentaré utilizar la traducción automática si envía informes de errores en otro idioma.</string>
     <string name="settings_translation_auto_word_summary">Aplicar un degradado lineal a las líneas de traducción en las letras sincronizadas si las traducciones no tienen metadatos de sincronización de palabras</string>
     <string name="refreshing_wait">Actualizando, por favor espere…</string>
     <string name="settings_cookie_summary">Crear portada de álbum en forma de galleta</string>
@@ -388,18 +382,14 @@
     <string name="settings_replaygain_no_rg_amp">Atenuación (no RG)</string>
     <string name="settings_replaygain_drc">Habilita DRC</string>
     <string name="settings_replaygain_drc_desc">Utilice «Compresión de Rango Dinámico» (DRC) como protección contra recortes (recomendado). Si se desactiva, el volumen será reducido en su lugar (el volumen no está en el mismo nivel, destruyendo efecto de normalización).</string>
-    <string name="log_will_auto_send">Los registros se enviarán de forma automática; por favor, describa el problema a continuación</string>
     <string name="track_gain">Igual sonoridad en todas las pistas</string>
     <string name="album_gain">Preservar la dinamica del album</string>
     <string name="smart">Inteligente</string>
-    <string name="gramophone_crashed_explainer2">Gramophone se detuvo :(\n\n¡Por favor, envía un informe de error para que los fallos como este puedan solucionarse!\n\nCada situación es tan única como la música; ¡sin tu ayuda, es probable que este error <b>NO</b> se solucione!</string>
     <string name="failed_to_parse_lyric">Error al analizar la letra</string>
     <string name="audio_not_initialized">El sistema de reproducción de audio no está inicializado. ¡Intenta reproducir algo!</string>
-    <string name="enter_msg_for_dev_here">Escriba aquí el mensaje para el desarrollador</string>
-    <string name="do_not_enter_email_enter_msg">Escriba un mensaje, no una dirección de correo electrónico</string>
     <string name="audio_signal_chain">Cadena de audio</string>
     <string name="settings_replaygain">ReplayGain</string>
-    <string name="refresh_did_you_know">Gramophone solicita una lista de canciones actualizada cada vez que se inicia la aplicación y, mientras está en ejecución, también detectará automáticamente el nuevo contenido multimedia. Este botón de \"Actualizar\" no recarga los archivos dentro de Gramophone; en su lugar, solicita al sistema que vuelva a escanear todos los archivos de todos los dispositivos de almacenamiento permanente conectados (por eso tarda un poco). Esto significa que, a menos que el sistema u otras aplicaciones fallen, nunca necesitarás usar esta función.\n\n¿Faltan algunas canciones? Asegúrate de revisar Ajustes &gt; Comportamiento para verificar el filtro de duración mínima y la lista negra de carpetas, y confirma que estos parámetros tengan los valores esperados. Para conocer otros motivos posibles, consulta nuestras Preguntas Frecuentes (FAQ).</string>
+    <string name="refresh_did_you_know">Boombox solicita una lista de canciones actualizada cada vez que se inicia la aplicación y, mientras está en ejecución, también detectará automáticamente el nuevo contenido multimedia. Este botón de \"Actualizar\" no recarga los archivos dentro de Boombox; en su lugar, solicita al sistema que vuelva a escanear todos los archivos de todos los dispositivos de almacenamiento permanente conectados (por eso tarda un poco). Esto significa que, a menos que el sistema u otras aplicaciones fallen, nunca necesitarás usar esta función.\n\n¿Faltan algunas canciones? Asegúrate de revisar Ajustes &gt; Comportamiento para verificar el filtro de duración mínima y la lista negra de carpetas, y confirma que estos parámetros tengan los valores esperados. Para conocer otros motivos posibles, consulta nuestras Preguntas Frecuentes (FAQ).</string>
     <string name="settings_replaygain_mode_desc">El modo \"Inteligente\" preserva automáticamente la dinámica del álbum solo cuando las canciones se reproducen de forma consecutiva.</string>
     <string name="settings_replaygain_boost_desc" formatted="false">"\"Boost\" emitirá tanto el contenido con ReplayGain como el resto de la música a un volumen superior al configurado en tu dispositivo. (Si el volumen del dispositivo está cerca del 100%, Boost no aumentará el sonido). Con Boost, puedes disfrutar de la música con una intensidad similar a la de otras aplicaciones, como los juegos. Ten en cuenta que esta función es experimental y podría interferir con ecualizadores externos. Boost no funciona con auriculares Bluetooth. En caso de presentar problemas con el volumen, desactiva Boost configurándolo en 0dB. "</string>
     <string name="settings_replaygain_no_rg_amp_desc">Reducir el volumen de canciones con sonido alto que no tengan etiquetas ReplayGain</string>

@@ -292,7 +292,6 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
             dao = systemQueueDao,
             exports = queueExporter,
             songs = { reader.songListFlow.first() },
-            legacyPlaylist = { LegacyFavouritesPlaylist.read(this) },
         )
         reader = FlowReader(
             this,
@@ -326,7 +325,6 @@ class GramophoneApplication : Application(), SingletonImageLoader.Factory,
             queueExporter.start(exportScope)
             // Rebuild only mirrors that are missing or older than the last queue edit.
             queueExporter.reconcile(queueRepository.queues.first())
-            favoritesStore.importLegacyPlaylistIfNeeded()
             favoritesStore.snapshot()?.let { queueExporter.reconcile(listOf(it)) }
             if (prefs.getBoolean("needToAdd_isMusicBlacklist", true)) {
                 prefs.edit(true) {

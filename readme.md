@@ -1,4 +1,4 @@
-# Gramophone
+# Boombox
 ![GitHub](https://img.shields.io/github/license/FoedusProgramme/Gramophone?style=flat-square&logoColor=white&labelColor=black&color=white)
 ![GitHub tag (with filter)](https://img.shields.io/github/v/tag/FoedusProgramme/Gramophone?style=flat-square&logoColor=white&labelColor=black&color=white)
 [![Static Badge](https://img.shields.io/badge/Telegram-Content?style=flat-square&logo=telegram&logoColor=black&color=white)](https://t.me/FoedusProgramme)
@@ -14,7 +14,7 @@ A sane music player built with media3 and the Material Design library that is fo
 [<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="80">](https://play.google.com/store/apps/details?id=org.akanework.gramophone&utm_source=github.com&utm_campaign=readme)
 
 ## Changes from upstream
-This fork reworks queues and adds a few things on top of upstream beta.
+This fork, Boombox, is based on upstream Gramophone. It reworks queues and adds a few things on top of upstream beta.
 
 - Queues tab
   - App UX remodeled after multiqueues as the main interaction surface
@@ -86,15 +86,15 @@ To build this app, you will need the latest beta version of [Android Studio](htt
 
 ### 1. Submodules
 
-Gramophone includes certain dependencies such as media3 as git submodule. Make sure you download git submodules by running `git submodule update --init --recursive` before trying to build Gramophone.
+Boombox includes certain dependencies such as media3 as git submodule. Make sure you download git submodules by running `git submodule update --init --recursive` before trying to build Boombox.
 
 ### 2. Set up package type
-Gramophone has a package type that indicates the source of the application package. Package type string is extracted from an external file named `package.properties`.
+Boombox has a package type that indicates the source of the application package. Package type string is extracted from an external file named `package.properties`.
 
 Simply open your favorite text editor, type `releaseType=SelfBuilt`, and save it in the root folder of the repository as `package.properties`.
 
 ### 3. Start the build
-Launch Android Studio and import your own app signing signature. You should be able to build Gramophone now.
+Launch Android Studio and import your own app signing signature. You should be able to build Boombox now.
 
 ## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](https://github.com/FoedusProgramme/Gramophone/blob/beta/LICENSE) file for details.
@@ -112,21 +112,21 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 ## FAQ
 
 **Why can't I see songs shorter than 60 seconds?**
-Gramophone hides songs shorter than 60 seconds by default. You can change it in _Three dots > Settings > Behaviour_ (set the setting to 0 to show all songs).
+Boombox hides songs shorter than 60 seconds by default. You can change it in _Three dots > Settings > Behaviour_ (set the setting to 0 to show all songs).
 
 **I changed the minimum song length setting, but some songs are still missing!**
 Make sure you haven't excluded the folder in _Behaviour > Folder blacklist_.
-Then, try to reboot your phone, then wait a few minutes (this will rescan the system-wide media database that Gramophone uses to find songs).
+Then, try to reboot your phone, then wait a few minutes (this will rescan the system-wide media database that Boombox uses to find songs).
 If it's still not visible, your system version may not support scanning this file extension: this is most commonly observed for .opus, which will only be scanned since Android 10 (pro tip: rename your .opus file to .ogg, and it will be detected on Android 6 and later).
 
 **My song isn't playing! / My song is playing, but it's completely silent, yet the volume is turned up!**
-Please note that Gramophone relies on system media codecs to make the app smaller. This means
+Please note that Boombox relies on system media codecs to make the app smaller. This means
 - int32 (32-bit) FLAC files will only work on Android 14 or later
 - FLAC files often do work even on versions prior to Android 8, but are only officially supported on Android 8 or later
 - xHE-AAC files in general will only work on Android 9 or later
 - Dolby Digital (AC-3) / Dolby Digital Plus (E-AC-3) / AC-4 requires a device that has licensed decoders for these formats
 
-There is one exception: ALAC files can be played even without the system ALAC decoder as Gramophone includes an extremely lightweight Java ALAC decoder.
+There is one exception: ALAC files can be played even without the system ALAC decoder as Boombox includes an extremely lightweight Java ALAC decoder.
 
 ## Friends
 [SongSync](https://github.com/lambada10/songsync)

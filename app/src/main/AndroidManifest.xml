@@ -66,7 +66,7 @@
         tools:targetApi="upside_down_cake">
         <meta-data
             android:name="androidx.car.app.TintableAttributionIcon"
-            android:resource="@drawable/ic_gramophone_monochrome" />
+            android:resource="@drawable/ic_boombox_monochrome" />
         <meta-data
             android:name="com.google.android.gms.car.application.theme"
             android:resource="@style/Theme.Gramophone"/>

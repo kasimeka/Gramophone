@@ -75,12 +75,10 @@
     <string name="spk_encoding_aac_eld">AAC-ELD</string>
     <string name="device_type_unknown">ไม่ทราบ</string>
     <string name="device_type_hearing_aid">เครื่องช่วยฟัง</string>
-    <string name="open_in_gramophone">เปิดในแกรโมโฟน</string>
+    <string name="open_in_gramophone">เปิดในBoombox</string>
     <string name="device_type_aux_line">สาย AUX</string>
     <string name="device_type_line_analog">สายแอนะล็อก</string>
     <string name="settings_lyrics_no_animation">ปิดแอนิเมชัน</string>
-    <string name="oh_no">ไม่นะ!</string>
-    <string name="send_email">ส่งอีเมล</string>
     <string name="mix_port_flag_iec958_nonaudio">IEC 958 (ไม่มีเสียง)</string>
     <string name="mix_port_flag_sync">ซิงค์</string>
     <string name="mix_port_flag_tts">TTS</string>
@@ -115,7 +113,6 @@
     <string name="spk_encoding_aac_erlc">AAC ERLC</string>
     <string name="spk_encoding_aac_ld">AAC-LD</string>
     <string name="spk_encoding_aac_adts_scalable">AAC Scalable ใน ADTS</string>
-    <string name="crash_report">รายงานข้อบกพร่อง</string>
     <string name="home_menu_settings">ตั้งค่า</string>
     <string name="folders">แฟ้ม</string>
     <string name="sort_by_album">อัลบั้ม</string>
@@ -202,7 +199,7 @@
     <string name="list">รายการ</string>
     <string name="dialog_disc_number">แผ่นที่</string>
     <string name="settings_experimental_settings_summary">ฟีเจอร์ทดสอบและอื่นๆ</string>
-    <string name="app_name">แกรโมโฟน</string>
+    <string name="app_name">Boombox</string>
     <plurals name="folders_plural">
         <item quantity="other">%d แฟ้ม</item>
     </plurals>

@@ -1,4 +1,4 @@
-# Gramophone
+# Boombox
 ![GitHub](https://img.shields.io/github/license/FoedusProgramme/Gramophone?style=flat-square&logoColor=white&labelColor=black&color=white)
 ![GitHub tag (with filter)](https://img.shields.io/github/v/tag/FoedusProgramme/Gramophone?style=flat-square&logoColor=white&labelColor=black&color=white)
 [![Static Badge](https://img.shields.io/badge/Telegram-Content?style=flat-square&logo=telegram&logoColor=black&color=white)](https://t.me/AkaneDev)
@@ -37,13 +37,13 @@ Beta バージョンとプレビューは [Telegram チャンネル](https://t.m
 このアプリをビルドするには、[Android Studio](https://developer.android.com/studio) の最新 Beta 版と高速なネットワーク環境が必要です。
 
 ### パッケージタイプのセットアップ
-Gramophone には、アプリのパッケージを示すためのパッケージタイプがあります。<br>
+Boombox には、アプリのパッケージを示すためのパッケージタイプがあります。<br>
 パッケージタイプの文字列は `package.properties` という名前の外部ファイルから抽出されます。
 
 お気に入りのテキストエディタを開いて、`releaseType=SelfBuilt` と入力してリポジトリのルートフォルダに `package.properties` として保存します。
 
 その後に Android Studio を起動して独自の署名をインポートします。<br>
-これで Gramophone をビルドできるはずです。
+これで Boombox をビルドできるはずです。
 
 ## ライセンス
 このプロジェクトは、GNU General Public License v3.0 に基づいてライセンスされています。<br>

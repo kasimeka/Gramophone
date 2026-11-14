@@ -185,7 +185,7 @@
     <string name="device_type_dock">Dock</string>
     <string name="device_type_hdmi_arc">Zpětný kanál zvuku HDMI</string>
     <string name="device_type_line_digital">Digitální vstup</string>
-    <string name="open_in_gramophone">Otevřít v Gramophone</string>
+    <string name="open_in_gramophone">Otevřít v Boombox</string>
     <string name="cannot_play_file">Tento soubor nelze přehrát</string>
     <string name="settings_status_bar_lyrics_title">Texty na stavovém řádku</string>
     <string name="settings_lyrics_no_animation">Zakázat animace</string>
@@ -273,10 +273,9 @@
     <string name="spk_encoding_pcm_32bit">32bitový (int) PCM</string>
     <string name="spk_channel_out_9point1point4">9.1.4</string>
     <string name="spk_channel_invalid">Neplatné</string>
-    <string name="app_name">Gramophone</string>
+    <string name="app_name">Boombox</string>
     <string name="timer_expiry_end_of_this_song">Časovač spánku zastaví hudbu na konci této skladby</string>
     <string name="settings_open_source_licenses">Open source licence</string>
-    <string name="oh_no">Ach ne!</string>
     <string name="mix_port_flag_none">Žádné</string>
     <string name="mix_port_flag_ultrasound">Ultrasound</string>
     <string name="mix_port_flag_voip_rx">VoIP RX</string>
@@ -345,17 +344,12 @@
     <string name="spk_encoding_mpegh_sub_lc_l4">MPEG-H Low Complexity L4</string>
     <string name="spk_encoding_unknown">Neznámý formát %s</string>
     <string name="spk_encoding_unknown_d">Neznámý formát %d</string>
-    <string name="what_were_you_doing">Co jste dělali v Gramophone, když došlo k tomuto selhání? Uveďte prosím co nejvíce podrobností, aby se zvýšila šance, že budu schopen problém vyřešit.\n\nVezměte prosím na vědomí, že pro hlášení chyb je preferován anglický jazyk, ale pokud mi zašlete hlášení v jiném jazyce, pokusím se použít strojový překlad.</string>
-    <string name="email_clipboard">E-mailová adresa a text zkopírovány do schránky</string>
     <string name="settings_audio_quality_info">Informace o kvalitě audia</string>
     <string name="settings_audio_quality_info_summary">Zobrazit informace o kvalitě/formátu zvuku na obrazovce přehrávače</string>
     <string name="settings_translation_auto_word">Automatické animace překladů</string>
     <string name="settings_translation_auto_word_summary">Použít lineární přechod na překladové řádky v synchronizovaném přehrávání textů písní, pokud překlady nemají metadata synchronizace slov</string>
     <string name="cannot_find_file">Tento soubor nelze najít</string>
-    <string name="enter_msg_for_dev_here">Zde zadejte zprávu pro vývojáře</string>
-    <string name="do_not_enter_email_enter_msg">Zadejte zprávu, ne e-mailovou adresu</string>
     <string name="settings_contributors_click">%s (Klikněte pro více!)</string>
     <string name="timer_expiry_eos">Časovač spánku pozastaví přehrávání hudby, když skončí skladba přehrávaná v %s</string>
-    <string name="send_email">Poslat email</string>
     <string name="failed_to_parse_lyric">Selhalo parsování textu písně</string>
 </resources>

@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.akanework.gramophone.logic.queue.M3uImport
 import org.akanework.gramophone.logic.queue.QueueExportSink
 import org.akanework.gramophone.logic.queue.SystemQueue
 import org.akanework.gramophone.logic.queue.SystemQueueDao
@@ -30,7 +29,6 @@ class FavoritesStore(
     private val dao: SystemQueueDao,
     private val exports: QueueExportSink,
     private val songs: suspend () -> List<MediaItem>,
-    private val legacyPlaylist: suspend () -> String?,
 ) {
     private val lock = Mutex()
     private val rowsState = MutableStateFlow<List<String>>(emptyList())
@@ -76,24 +74,6 @@ class FavoritesStore(
     /** Record the mirror name the exporter wrote for [id]. Ignores ids this store does not own. */
     fun recordExport(id: UUID, fileName: String) {
         scope.launch(Dispatchers.IO) { dao.setExportFileName(id, fileName) }
-    }
-
-    /** Import the playlist-era Favourites file once, when the Favourites list has never been saved. */
-    suspend fun importLegacyPlaylistIfNeeded() {
-        val saved = lock.withLock {
-            withContext(Dispatchers.IO) { dao.load(SystemQueueKind.FAVOURITES) != null }
-        }
-        if (saved) return
-        val text = legacyPlaylist() ?: return
-        val byPath = songs().mapNotNull { song ->
-            song.getFile()?.absolutePath?.let { it to song }
-        }.toMap()
-        val matches = M3uImport.resolve(M3uImport.entries(text)) { byPath[it] }.matches
-        if (matches.isEmpty()) return
-        lock.withLock {
-            if (withContext(Dispatchers.IO) { dao.load(SystemQueueKind.FAVOURITES) } != null) return
-            save(matches.map(MediaRowCodec::encode))
-        }
     }
 
     private suspend fun apply(wanted: Set<String>, favorite: Boolean, items: List<MediaItem>) {
