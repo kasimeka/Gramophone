@@ -1096,12 +1096,6 @@
     <string name="add_to_queue">Add to queue</string>
     <!-- Three-state dialog toggle if a feature is disabled -->
     <string name="disabled">Disabled</string>
-    <!-- Three-state dialog toggle if a feature is enabled -->
-    <string name="offload_enabled_if_supported">Always enabled</string>
-    <!-- Three-state dialog toggle if a feature is conditionally enabled -->
-    <string name="offload_enabled_if_gapless">Enabled if gapless playback possible</string>
-    <!-- Dialog title for audio offload feature. Offload is a technical term -->
-    <string name="settings_audio_offload">Audio offload (saves battery)</string>
     <!-- Shown above the link to our group in about screen -->
     <string name="settings_telegram">Telegram</string>
     <!-- This is one of the possible audio formats supported by Android. It's used to display

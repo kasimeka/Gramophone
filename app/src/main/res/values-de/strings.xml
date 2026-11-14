@@ -378,9 +378,6 @@
     <string name="home_menu_quick_refresh">Schnelles Aktualisieren</string>
     <string name="add_to_queue">Zur Warteschlange hinzufügen</string>
     <string name="disabled">deaktiviert</string>
-    <string name="offload_enabled_if_supported">Immer aktiviert</string>
-    <string name="offload_enabled_if_gapless">Aktiviert, wenn lückenlose Wiedergabe möglich ist</string>
-    <string name="settings_audio_offload">Audio offload (verringert Stromverbrauch)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="mix_port_flag_deep_buffer">Tiefpuffer</string>
     <string name="refreshing_wait">Aktualisierung, bitte warten…</string>

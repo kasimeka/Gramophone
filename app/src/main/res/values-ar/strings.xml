@@ -263,7 +263,6 @@
     <string name="settings_replaygain_boost_desc" formatted="false">"سيؤدي \"التعزيز\" إلى إخراج كل من ReplayGain والموسيقى الأخرى بمستوى صوت أعلى مما هو محدد في جهازك. (إذا تم ضبط مستوى صوت جهازك بالقرب من ١٠٠٪، فلن يؤدي تعزيز الصوت إلى زيادة مستوى الصوت). مع التعزيز، يمكنك الاستمتاع بالموسيقى التي تتمتع بصوت عالٍ مماثل للتطبيقات الأخرى، مثل الألعاب. يرجى ملاحظة أن هذه الميزة تجريبية وقد تتداخل مع تطبيقات المعادل الخارجية. لا يعمل التعزيز مع سماعات الرأس التي تعمل بالبلوتوث. في حالة وجود أي مشاكل متعلقة بحجم الصوت، يرجى تعطيل التعزيز عن طريق تعيينها إلى ٠ dB. "</string>
     <string name="settings_telegram">تيليجرام</string>
     <string name="disabled">معطل</string>
-    <string name="offload_enabled_if_supported">مفعل دائماً</string>
     <string name="contributors_developer">مطور</string>
     <string name="contributors_akanetan">المنشئ الأصلي، المطور متقاعد</string>
     <string name="contributors_nift4">المشرف / المطور الرئيسي</string>
@@ -294,7 +293,6 @@
     <string name="settings_replaygain_mode">الوضع</string>
     <string name="settings_replaygain_no_rg_amp_desc">خفض مستوى الصوت للأغاني الصاخبة التي لا تحتوي على علامات ReplayGain</string>
     <string name="settings_replaygain_mode_desc">يحافظ \"الذكي\" تلقائيًا على ديناميكيات الألبوم فقط عند تشغيل أغاني من ألبوم على التوالي.</string>
-    <string name="settings_audio_offload">إلغاء تحميل الصوت (يُحفظ البطّارية)</string>
     <string name="device_type_bluetooth_a2dp">بلوتوث A2DP</string>
     <string name="device_type_builtin_speaker">مكبّر صوت مُدمَج</string>
     <string name="contributors_code_contributions">مساهمات للكود</string>

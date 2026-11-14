@@ -362,7 +362,6 @@
     <string name="add_to_queue">대기열에 추가</string>
     <string name="home_menu_quick_refresh">빠른 새로고침</string>
     <string name="disabled">꺼짐</string>
-    <string name="offload_enabled_if_supported">항상 켜짐</string>
     <string name="settings_telegram">Telegram</string>
     <string name="settings_replaygain_boost_desc" formatted="false">"\"부스트\"는 ReplayGain이 적용된 음악과 그 외 음악을 기기에 설정된 것보다 더 높은 음량으로 출력합니다. (기기 음량이 100%에 가까우면 부스트로 음량이 더 커지지 않습니다.) 부스트를 사용하면 게임과 같은 다른 앱과 비슷한 체감 음량으로 음악을 들을 수 있습니다. 이 기능은 실험적이며 외부 이퀄라이저 앱과 충돌할 수 있습니다. 부스트는 블루투스 헤드폰에서 작동하지 않습니다. 음량 관련 문제가 발생하면 부스트를 0 dB로 설정해 비활성화해 주세요. "</string>
     <string name="settings_trim_lyrics_summary">가사 줄의 첫 글자 앞이나 끝 뒤의 공백은 표현상 의미가 있을 수 있습니다. 필요하지 않다면 이 옵션을 켜 해당 공백을 자동으로 제거할 수 있습니다.</string>
@@ -376,10 +375,8 @@
     <string name="settings_replaygain_no_rg_amp_desc">ReplayGain 태그가 없는 큰 음량의 곡은 음량을 낮춥니다</string>
     <string name="settings_stop_on_dismiss_summary">최근 앱에서 앱 작업을 닫으면 재생 중지</string>
     <string name="no_app_found">이 작업을 처리할 수 있는 앱을 찾을 수 없습니다</string>
-    <string name="offload_enabled_if_gapless">갭리스 재생이 가능할 때 사용</string>
     <string name="settings_cookie_summary">앨범 커버를 쿠키 모양으로 표시</string>
     <string name="cannot_find_file">이 파일을 찾을 수 없습니다</string>
-    <string name="settings_audio_offload">오디오 오프로드(배터리 절약)</string>
     <plurals name="folders_plural">
         <item quantity="other">%d개 폴더</item>
     </plurals>

@@ -398,9 +398,6 @@
     <string name="home_menu_quick_refresh">விரைவான புதுப்பிப்பு</string>
     <string name="add_to_queue">வரிசையில் சேர்க்கவும்</string>
     <string name="disabled">முடக்கப்பட்டது</string>
-    <string name="offload_enabled_if_supported">எப்போதும் இயக்கப்பட்டிருக்கும்</string>
-    <string name="offload_enabled_if_gapless">இடைவெளியில்லாமல் பிளேபேக் முடிந்தால் இயக்கப்படும்</string>
-    <string name="settings_audio_offload">ஆடியோ ஆஃப்லோட் (பேட்டரியைச் சேமிக்கிறது)</string>
     <string name="settings_telegram">தந்தி</string>
     <string name="settings_cookie_summary">ஆல்பம் கவர் குக்கீ வடிவத்தை உருவாக்கவும்</string>
     <string name="settings_cookie_info">குக்கீ கவர்</string>

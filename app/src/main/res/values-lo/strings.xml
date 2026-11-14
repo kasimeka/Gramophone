@@ -402,9 +402,6 @@
     <string name="home_menu_quick_refresh">ຣີເຟຣຊດ່ວນ</string>
     <string name="add_to_queue">ເພີ່ມເຂົ້າໃນຄິວ</string>
     <string name="disabled">ປິດການນຳໃຊ້</string>
-    <string name="offload_enabled_if_supported">ເປີດນຳໃຊ້ສະເໝີ</string>
-    <string name="offload_enabled_if_gapless">ເປີດໃຊ້ຖ້າການຫຼິ້ນແບບບໍ່ມີຊ່ອງຕັດຕໍ່ສາມາດເຮັດໄດ້</string>
-    <string name="settings_audio_offload">Audio offload (ປະຢັດແບັດເຕີຣີ)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">ເຮັດໃຫ້ໜ້າປົກອະລະບ້ຳເປັນຮູບຊົງຄຸກກີ້</string>
     <string name="settings_cookie_info">ໜ້າປົກຮູບຄຸກກີ້</string>

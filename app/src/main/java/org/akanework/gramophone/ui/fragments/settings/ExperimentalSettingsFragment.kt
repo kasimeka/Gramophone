@@ -30,7 +30,6 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import org.akanework.gramophone.BuildConfig
 import org.akanework.gramophone.R
-import org.akanework.gramophone.logic.utils.Flags
 import org.akanework.gramophone.ui.fragments.BasePreferenceFragment
 import org.akanework.gramophone.ui.fragments.BaseSettingsActivity
 import java.io.File
@@ -47,8 +46,6 @@ class ExperimentalSettingsFragment : BasePreferenceFragment() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_experimental, rootKey)
         findPreference<Preference>("crash")!!.isVisible = BuildConfig.DEBUG
-        if (!Flags.OFFLOAD)
-            findPreference<Preference>("offload")!!.isVisible = false
 
         if (BuildConfig.DEBUG)
             e = RuntimeException("skill issue")

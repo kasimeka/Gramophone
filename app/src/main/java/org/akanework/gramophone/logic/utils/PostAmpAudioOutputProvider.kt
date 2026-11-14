@@ -307,7 +307,7 @@ class PostAmpAudioOutputProvider(
     // These can be created once handler is created and offloadEnabled is loaded, and then never
     // need to be recycled until we get released.
     private fun createEffectsIfNeeded() {
-        val offloadEnabled = Flags.TEST_RG_OFFLOAD || offloadEnabled!!
+        val offloadEnabled = offloadEnabled!!
         val handler = handler!!
         val hasOffloadDpe = isDpeAvailable && isDpeOffloadable && offloadEnabled
         val useDpeForVolume = !isVolumeAvailable && !offloadEnabled && isDpeAvailable
@@ -403,7 +403,7 @@ class PostAmpAudioOutputProvider(
             reduceGain = rgAp.reduceGain
         }
         // we won't be called if offload state changes, one can't reuse audio track in that case
-        val isOffload = Flags.TEST_RG_OFFLOAD ||
+        val isOffload = 
                 format?.let { it.sampleMimeType != MimeTypes.AUDIO_RAW } == true ||
                 reuseFormat.sampleMimeType != MimeTypes.AUDIO_RAW
         if (isOffload) {
@@ -477,7 +477,7 @@ class PostAmpAudioOutputProvider(
         dpeEffect?.created = isDpeAvailable && isDpeOffloadable && offloadEnabled!!
                 || boostGainDb > 0
         val useDpe = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && dpeEffect?.hasControl == true
-        val isOffload = Flags.TEST_RG_OFFLOAD ||
+        val isOffload = 
                 format?.let { it.sampleMimeType != MimeTypes.AUDIO_RAW } == true
         if (useDpe) {
             val enable = isOffload || boostGainDb > 0

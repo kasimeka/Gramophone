@@ -386,10 +386,7 @@
     <string name="add_to_queue">Engadir á cola</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">Desactivado</string>
-    <string name="offload_enabled_if_supported">Sempre activado</string>
-    <string name="offload_enabled_if_gapless">Activado se é posible reproducir sen pausas</string>
     <string name="settings_telegram">Telegram</string>
-    <string name="settings_audio_offload">Audio offload (para aforrar batería)</string>
     <string name="timer_expiry_eos">O temporizador deterá a música cando finalice a canción en reprodución en %s</string>
     <string name="timer_expiry_end_of_this_song">O temporizador deterá a música cando finalice esta canción</string>
     <plurals name="folders_plural">

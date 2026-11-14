@@ -386,9 +386,6 @@
     <string name="add_to_queue">Lisa esitusjärjekorda</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">Pole kasutusel</string>
-    <string name="offload_enabled_if_supported">Alati kasutusel</string>
-    <string name="offload_enabled_if_gapless">Kasutusel, kui katkestusteta taasesitus on võimalik</string>
-    <string name="settings_audio_offload">Heli töötlus protsessoriväliselt (säästab akukasutust)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">Unetaimer peatab esituse, kui lugude esitamine lõppeb %s</string>
     <string name="timer_expiry_end_of_this_song">Unetaimer peatab esituse selle loo esitamise lõppedes</string>

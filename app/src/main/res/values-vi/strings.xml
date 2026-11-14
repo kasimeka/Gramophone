@@ -282,9 +282,6 @@
     <string name="home_menu_quick_refresh">Làm mới nhanh</string>
     <string name="add_to_queue">Thêm vào hàng đợi</string>
     <string name="disabled">Vô hiệu hóa</string>
-    <string name="offload_enabled_if_supported">Luôn kích hoạt</string>
-    <string name="offload_enabled_if_gapless">Bật nếu có thể phát không gián đoạn</string>
-    <string name="settings_audio_offload">Tách xử lý âm thanh (tiết kiệm pin)</string>
     <string name="settings_cookie_summary">Làm bìa album hình bánh quy</string>
     <string name="settings_cookie_info">Bìa bánh quy</string>
     <string name="settings_pure_dark_summary">Chủ đề làm tất cả các nền trong ứng dụng đều có màu đen (có thể gây hiện tượng mất chi tiết ở vùng tối trên màn hình OLED)</string>

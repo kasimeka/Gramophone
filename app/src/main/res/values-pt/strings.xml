@@ -396,9 +396,6 @@
     <string name="home_menu_quick_refresh">Atualização rápida</string>
     <string name="add_to_queue">Adicionar à fila</string>
     <string name="disabled">Desativado</string>
-    <string name="offload_enabled_if_supported">Sempre ativado</string>
-    <string name="offload_enabled_if_gapless">Ativado se a reprodução sem espaços for possível</string>
-    <string name="settings_audio_offload">Audio offload (conserva pilha)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">Capa do álbum em formato de cookie</string>
     <string name="settings_cookie_info">Capa de cookie</string>

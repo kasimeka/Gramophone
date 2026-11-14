@@ -394,9 +394,6 @@
     <string name="home_menu_quick_refresh">Segarkan cepat</string>
     <string name="add_to_queue">Tambahkan ke antrean</string>
     <string name="disabled">Dinonaktifkan</string>
-    <string name="offload_enabled_if_supported">Selalu diaktifkan</string>
-    <string name="offload_enabled_if_gapless">Diaktifkan jika pemutaran tanpa jeda memungkinkan</string>
-    <string name="settings_audio_offload">Offload audio (menghemat baterai)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">Jadikan sampul album berbentuk kue</string>
     <string name="settings_cookie_info">Sampul kue</string>

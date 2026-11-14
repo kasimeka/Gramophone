@@ -121,9 +121,6 @@ class ReplayGainAudioProcessor : BaseAudioProcessor() {
     }
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
-        if (Flags.TEST_RG_OFFLOAD) {
-            return AudioProcessor.AudioFormat.NOT_SET
-        }
         if (computeGain()?.second != null) { // we need a compressor which outputs float32
             pendingOutputFloat = true
             toFloatPcmAudioProcessor.configure(inputAudioFormat)

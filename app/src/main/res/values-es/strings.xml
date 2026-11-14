@@ -362,7 +362,6 @@
     <string name="home_menu_quick_refresh">Escaneo rápido</string>
     <string name="add_to_queue">Añadir a la cola</string>
     <string name="disabled">Deshabilitado</string>
-    <string name="offload_enabled_if_supported">Siempre habilitado</string>
     <string name="settings_stop_on_dismiss">Detenerse al descartar</string>
     <string name="settings_stop_on_dismiss_summary">Detener la reproducción cuando la aplicación se descarta de recientes</string>
     <string name="playback_speed">Velocidad de reproducción</string>
@@ -370,8 +369,6 @@
     <string name="pitch">Tono</string>
     <string name="lock_tempo_pitch">bloquear el tempo y el tono</string>
     <string name="reset">Restablecer</string>
-    <string name="offload_enabled_if_gapless">Activado si la reproducción sin pausas es posible</string>
-    <string name="settings_audio_offload">Audio offload (ahorra batería)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="translators">Traductores</string>
     <string name="settings_replaygain_mode">Modo</string>

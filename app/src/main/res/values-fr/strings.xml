@@ -407,9 +407,6 @@
     <string name="home_menu_quick_refresh">Actualisation rapide</string>
     <string name="add_to_queue">Ajouter à la file d’attente</string>
     <string name="disabled">Désactivé</string>
-    <string name="offload_enabled_if_supported">Toujours activé</string>
-    <string name="offload_enabled_if_gapless">Activé si la lecture sans interruption est possible</string>
-    <string name="settings_audio_offload">Offload audio (économise la batterie)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="settings_cookie_summary">Donner à la pochette d’album une forme de cookie</string>
     <string name="settings_cookie_info">Pochette en forme de cookie</string>

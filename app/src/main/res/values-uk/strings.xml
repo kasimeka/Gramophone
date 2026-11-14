@@ -393,9 +393,6 @@
     <string name="add_to_queue">Додати до черги</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">Відключено</string>
-    <string name="offload_enabled_if_supported">Завжди ввімкнено</string>
-    <string name="offload_enabled_if_gapless">Увімкнено, якщо можливе відтворення без пауз</string>
-    <string name="settings_audio_offload">Розвантаження аудіо (економія заряду батареї)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">Таймер сну призупинить музику, коли відтворення пісні о %s закінчиться</string>
     <string name="timer_expiry_end_of_this_song">Таймер сну призупинить музику в кінці цієї пісні</string>

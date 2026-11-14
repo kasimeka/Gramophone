@@ -386,9 +386,6 @@
     <string name="add_to_queue">افزودن به صف</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">غیرفعال</string>
-    <string name="offload_enabled_if_supported">همیشه فعال</string>
-    <string name="offload_enabled_if_gapless">فعال در صورت امکان پخش بی‌وقفه</string>
-    <string name="settings_audio_offload">تخلیۀ صدا (باتری را ذخیره می‌کند)</string>
     <string name="settings_telegram">تلگرام</string>
     <plurals name="folders_plural">
         <item quantity="one">%d پوشه</item>

@@ -210,17 +210,7 @@ class AudioPreviewActivity : BaseActivity(), View.OnClickListener {
                 setParameters(
                     buildUponParameters()
                     .setAllowInvalidateSelectionsOnRendererCapabilitiesChange(true)
-                    .setAudioOffloadPreferences(
-                        TrackSelectionParameters.AudioOffloadPreferences.Builder()
-                            .apply {
-                                val config = prefs.getStringStrict("offload", "0")?.toIntOrNull()
-                                if (config != null && config > 0 && Flags.OFFLOAD) {
-                                    rgAp.setOffloadEnabled(true)
-                                    setAudioOffloadMode(TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED)
-                                    setIsGaplessSupportRequired(config == 2)
-                                }
-                            }
-                            .build()))
+                    .build())
             })
             .build()
         player.addListener(object : Player.Listener {

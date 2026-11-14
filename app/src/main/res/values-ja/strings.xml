@@ -381,9 +381,6 @@
     <string name="add_to_queue">キューに追加</string>
     <string name="app_name">Boombox</string>
     <string name="disabled">無効</string>
-    <string name="offload_enabled_if_supported">常に有効</string>
-    <string name="offload_enabled_if_gapless">ギャップレス再生が可能な場合に有効化されます</string>
-    <string name="settings_audio_offload">オーディオオフロード (バッテリーを節約)</string>
     <string name="settings_telegram">Telegram</string>
     <string name="timer_expiry_eos">スリープタイマーは %s で再生中の曲が終了すると音楽を一時停止します</string>
     <string name="timer_expiry_end_of_this_song">スリープタイマーは、この曲の再生を終了後に音楽を一時停止します</string>
