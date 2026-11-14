@@ -279,7 +279,9 @@
     <!-- Toggle in player UI settings to make song name bold. Subtext -->
     <string name="settings_title_bold_summary">Use bold title for full player</string>
     <!-- Settings category about experimental features. Title -->
-    <string name="settings_experimental_settings">Experimental</string>
+    <string name="settings_experimental_settings">Experiments</string>
+    <!-- Note at the top of the experiments settings page while it has no experiments -->
+    <string name="settings_no_experiments">There are currently no experiments.</string>
     <!-- Settings category about experimental features. Subtext -->
     <string name="settings_experimental_settings_summary">Testing features, misc</string>
     <!-- Sort songs by date created (of file) -->
