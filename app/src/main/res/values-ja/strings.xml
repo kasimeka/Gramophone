@@ -100,8 +100,6 @@
     <string name="settings_title_bold">タイトルを太字にする</string>
     <string name="settings_title_bold_summary">フルプレーヤーのタイトルに太字を使用します</string>
     <string name="settings_experimental_settings">試験的</string>
-    <string name="settings_color_accuracy">色の精度を向上させる</string>
-    <string name="settings_color_accuracy_summary">カラー生成の精度を向上させます</string>
     <string name="settings_experimental_settings_summary">試験的な機能とその他を設定します</string>
     <string name="sort_by_add_date">日付を追加</string>
     <string name="settings_lyrics_configuration">歌詞の設定</string>

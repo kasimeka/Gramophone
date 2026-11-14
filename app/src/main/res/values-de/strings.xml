@@ -81,7 +81,6 @@
     <string name="filesystem">Dateisystem</string>
     <string name="settings_behavior_summary">Filter, Startverhalten</string>
     <string name="settings_lyrics_configuration_summary">Aussehen von Liedtexten konfigurieren</string>
-    <string name="settings_color_accuracy_summary">Für eine präzise Farberzeugung sorgen</string>
     <string name="settings_category_full_player">Vollbildmodus</string>
     <string name="settings_preference_category_application">Anwendung</string>
     <string name="settings_lyrics_center_summary">Zentrierte Ausrichtung für Liedtexte verwenden</string>
@@ -107,7 +106,6 @@
     <string name="settings_category_filters">Filter</string>
     <string name="settings_category_misc">Sonstiges</string>
     <string name="delete_failed">Löschen des Titels fehlgeschlagen: %s</string>
-    <string name="settings_color_accuracy">Farbgenauigkeit</string>
     <string name="settings_content_based_color">Inhaltsbasierte Farben</string>
     <string name="settings_content_based_color_summary">Albumbasierte Farbgenerierung aktivieren</string>
     <string name="album_cover">Albumcover</string>

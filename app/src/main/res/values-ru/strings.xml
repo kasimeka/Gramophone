@@ -115,8 +115,6 @@
     <string name="settings_title_bold">Жирный заголовок</string>
     <string name="settings_title_bold_summary">Использует жирный заголовок для плеера</string>
     <string name="settings_experimental_settings">Экспериментальные</string>
-    <string name="settings_color_accuracy">Точность цветопередачи</string>
-    <string name="settings_color_accuracy_summary">Более точная генерация цветов</string>
     <string name="settings_experimental_settings_summary">Тестирование функций, разное</string>
     <string name="settings_blacklist">Чёрный список</string>
     <string name="sort_by_add_date">Дата добавления</string>

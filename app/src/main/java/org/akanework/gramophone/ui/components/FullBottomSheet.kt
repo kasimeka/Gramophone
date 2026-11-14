@@ -754,7 +754,7 @@ class FullBottomSheet
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        if (key == "color_accuracy" || key == "content_based_color") {
+        if (key == "content_based_color") {
             if (DynamicColors.isDynamicColorAvailable() &&
                 prefs.getBooleanStrict("content_based_color", true)
             ) {
@@ -1008,12 +1008,7 @@ class FullBottomSheet
             currentDisposable = context.imageLoader.enqueue(
                 ImageRequest.Builder(context).apply {
                     data(mediaItem?.mediaMetadata?.artworkUri)
-                    val colorAccuracy = prefs.getBoolean("color_accuracy", false)
-                    if (colorAccuracy) {
-                        size(256, 256)
-                    } else {
-                        size(16, 16)
-                    }
+                    size(16, 16)
                     allowConversionToBitmap(true)
                     scale(Scale.FILL)
                     target(onSuccess = {

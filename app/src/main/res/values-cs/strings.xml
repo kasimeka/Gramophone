@@ -6,7 +6,6 @@
     <string name="settings_player_options">Zvuk</string>
     <string name="settings_title_bold">Tučný název</string>
     <string name="settings_title_center">Název na střed</string>
-    <string name="settings_color_accuracy">Přesnost barev</string>
     <string name="settings_content_based_color">Barvy podle skladby</string>
     <string name="settings_contributors">Přispěvatelé</string>
     <string name="settings_crash_application">Shodit aplikaci</string>
@@ -246,7 +245,6 @@
     <string name="settings_player_ui_summary">Plný přehrávač UI, text skladby</string>
     <string name="settings_library">Knihovna</string>
     <string name="settings_library_summary">Správa mediální knihovny</string>
-    <string name="settings_color_accuracy_summary">Udělat barevný gradient přesný</string>
     <string name="settings_lyrics_configuration">Konfigurace textu skladby</string>
     <string name="settings_category_misc">Ostatní</string>
     <string name="grant_images"><![CDATA[Prosím povolte \"Fotky a Videa\" povolení]]></string>

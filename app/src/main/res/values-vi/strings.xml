@@ -107,9 +107,7 @@
     <string name="settings_lyrics_center_summary">Hiện lời bài hát ở giữa</string>
     <string name="settings_title_bold_summary">In đậm tên bài hát trong trình phát đầy đủ</string>
     <string name="settings_lyric">Lời bài hát</string>
-    <string name="settings_color_accuracy">Độ chính xác màu</string>
     <string name="settings_lyrics_center">Căn giữa</string>
-    <string name="settings_color_accuracy_summary">Dùng màu sắc chính xác dựa theo nội dung</string>
     <string name="settings_lyrics_configuration_summary">Cách hiển thị lời bài hát</string>
     <string name="settings_experimental_settings_summary">Sắp ra mắt</string>
     <string name="settings_lyrics_bold_summary">In đậm lời bài hát</string>

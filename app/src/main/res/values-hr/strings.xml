@@ -120,8 +120,6 @@
     <string name="settings_title_bold_summary">Koristi podebljani naslov kada player zauzima cijeli ekran</string>
     <string name="settings_experimental_settings">Eksperimentalno</string>
     <string name="settings_experimental_settings_summary">Testiranje funkcija, razno</string>
-    <string name="settings_color_accuracy_summary">Generiraj boje točno</string>
-    <string name="settings_color_accuracy">Točnost boja</string>
     <string name="sort_by_add_date">Datum dodavanja</string>
     <string name="sort_by_modified_date">Datum promjene</string>
     <string name="settings_lyric">Tekst pjesme</string>

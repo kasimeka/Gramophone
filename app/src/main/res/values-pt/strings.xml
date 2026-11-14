@@ -115,8 +115,6 @@
     <string name="settings_title_bold_summary">Ponha o título completo do player em negrito</string>
     <string name="settings_experimental_settings">Experimental</string>
     <string name="settings_experimental_settings_summary">Configurar recursos de teste</string>
-    <string name="settings_color_accuracy_summary">Torne a geração de cores precisa</string>
-    <string name="settings_color_accuracy">Precisão de cores dinâmicas</string>
     <string name="sort_by_add_date">Adicionadas recentemente</string>
     <string name="sort_by_modified_date">Modificadas recentemente</string>
     <string name="settings_lyrics_bold_summary">Fazer as letras usarem uma fonte mais grossa</string>

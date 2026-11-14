@@ -282,12 +282,6 @@
     <string name="settings_experimental_settings">Experimental</string>
     <!-- Settings category about experimental features. Subtext -->
     <string name="settings_experimental_settings_summary">Testing features, misc</string>
-    <!-- Toggle which makes color detection for album cover based color use more CPU to detect the
-    color, which improves accuracy but causes some lags on old devices. Subtext -->
-    <string name="settings_color_accuracy_summary">Make color generation accurate</string>
-    <!-- Toggle which makes color detection for album cover based color use more CPU to detect the
-    color, which improves accuracy but causes some lags on old devices. Title -->
-    <string name="settings_color_accuracy">Color accuracy</string>
     <!-- Sort songs by date created (of file) -->
     <string name="sort_by_add_date">Add date</string>
     <!-- Sort songs by date modified (of file) -->

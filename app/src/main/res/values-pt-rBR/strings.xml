@@ -61,7 +61,6 @@
     <string name="settings_contributors">Colaboradores</string>
     <string name="settings_category_appearance">Aparência</string>
     <string name="dialog_album">Álbum</string>
-    <string name="settings_color_accuracy">Precisão de cores dinâmicas</string>
     <string name="settings_default_progress_bar">Barra de progresso padrão</string>
     <string name="details">Detalhes</string>
     <string name="home_menu_equalizer">Equalizador</string>
@@ -70,7 +69,6 @@
     <string name="album_artist">Álbum do artista</string>
     <string name="sort_by_album">Álbum</string>
     <string name="category_albums">Álbuns</string>
-    <string name="settings_color_accuracy_summary">Tornar a geração de cores mais precisas</string>
     <string name="filesystem">Arquivos</string>
     <string name="refreshed_songs">%1$d música(s) atualizada(s)</string>
     <string name="dark">Escuro</string>

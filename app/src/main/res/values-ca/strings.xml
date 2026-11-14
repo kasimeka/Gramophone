@@ -102,9 +102,7 @@
     <string name="settings_category_links">Enllaços</string>
     <string name="settings_library">Biblioteca</string>
     <string name="settings_title_bold">Títols en negreta</string>
-    <string name="settings_color_accuracy_summary">Fes que la generació de color sigui precisa</string>
     <string name="settings_experimental_settings_summary">Funcionalitats de prova, miscel·lània</string>
-    <string name="settings_color_accuracy">Precisió del color</string>
     <string name="sort_by_add_date">Afegeix la data</string>
     <string name="sort_by_modified_date">Data modificada</string>
     <string name="settings_lyrics_configuration_summary">Configura l\'aparença de les lletres</string>

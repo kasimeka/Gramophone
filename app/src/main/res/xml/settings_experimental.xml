@@ -22,15 +22,6 @@
         android:layout="@layout/preference_category_md"
         android:title="@string/settings_category_misc">
 
-        <SwitchPreferenceCompat
-            android:defaultValue="false"
-            android:key="color_accuracy"
-            android:layout="@layout/preference_switch"
-            android:summary="@string/settings_color_accuracy_summary"
-            android:title="@string/settings_color_accuracy"
-            android:widgetLayout="@layout/preference_switch_widget"
-            app:iconSpaceReserved="false" />
-
         <Preference
             android:key="crash"
             android:layout="@layout/preference_basic"

@@ -99,7 +99,6 @@
     <string name="settings_about_app">Acerca de</string>
     <string name="settings_lyrics_bold">Letra en negrita</string>
     <string name="settings_player_options">Audio</string>
-    <string name="settings_color_accuracy">Precisión del color</string>
     <string name="settings_lyrics_center">Centrado</string>
     <string name="settings_appearance_summary">Aspecto de la aplicación, modos de los temas</string>
     <string name="settings_title_center_summary">Utilice el título centrado en el reproductor completo</string>
@@ -118,7 +117,6 @@
     <string name="settings_title_bold_summary">Poner en negrita el título en el reproductor completo</string>
     <string name="settings_lyric">Letra</string>
     <string name="settings_category_links">Enlaces</string>
-    <string name="settings_color_accuracy_summary">Generar colores precisos</string>
     <string name="settings_player_options_summary">Calidad de salida, comportamiento de reproducción</string>
     <string name="settings_library">Biblioteca</string>
     <string name="settings_lyrics_bold_summary">Utilice un tipo de fuente más grueso para la letra</string>

@@ -111,7 +111,6 @@
     <string name="settings_customization">Персоналізація</string>
     <string name="settings_lyrics_center">Вирівнювання по центру</string>
     <string name="settings_title_bold">Жирний заголовок</string>
-    <string name="settings_color_accuracy">Точність передачі кольору</string>
     <string name="settings_lyrics_configuration_summary">Налаштуйте вигляд тексту пісні</string>
     <string name="album_cover">Обкладинка альбому</string>
     <string name="settings_preference_category_application">Застосунок</string>
@@ -125,7 +124,6 @@
     <string name="settings_lyrics_bold">Жирний текст пісні</string>
     <string name="settings_experimental_settings">Експериментальні</string>
     <string name="settings_category_basic_info">Основна інформація</string>
-    <string name="settings_color_accuracy_summary">Більш точна генерація кольорів</string>
     <string name="sort_by_add_date">Додати дату</string>
     <string name="settings_lyric">Текст пісня</string>
     <string name="settings_lyrics_configuration">Налаштування текстів пісень</string>

@@ -114,8 +114,6 @@
     <string name="settings_title_bold_summary">Usar letra grosa no reprodutor completo</string>
     <string name="settings_experimental_settings">Experimental</string>
     <string name="settings_experimental_settings_summary">Probas, varios</string>
-    <string name="settings_color_accuracy_summary">Mellorar a creación da cor</string>
-    <string name="settings_color_accuracy">Exactitude da cor</string>
     <string name="sort_by_add_date">Data de adición</string>
     <string name="sort_by_modified_date">Data de modificación</string>
     <string name="settings_lyric">Letras</string>

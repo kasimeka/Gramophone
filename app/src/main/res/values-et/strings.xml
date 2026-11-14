@@ -93,8 +93,6 @@
     <string name="settings_about_gramophone">Teave selle rakenduse kohta</string>
     <string name="settings_category_links">Lingid</string>
     <string name="settings_album_round_corner">Albumi kaanepildi ümarad nurgad</string>
-    <string name="settings_color_accuracy_summary">Loo värvid väga täpselt</string>
-    <string name="settings_color_accuracy">Värvitäpsus</string>
     <string name="sort_by_add_date">Lisa kuupäev</string>
     <string name="settings_lyrics_configuration_summary">Seadista laulusõnade kuvamist</string>
     <string name="settings_lyrics_bold">Laulusõnad paksus kirjas</string>

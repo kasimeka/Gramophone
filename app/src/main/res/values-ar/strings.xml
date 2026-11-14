@@ -78,7 +78,6 @@
     <string name="settings_contributors">المُساهِمون</string>
     <string name="settings_category_appearance">المظهر</string>
     <string name="dialog_album">ألبوم</string>
-    <string name="settings_color_accuracy">دِقَّة التلوين</string>
     <string name="settings_default_progress_bar">شريط التَّقدُّم الأصليّ</string>
     <string name="details">التَّفاصيل</string>
     <string name="home_menu_equalizer">مُعادِل الصَّوت</string>
@@ -88,7 +87,6 @@
     <string name="album_artist">فنّان الألبوم</string>
     <string name="sort_by_album">ألبوم</string>
     <string name="category_albums">الألبومات</string>
-    <string name="settings_color_accuracy_summary">جعل عمليَّة صناعة الألوان دقيقة</string>
     <string name="filesystem">نظام الملفات</string>
     <string name="refreshed_songs">تم تحميل %1$d أغنية</string>
     <string name="dark">داكن</string>

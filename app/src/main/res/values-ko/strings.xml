@@ -60,8 +60,6 @@
     <string name="settings_lyrics_bold">가사 굵게</string>
     <string name="settings_experimental_settings">실험적 기능</string>
     <string name="settings_experimental_settings_summary">테스트 중인 기능, 기타</string>
-    <string name="settings_color_accuracy_summary">색상 생성 정확도 향상</string>
-    <string name="settings_color_accuracy">색상 정확도</string>
     <string name="settings_lyrics_center">가운데 정렬</string>
     <string name="settings_blacklist">블랙리스트</string>
     <string name="settings_blacklist_folder_summary">지정한 폴더의 음악 제외</string>

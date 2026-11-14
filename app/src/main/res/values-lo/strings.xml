@@ -112,8 +112,6 @@
     <string name="settings_title_bold_summary">ໃຊ້ຊື່ເພງໂຕເຂັ້ມສຳລັບເຄື່ອງຫຼິ້ນເຕັມຈໍ</string>
     <string name="settings_experimental_settings">ການທົດລອງ</string>
     <string name="settings_experimental_settings_summary">ຟີເຈີທົດລອງ, ອື່ນໆ</string>
-    <string name="settings_color_accuracy_summary">ເຮັດໃຫ້ການສ້າງສີແນ່ນອນຂຶ້ນ</string>
-    <string name="settings_color_accuracy">ຄວາມແນ່ນອນຂອງສີ</string>
     <string name="sort_by_add_date">ວັນທີເພີ່ມ</string>
     <string name="sort_by_modified_date">ວັນທີແກ້ໄຂ</string>
     <string name="settings_lyric">ເນື້ອເພງ</string>

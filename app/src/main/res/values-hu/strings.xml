@@ -46,9 +46,7 @@
     <string name="settings_customization_summary">Testreszabási lehetőségek kezelése</string>
     <string name="sort_by_add_date">Dátum hozzáadása</string>
     <string name="settings_title_bold">Félkövér cím</string>
-    <string name="settings_color_accuracy">Színpontosság</string>
     <string name="settings_experimental_settings">Kísérleti</string>
-    <string name="settings_color_accuracy_summary">Pontos színgenerálás</string>
     <string name="sort_by_modified_date">Módosítás dátuma</string>
     <string name="settings_experimental_settings_summary">Tesztelés alatt levő funkciók, egyebek</string>
     <string name="settings_title_bold_summary">Félkövér cím használata a teljes lejászóhoz</string>
