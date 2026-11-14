@@ -24,9 +24,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -50,7 +48,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyColumn
@@ -135,9 +132,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ShareCompat
-import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -160,10 +155,8 @@ import org.akanework.gramophone.logic.getFile
 import org.akanework.gramophone.logic.expandedAppBarHeight
 import org.akanework.gramophone.logic.deduplicateQueue
 import org.akanework.gramophone.logic.gramophoneApplication
-import org.akanework.gramophone.logic.closeKeyboard
 import org.akanework.gramophone.logic.moveQueueRow
 import org.akanework.gramophone.logic.playQueue
-import org.akanework.gramophone.logic.showKeyboard
 import org.akanework.gramophone.logic.queue.Queue
 import org.akanework.gramophone.logic.queue.QueueEditOperation
 import org.akanework.gramophone.logic.queue.QueueOrderEditor

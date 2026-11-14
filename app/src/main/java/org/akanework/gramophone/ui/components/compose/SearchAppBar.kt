@@ -57,10 +57,9 @@ fun SearchAppBar(
     onClose: () -> Unit,
     expandedHeight: Dp = 152.dp,
     scrollBehavior: TopAppBarScrollBehavior = rememberSearchBarScrollBehavior(),
-    modifier: Modifier = Modifier,
     onFieldReady: (EditText) -> Unit = {},
 ) {
-    Box(modifier = modifier) {
+    Box {
         LargeTopAppBar(
             expandedHeight = expandedHeight,
             title = {},

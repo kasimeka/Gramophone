@@ -203,24 +203,6 @@ data class Queue(
     /** Add serialized rows at the end without changing the bookmark or the queue's identity. */
     fun withAppendedRows(newRows: List<String>): Queue = copy(rows = rows + newRows, isModified = true)
 
-    /** Remove the rows at [positions] in one pass, keeping the bookmark on a surviving row. */
-    fun withoutRows(positions: Collection<Int>, now: Long = System.currentTimeMillis()): Queue {
-        val drop = positions.filter { it in rows.indices }.toHashSet()
-        if (drop.isEmpty()) return this
-        var newBookmark = bookmark
-        var size = rows.size
-        for (position in drop.sortedDescending()) {
-            size--
-            newBookmark = newBookmark.afterRemoval(position, size)
-        }
-        return copy(
-            rows = rows.filterIndexed { index, _ -> index !in drop },
-            bookmark = newBookmark,
-            updatedAt = now,
-            isModified = true,
-        )
-    }
-
     /** Remove the row at [position], clamping the bookmark to a surviving row. */
     fun withoutRow(position: Int, now: Long = System.currentTimeMillis()): Queue {
         if (position !in rows.indices) return this

@@ -50,7 +50,6 @@ import org.akanework.gramophone.ui.NowPlayingPresentation
 import org.akanework.gramophone.ui.NowPlayingState
 import org.akanework.gramophone.ui.NowPlayingViewBinder
 import org.akanework.gramophone.ui.SongPickerActivity
-import org.akanework.gramophone.ui.components.AddToQueueSheet
 import org.akanework.gramophone.ui.fragments.ArtistSubFragment
 import org.akanework.gramophone.ui.fragments.DetailDialogFragment
 import org.akanework.gramophone.ui.fragments.GeneralSubFragment

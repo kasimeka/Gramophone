@@ -34,10 +34,8 @@ import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.GramophonePlaybackService
 import org.akanework.gramophone.logic.utils.SemanticLyrics
 import org.akanework.gramophone.ui.MainActivity
-import org.akanework.gramophone.ui.MediaControllerViewModel
 import kotlin.math.max
 import androidx.core.view.isVisible
-import org.akanework.gramophone.logic.updateMargin
 
 class LyricsView(context: Context, attrs: AttributeSet?) : FrameLayout(context, attrs),
     SharedPreferences.OnSharedPreferenceChangeListener {
@@ -74,10 +72,6 @@ class LyricsView(context: Context, attrs: AttributeSet?) : FrameLayout(context, 
                 )
                 .build()
         }
-        createView()
-    }
-
-    private fun createView() {
         val cb = object : NewLyricsView.Callbacks, Player.Listener, LifecycleOwner {
             private var waitingForSeek = 0
             private var waitingForSeekPos = 0uL
@@ -133,12 +127,13 @@ class LyricsView(context: Context, attrs: AttributeSet?) : FrameLayout(context, 
             }
         }
         inflate(context, R.layout.lyric_view_v2, this)
-        newView = findViewById(R.id.lyric_view)!!
-        newView!!.instance = cb
-        newView!!.updateTextColor(
+        val view: NewLyricsView = findViewById(R.id.lyric_view)!!
+        view.instance = cb
+        view.updateTextColor(
             defaultTextColor, highlightTextColor, highlightTlTextColor
         )
-        newView!!.updateLyrics(lyrics)
+        view.updateLyrics(lyrics)
+        newView = view
     }
 
     private fun updateFullPlayerVisibility() {
