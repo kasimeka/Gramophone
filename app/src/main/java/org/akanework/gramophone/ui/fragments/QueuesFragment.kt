@@ -128,7 +128,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -903,16 +902,23 @@ private fun QueueDetailScreen(
     Box(Modifier.fillMaxSize().onGloballyPositioned { rootOrigin = it.positionInWindow() }) {
         // Outside the top bar, which lays its title out more than once and would open the menu twice.
         overflowBounds?.let { bounds ->
-            DropdownMenu(
-                expanded = actionsOpen,
-                onDismissRequest = { actionsOpen = false },
-                offset = with(LocalDensity.current) {
-                    DpOffset(
-                        (bounds.left - rootOrigin.x).toDp(),
-                        (bounds.bottom - rootOrigin.y).toDp(),
-                    )
-                },
+            val anchorSize = with(LocalDensity.current) {
+                Modifier.size(bounds.width.toDp(), bounds.height.toDp())
+            }
+            Box(
+                modifier = Modifier
+                    .offset {
+                        IntOffset(
+                            (bounds.left - rootOrigin.x).roundToInt(),
+                            (bounds.top - rootOrigin.y).roundToInt(),
+                        )
+                    }
+                    .then(anchorSize),
             ) {
+                DropdownMenu(
+                    expanded = actionsOpen,
+                    onDismissRequest = { actionsOpen = false },
+                ) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.ui_exp_huge_forehead)) },
                     trailingIcon = {
@@ -944,6 +950,7 @@ private fun QueueDetailScreen(
                         deleteOpen = true
                     },
                 )
+            }
             }
         }
         Scaffold(
