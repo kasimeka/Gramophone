@@ -69,6 +69,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import org.akanework.gramophone.ui.components.compose.rememberDialogTextFocus
 import android.widget.Toast
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -175,6 +176,7 @@ import org.akanework.gramophone.logic.undoQueueEdit
 import org.akanework.gramophone.logic.ui.DecorPanelRules
 import org.akanework.gramophone.logic.utils.MediaRowCodec
 import org.akanework.gramophone.ui.GramophoneTheme
+import org.akanework.gramophone.logic.ui.UiExperiments
 import org.akanework.gramophone.ui.MainActivity
 import org.akanework.gramophone.ui.NowPlayingPresentation
 import org.akanework.gramophone.ui.SongMenuLogic
@@ -909,6 +911,23 @@ private fun QueueDetailScreen(
                     )
                 },
             ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.ui_exp_huge_forehead)) },
+                    trailingIcon = {
+                        Checkbox(
+                            checked = UiExperiments.hugeForehead(activity),
+                            onCheckedChange = null,
+                        )
+                    },
+                    onClick = {
+                        actionsOpen = false
+                        UiExperiments.setHugeForehead(
+                            activity,
+                            !UiExperiments.hugeForehead(activity),
+                        )
+                    },
+                )
+                HorizontalDivider()
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.rename)) },
                     onClick = {

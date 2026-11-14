@@ -35,6 +35,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.fragment.app.FragmentManager
 import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.view.MenuCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -180,12 +181,21 @@ class ViewPagerFragment : BaseFragment() {
         }
         topAppBar.overflowIcon =
             AppCompatResources.getDrawable(requireContext(), R.drawable.ic_more_vert_alt_topappbar)
+        MenuCompat.setGroupDividerEnabled(topAppBar.menu, true)
+        topAppBar.menu.findItem(R.id.huge_forehead)?.isChecked =
+            UiExperiments.hugeForehead(requireContext())
 
         topAppBar.setOnMenuItemClickListener { it ->
             val activity = requireActivity() as MainActivity
             when (it.itemId) {
                 R.id.search -> {
                     activity.startFragment(SearchFragment())
+                }
+
+                R.id.huge_forehead -> {
+                    val next = !it.isChecked
+                    it.isChecked = next
+                    UiExperiments.setHugeForehead(requireContext(), next)
                 }
 
                 R.id.equalizer -> {

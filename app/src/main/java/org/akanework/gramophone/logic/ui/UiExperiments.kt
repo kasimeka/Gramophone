@@ -17,4 +17,11 @@ object UiExperiments {
         return PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
             .getBoolean(HUGE_FOREHEAD, false)
     }
+
+    fun setHugeForehead(context: Context, enabled: Boolean) {
+        PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
+            .edit()
+            .putBoolean(HUGE_FOREHEAD, enabled)
+            .apply()
+    }
 }

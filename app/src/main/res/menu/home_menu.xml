@@ -6,33 +6,42 @@
         android:icon="@drawable/ic_search"
         android:title="@string/home_menu_search"
         app:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/shuffle"
-        android:icon="@drawable/ic_shuffle"
-        android:title="@string/home_menu_shuffle"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/quick_refresh"
-        android:icon="@drawable/ic_refresh"
-        android:title="@string/home_menu_quick_refresh"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/refresh"
-        android:icon="@drawable/ic_refresh"
-        android:title="@string/home_menu_refresh"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/import_playlist"
-        android:title="@string/home_menu_import_playlist"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/equalizer"
-        android:icon="@drawable/ic_equalizer"
-        android:title="@string/home_menu_equalizer"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/settings"
-        android:icon="@drawable/ic_settings"
-        android:title="@string/home_menu_settings"
-        app:showAsAction="never" />
+    <group android:id="@+id/group_forehead">
+        <item
+            android:id="@+id/huge_forehead"
+            android:checkable="true"
+            android:title="@string/ui_exp_huge_forehead"
+            app:showAsAction="never" />
+    </group>
+    <group android:id="@+id/group_main">
+        <item
+            android:id="@+id/shuffle"
+            android:icon="@drawable/ic_shuffle"
+            android:title="@string/home_menu_shuffle"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/quick_refresh"
+            android:icon="@drawable/ic_refresh"
+            android:title="@string/home_menu_quick_refresh"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/refresh"
+            android:icon="@drawable/ic_refresh"
+            android:title="@string/home_menu_refresh"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/import_playlist"
+            android:title="@string/home_menu_import_playlist"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/equalizer"
+            android:icon="@drawable/ic_equalizer"
+            android:title="@string/home_menu_equalizer"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/settings"
+            android:icon="@drawable/ic_settings"
+            android:title="@string/home_menu_settings"
+            app:showAsAction="never" />
+    </group>
 </menu>
